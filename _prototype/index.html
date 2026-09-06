@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkorPluss Learning Center — Bimbel Persiapan UTBK-SNBT & Kedinasan Terdepan</title>
+  <meta name="description" content="Raih Kampus Impian Bersama Bimbel & LMS Prestasi Terdepan. Persiapan komprehensif UTBK-SNBT, Kedinasan, dan Olimpiade melalui integrasi kecerdasan simulasi CBT prediktif.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- TOPBAR PROMO -->
+<div class="topbar-promo" id="topbar-promo">
+  <span>🎉 Promo Gelombang Emas 2025: Diskon hingga 40% & Akses Bank Soal Premium Melalui UTBK-SNBT!</span>
+  <div class="countdown-mini" id="countdown-mini">
+    <span id="ct-h">44</span>:<span id="ct-m">42</span>:<span id="ct-s">08</span>
+  </div>
+  <button class="topbar-close" onclick="document.getElementById('topbar-promo').style.display='none'">✕</button>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon">S+</div>
+      <div class="logo-text">
+        <span class="logo-skor">Skor</span><span class="logo-pluss">Pluss</span>
+        <small>Learning Center</small>
+      </div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#program">Program</a></li>
+      <li><a href="#fitur">Fitur</a></li>
+      <li><a href="#testimoni">Testimoni Klien</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="dashboard.html" class="btn-ghost">Masuk</a>
+      <a href="daftar.html" class="btn-primary">Daftar Sekarang</a>
+    </div>
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="#program">Program</a>
+    <a href="#fitur">Fitur</a>
+    <a href="#testimoni">Testimoni</a>
+    <a href="dashboard.html">Masuk</a>
+    <a href="daftar.html" class="btn-primary">Daftar Sekarang</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Target Kelulusan 94.3%! PTN Kelas & Hasil Kedinasan 2024
+      </div>
+      <h1 class="hero-title">Raih Kampus Impian Bersama <span class="gradient-text">Bimbel & LMS Prestasi</span> Terdepan</h1>
+      <p class="hero-desc">Persiapan komprehensif UTBK-SNBT, Kedinasan, dan Olimpiade melalui integrasi kecerdasan simulasi CBT prediktif, pendampingan mentor lulusan terbaik UI & ITB, serta platform RIASEC.</p>
+      <div class="hero-actions">
+        <a href="cbt.html" class="btn-primary btn-lg">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/></svg>
+          Daftar Uji Coba Gratis →
+        </a>
+        <a href="#program" class="btn-outline btn-lg">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" stroke="currentColor" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2"/></svg>
+          Lihat Program & Biaya
+        </a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><polyline points="22 4 12 14.01 9 11.01" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Kurikulum Kolaborasi Alumni UI
+        </div>
+        <div class="trust-item">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><polyline points="22 4 12 14.01 9 11.01" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Diagnosa IRT (Item Response Theory)
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-card main-card">
+        <div class="card-top">
+          <div class="card-avatar">🎓</div>
+          <div>
+            <div class="card-label">LMS CBT Simulator #1</div>
+            <div class="card-sub">SNBT 2025</div>
+          </div>
+        </div>
+        <div class="score-display">
+          <div class="score-item">
+            <div class="score-val">756.50</div>
+            <div class="score-label">Skor Akhir</div>
+          </div>
+          <div class="score-divider">/808</div>
+        </div>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-fill" style="width:93.6%"></div></div>
+          <span>93.6 Persentil Nasional</span>
+        </div>
+        <div class="card-prog">
+          <div class="prog-label">Kemajuan belajar minggu ini</div>
+          <div class="prog-bars">
+            <div class="prog-item"><span>MTK</span><div class="pbar"><div style="width:88%"></div></div></div>
+            <div class="prog-item"><span>IND</span><div class="pbar"><div style="width:76%"></div></div></div>
+            <div class="prog-item"><span>ING</span><div class="pbar"><div style="width:92%"></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-card side-card notif-card">
+        <div class="notif-icon">🏆</div>
+        <div>
+          <div class="notif-title">Peringkat Naik!</div>
+          <div class="notif-sub">Top 5% Nasional • UTBK Matematika</div>
+        </div>
+      </div>
+      <div class="hero-card side-card tutor-card">
+        <div class="tutor-avatars">
+          <div class="tutor-av">👩‍🏫</div>
+          <div class="tutor-av">👨‍🔬</div>
+          <div class="tutor-av">👩‍💻</div>
+        </div>
+        <div>
+          <div class="notif-title">Tutor Alumni UI/ITB</div>
+          <div class="notif-sub">450+ Tutor Spesialis On-Duty</div>
+        </div>
+      </div>
+      <div class="hero-glow"></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="hero-stats container">
+    <div class="stat-item">
+      <div class="stat-val">15.000<span>+</span></div>
+      <div class="stat-label">Siswa Aktif & Alumni</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-val">450<span>+</span></div>
+      <div class="stat-label">Tutor Spesialis & Mentor PTN</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-val">98.4<span>%</span></div>
+      <div class="stat-label">Kepuasan Siswa & Orang Tua</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROGRAM UNGGULAN -->
+<section class="section" id="program">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">PROGRAM UNGGULAN</div>
+      <h2>Program Unggulan SkorPluss</h2>
+      <p>Dirancang bersama alumni kampus terbaik untuk memastikan kamu tembus tujuan akademik tertinggi dengan kurikulum cerdas, drilling, dan simulasi terintegrasi premium.</p>
+    </div>
+
+    <div class="program-carousel" id="program-carousel">
+      <div class="program-cards">
+        <!-- Card 1 -->
+        <div class="program-card featured">
+          <div class="prog-card-top">
+            <div class="prog-img prog-reg">📚</div>
+            <div class="prog-badges">
+              <span class="badge-award">🏆 Award 2024</span>
+              <span class="badge-type">Paling Banyak Dipilih</span>
+            </div>
+          </div>
+          <div class="prog-card-body">
+            <div class="prog-tags"><span class="tag blue">TPS & Literasi</span><span class="tag gray">Ujian CBT Nasional</span></div>
+            <h3>Program Regular Intensif SNBT</h3>
+            <p>Persiapan SNBT dengan kurikulum IRT dari Tutor Responsif, 75% Rasio Nalar, dan paket bank soal adaptif premium.</p>
+            <div class="prog-meta">
+              <div class="prog-meta-item">⏰ 1 Tahun / 200+ HRD</div>
+              <div class="prog-meta-item">👥 Maksimal 15 Siswa / Kelas</div>
+            </div>
+            <div class="prog-price">
+              <span class="price-old">Rp 3.990.000</span>
+              <span class="price-new">Rp 1.995.000</span>
+              <span class="price-period">/tahun</span>
+            </div>
+            <div class="prog-actions">
+              <a href="daftar.html" class="btn-primary btn-full">Daftar</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="program-card">
+          <div class="prog-card-top">
+            <div class="prog-img prog-din">🎖️</div>
+            <div class="prog-badges"><span class="badge-type green">Passing Bikin Tinggi</span></div>
+          </div>
+          <div class="prog-card-body">
+            <div class="prog-tags"><span class="tag blue">SKD, CPNS, STAN</span><span class="tag gray">Tes Kedinasan</span></div>
+            <h3>Kedinasan & Akpol/Akmil</h3>
+            <p>Persiapan CPNS, STAN, Kedinasan IPDN, PPPK, Tes Akmil dan Akpol, yang dipandukan dengan pendampingan intens.</p>
+            <div class="prog-meta">
+              <div class="prog-meta-item">⏰ 6 Bulan / 80 Sesi</div>
+              <div class="prog-meta-item">👥 Maksimal 10 Siswa / Kelas</div>
+            </div>
+            <div class="prog-price">
+              <span class="price-new">Rp 2.860.000</span>
+              <span class="price-period">/tahun</span>
+            </div>
+            <div class="prog-actions">
+              <a href="daftar.html" class="btn-outline btn-full">Daftar</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="program-card">
+          <div class="prog-card-top">
+            <div class="prog-img prog-osn">🔬</div>
+            <div class="prog-badges"><span class="badge-type orange">Kompetitif</span></div>
+          </div>
+          <div class="prog-card-body">
+            <div class="prog-tags"><span class="tag blue">OSN, KSN</span><span class="tag gray">Olimpiade Sains</span></div>
+            <h3>Olimpiade Sains (OSN)</h3>
+            <p>Program OSN Matematika, Fisika, Kimia, Biologi, Informatika, Astronomi, Geografi dan Ekonomi dengan pendamping olimpiade internasional.</p>
+            <div class="prog-meta">
+              <div class="prog-meta-item">🏅 5+ Olympiad Faculty</div>
+              <div class="prog-meta-item">🌍 Pelatih IPhO & IMO</div>
+            </div>
+            <div class="prog-price">
+              <span class="price-new">Rp 3.200.000</span>
+              <span class="price-period">/tahun</span>
+            </div>
+            <div class="prog-actions">
+              <a href="daftar.html" class="btn-outline btn-full">Daftar</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="program-card">
+          <div class="prog-card-top">
+            <div class="prog-img prog-dok">⚕️</div>
+            <div class="prog-badges"><span class="badge-type purple">Kursus Terbatas</span></div>
+          </div>
+          <div class="prog-card-body">
+            <div class="prog-tags"><span class="tag blue">SNBT + Pre-Med</span><span class="tag gray">Target Dok/ITB</span></div>
+            <h3>Bimbel Kedokteran Torpedo</h3>
+            <p>Jalur cepat masuk UI/ITB, ITS, dan kampus impian. Latihan intensif dengan 1-on-1 Private Drill oleh alumni Kedokteran UI.</p>
+            <div class="prog-meta">
+              <div class="prog-meta-item">👩‍⚕️ 1-on-1 Private Intensif</div>
+              <div class="prog-meta-item">📅 Setup 1 Sebelum Interval</div>
+            </div>
+            <div class="prog-price">
+              <span class="price-new">Rp 4.990.000</span>
+              <span class="price-period">/tahun</span>
+            </div>
+            <div class="prog-actions">
+              <a href="daftar.html" class="btn-outline btn-full">Daftar</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="carousel-nav">
+      <button class="carousel-btn" onclick="scrollProg(-1)">‹</button>
+      <button class="carousel-btn" onclick="scrollProg(1)">›</button>
+    </div>
+  </div>
+</section>
+
+<!-- 4 PILAR KEUNGGULAN -->
+<section class="section bg-gray" id="fitur">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">EKOSISTEM BELAJAR ETIS LMS</div>
+      <h2>4 Pilar Keunggulan Belajar Digital</h2>
+      <p>Dirancang untuk melatih ketajaman berpikir kritis dan daya adaptasi terhadap ujian premium yang lebih beragam dan kompetitif.</p>
+    </div>
+    <div class="pilar-grid">
+      <div class="pilar-card">
+        <div class="pilar-icon blue">🖥️</div>
+        <h3>Computer Based Test (CBT) Real-Time</h3>
+        <p>Latihan soal dengan pembangunan soal HOTS IRT (Item Response Theory), pemantapan, dan pembiasaan soal nasional tanpa keberulangan.</p>
+        <div class="pilar-demo cbt-demo">
+          <div class="cbt-mini-header">
+            <span>Soal 14</span><span class="cbt-timer">⏱ 00:42:11</span>
+          </div>
+          <div class="cbt-mini-score">Skor IRT: 756/808 <span class="badge-green">+12 poin</span></div>
+          <div class="cbt-mini-nav">
+            <span class="cn answered">1</span><span class="cn answered">2</span><span class="cn answered">3</span>
+            <span class="cn doubt">4</span><span class="cn active">5</span>
+            <span class="cn">6</span><span class="cn">7</span><span class="cn">8</span>
+          </div>
+        </div>
+        <a href="cbt.html" class="pilar-link">Mulai Latihan →</a>
+      </div>
+
+      <div class="pilar-card">
+        <div class="pilar-icon orange">🧪</div>
+        <h3>Tes Minat Bakat RIASEC & Jurusan</h3>
+        <p>Meningkatkan Program Studi di Universitas Riasec, Investigatif, Artistik, Sosial, Enterprising, & Conventional dikerjakan dengan kemampuan psikogram SNBT/SIMAK/PTN.</p>
+        <div class="pilar-demo riasec-demo">
+          <div class="riasec-chart">
+            <div class="riasec-bar" style="height:85%"><span>R</span></div>
+            <div class="riasec-bar active" style="height:92%"><span>I</span></div>
+            <div class="riasec-bar" style="height:60%"><span>A</span></div>
+            <div class="riasec-bar" style="height:75%"><span>S</span></div>
+            <div class="riasec-bar" style="height:45%"><span>E</span></div>
+            <div class="riasec-bar" style="height:68%"><span>C</span></div>
+          </div>
+          <div class="riasec-labels">
+            <span class="riasec-tag">Investigatif</span>
+            <span class="riasec-tag">Analisis (INU)</span>
+            <span class="riasec-tag">Konvensional (BU)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pilar-card">
+        <div class="pilar-icon green">🎬</div>
+        <h3>E-Learning Video 4K & Modul PDF</h3>
+        <p>Lebih dari 1.200+ video pembelajaran HD dan 350+ modul PDF berformat standar untuk per subjek, dilengkapi ringkasan modul infografis dari bank rumus pintar terupdate.</p>
+        <div class="pilar-stats">
+          <div class="pstat"><span class="pstat-val">1.200<span>+</span></span><span class="pstat-lbl">Video Belajar</span></div>
+          <div class="pstat"><span class="pstat-val">350<span>+</span></span><span class="pstat-lbl">Modul PDF</span></div>
+          <div class="pstat"><span class="pstat-val">50.000<span>+</span></span><span class="pstat-lbl">Bank Soal</span></div>
+        </div>
+      </div>
+
+      <div class="pilar-card">
+        <div class="pilar-icon purple">💬</div>
+        <h3>Tanya Jawab Tutor Personal 24/7</h3>
+        <p>Fitur tanya jawab langsung (live Q&A) dan forum diskusi akademik premium. Tersedia juga asisten tutor agar setiap pelajar mendapatkan jawaban di waktu yang tepat.</p>
+        <div class="pilar-chat">
+          <div class="chat-bubble student">Kak, gimana cara integral ∫ x·e^x dx?</div>
+          <div class="chat-bubble tutor">
+            <strong>Kak Aditya • Master Tutor MTK ITB</strong><br>
+            Gunakan integrasi parsial: u = x, dv = e^x dx → Hasilnya x·e^x − e^x + C ✅
+          </div>
+        </div>
+        <a href="forum.html" class="pilar-link">Tanya Sekarang →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONI -->
+<section class="section" id="testimoni">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">BUKTI PRESTASI ALUMNI</div>
+      <h2>Bukti Prestasi Alumni SkorPluss</h2>
+      <p>Mereka yang telah mempercayai sistem pembelajaran kami — dan kini meraih perubahan kehidupan mereka. Ribuan alumni telah masuk PTN terbaik Indonesia.</p>
+    </div>
+    <div class="testimonial-grid">
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p>"Gue dulu ngerasa udah stuck di skor TPA. Tapi setelah ikut SkorPluss, skor UTBK-ku naik 87 poin dalam 3 bulan! Tutor-nya dari FKUI, jelas banget ngajarinnya."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">👨‍🎓</div>
+          <div>
+            <strong>Aisyah Nurulaini</strong>
+            <span>Siswa SMA — Universitas Indonesia</span>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card featured">
+        <div class="testi-stars">★★★★★</div>
+        <p>"Wah mantap sekali dan tujuan di EduMaestro sangat tepat dipilih satu aplikasi dipelajari banyak platform. Lanjutkan semangat terus, skor TPS ku naik 100 poin!"</p>
+        <div class="testi-author">
+          <div class="testi-avatar">👩‍🎓</div>
+          <div>
+            <strong>Fadhil Maulana</strong>
+            <span>Siswa SMA — Institut Teknologi Bandung, STM</span>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p>"CBT UI di SkorPluss beneran-beneran akurat sama ujian aslinya. Pembahasan tutornya to-the-point dan drill soalnya bikin terbiasa sama soal HOTS yang tricky."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">👩‍💻</div>
+          <div>
+            <strong>Baqian Wiryanama</strong>
+            <span>Ultas Akademi Science Publik — FKUI ITB/STT</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section bg-gray" id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">PILIHAN PAKET BELAJAR</div>
+      <h2>Pilihan Paket Belajar SkorPluss</h2>
+      <p>Pilih paket yang paling sesuai dengan intensitas belajar Anda. Tersedia cicilan 0% hingga 12 bulan.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-header">
+          <h3>Paket Mandiri</h3>
+          <p>Belajar mandiri kapanpun, dimanapun</p>
+          <div class="pricing-price">
+            <span class="price-curr">Rp</span>
+            <span class="price-big">899</span>
+            <span class="price-suf">rb / 3 bulan</span>
+          </div>
+        </div>
+        <ul class="pricing-features">
+          <li>✅ Akses 1.200+ Video CBT Modul</li>
+          <li>✅ 30+ Simulasi CBT Nasional</li>
+          <li>✅ Modul Belajar Berformat PDF</li>
+          <li>✅ Forum Diskusi Terbatas</li>
+          <li>❌ Tutor Personal 1-on-1</li>
+          <li>❌ Konsultasi WhatsApp Priority</li>
+        </ul>
+        <a href="daftar.html" class="btn-outline btn-full">Pilih Paket Mandiri</a>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-badge">PALING FAVORIT</div>
+        <div class="pricing-header">
+          <h3>Paket Intensif Kilat</h3>
+          <p>Ke Administrasi</p>
+          <div class="pricing-price">
+            <span class="price-curr">Rp</span>
+            <span class="price-big">2.390</span>
+            <span class="price-suf">rb / program</span>
+          </div>
+        </div>
+        <ul class="pricing-features">
+          <li>✅ Semua Fitur Paket Mandiri</li>
+          <li>✅ Live Class Tatap Muka 6× per Minggu</li>
+          <li>✅ 50+ Simulasi CBT Nasional (AI)</li>
+          <li>✅ Konsultasi WhatsApp Priority</li>
+          <li>✅ Group Diskusi dengan Asisten Tutor</li>
+          <li>✅ Garansi Nilai Naik / Uang Kembali</li>
+        </ul>
+        <a href="daftar.html" class="btn-primary btn-full">Daftar Paket Intensif</a>
+      </div>
+
+      <div class="pricing-card premium">
+        <div class="pricing-header">
+          <h3>Garansi Kelulusan</h3>
+          <p>PTN Kelulusan</p>
+          <div class="pricing-price">
+            <span class="price-curr">Rp</span>
+            <span class="price-big">5.450</span>
+            <span class="price-suf">rb / Full Program</span>
+          </div>
+        </div>
+        <ul class="pricing-features">
+          <li>✅ Semua Fitur Paket Intensif</li>
+          <li>✅ Private Tutor UI/ITB 1-on-1</li>
+          <li>✅ Tes Masuk Universitas Garansi</li>
+          <li>✅ Garansi 100% Uang Kembali (Jika Tidak Lulus)</li>
+          <li>✅ Sertifikat SkorPluss Elite Alumni</li>
+          <li>✅ Akses Selamanya ke LMS & Bank Soal</li>
+        </ul>
+        <a href="daftar.html" class="btn-outline btn-full">Pilih Paket Garansi</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BOTTOM -->
+<section class="section cta-section">
+  <div class="container">
+    <div class="cta-box">
+      <h2>Siap Taklukkan Soal Terberat Tahun Ini?</h2>
+      <p>Ikut Uji Coba Gratis Simulasi CBT Nasional SkorPluss satu pekan ini dan dapatkan analisis tindak kalian akademik Anda.</p>
+      <div class="cta-actions">
+        <a href="cbt.html" class="btn-warning btn-lg">🎯 Mulai Uji Coba Gratis 7 Hari</a>
+        <a href="https://wa.me/6281234567890" class="btn-outline-white btn-lg">💬 Konsultasi via WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo">
+        <div class="logo-icon">S+</div>
+        <div class="logo-text">
+          <span class="logo-skor">Skor</span><span class="logo-pluss">Pluss</span>
+          <small>Learning Center</small>
+        </div>
+      </div>
+      <p>Platform bimbel & LMS terpadu untuk persiapan UTBK-SNBT, Kedinasan, dan Olimpiade Sains terdepan di Indonesia.</p>
+      <div class="footer-socials">
+        <a href="#" class="social-btn">📘 Facebook</a>
+        <a href="#" class="social-btn">📸 Instagram</a>
+        <a href="#" class="social-btn">🎵 TikTok</a>
+      </div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h4>Program Unggulan</h4>
+        <a href="daftar.html">UTBK-SNBT Reguler</a>
+        <a href="daftar.html">Kedinasan / CPNS</a>
+        <a href="daftar.html">Olimpiade Sains</a>
+        <a href="daftar.html">Kedokteran Torpedo</a>
+      </div>
+      <div class="footer-col">
+        <h4>Fitur Belajar</h4>
+        <a href="cbt.html">CBT Simulator</a>
+        <a href="dashboard.html">E-Learning Video</a>
+        <a href="forum.html">Forum Tanya Jawab</a>
+        <a href="dashboard.html">Analisa RIASEC</a>
+      </div>
+      <div class="footer-col">
+        <h4>Hubungi Kami</h4>
+        <a href="tel:0812-3456-7890">📞 0812-3456-7890</a>
+        <a href="mailto:cs@skorpluss.id">✉️ cs@skorpluss.id</a>
+        <a href="#">📍 Jakarta & Online</a>
+        <a href="#">⏰ 07.00 - 22.00 WIB</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container">
+      <span>© 2025 PT SkorPluss & Edukasi Prima Data Indonesia. Hak Cipta Dilindungi.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

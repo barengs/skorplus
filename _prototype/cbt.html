@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ujian CBT Potensi Akademik — SkorPluss Learning Center</title>
+  <meta name="description" content="Simulasi ujian CBT TPS Tes Potensi Skolastik — latihan soal UTBK adaptif berbasis AI dengan timer real-time.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-layout cbt-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">S+</div>
+      <div class="logo-text">
+        <span class="logo-skor">Skor</span><span class="logo-pluss">Pluss</span>
+        <small>Learning Center</small>
+      </div>
+    </div>
+    <nav class="sidebar-menu">
+      <div class="menu-group-label">Menu Utama</div>
+      <a href="dashboard.html" class="menu-item">
+        <span class="menu-icon">🏠</span> Beranda / Overview
+      </a>
+      <a href="cbt.html" class="menu-item active">
+        <span class="menu-icon">📝</span> Ujian CBT Potensi Akademik
+      </a>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">🧭</span> Analisa Minat & Bakat (RIASEC)
+      </a>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">🎬</span> E-Learning & Video Modul
+      </a>
+      <a href="forum.html" class="menu-item">
+        <span class="menu-icon">💬</span> Tanya Jawab (Q&A Forum)
+      </a>
+      <div class="menu-group-label" style="margin-top:16px">Sistem</div>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">⚙️</span> Pengaturan
+      </a>
+    </nav>
+    <div class="verified-badge">
+      🛡️ Akun Terverifikasi<br><small style="font-weight:400;color:rgba(96,165,250,0.8)">Siswa Aktif TP 2024/2025</small>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-av">👨‍🎓</div>
+      <div class="sidebar-user-info">
+        <strong>Fathur Rahman</strong>
+        <span>NISN: 0064821901</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CBT MAIN -->
+  <div class="cbt-main">
+
+    <!-- CBT TOP BAR -->
+    <div class="cbt-topbar">
+      <div class="cbt-context">
+        <div class="cbt-context-tag">🎯 UTBK-SNBT 2025</div>
+        <div>
+          <div style="font-size:11px;color:var(--gray-400);font-weight:700">TPS Seri 04</div>
+          <h2>Tes Potensi Skolastik (TPS) — Penalaran Matematika & Logika</h2>
+        </div>
+      </div>
+      <div class="cbt-timer-display">
+        <div>
+          <div class="time-label">Sisa Waktu</div>
+          <div class="time-value" id="cbt-timer">00:42:11</div>
+        </div>
+        <button class="btn-end-ujian" onclick="if(confirm('Yakin ingin mengakhiri ujian? Jawaban sudah tersimpan.'))window.location='dashboard.html'">
+          🏁 Akhiri Ujian
+        </button>
+      </div>
+      <div class="topbar-right">
+        <button class="notif-btn">🔔<span class="notif-dot"></span></button>
+        <div class="user-chip">
+          <div class="uc-av">👨‍🎓</div>
+          <div>
+            <strong>Fathur Rahman</strong>
+            <small>NISN: 0064821901</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT AREA -->
+    <div class="cbt-content">
+
+      <!-- LEFT: QUESTION -->
+      <div class="cbt-question-area">
+
+        <!-- SUBTABS -->
+        <div class="cbt-subtabs">
+          <button class="subtab" onclick="switchSubtab(this, 'umum')">
+            <span class="subtab-icon">✅</span> Penalaran Umum <span class="subtab-count">20/20</span>
+          </button>
+          <button class="subtab active" onclick="switchSubtab(this, 'kuant')">
+            <span class="subtab-icon">⚡</span> Pengetahuan Kuantitatif <span class="subtab-count">14/20</span>
+          </button>
+          <button class="subtab" onclick="switchSubtab(this, 'litind')">
+            <span class="subtab-icon">🔒</span> Literasi B. Indonesia <span class="subtab-count">0/25</span>
+          </button>
+          <button class="subtab" onclick="switchSubtab(this, 'liting')">
+            <span class="subtab-icon">🔒</span> Literasi B. Inggris <span class="subtab-count">0/20</span>
+          </button>
+        </div>
+
+        <!-- QUESTION CARD -->
+        <div class="question-card">
+          <div class="question-header">
+            <div class="question-num">
+              <div class="q-num-badge">14</div>
+              <div>
+                <div class="q-title">Soal Nomor 14</div>
+                <div class="q-bobot">Bobot Nilai IRT: 3.85 Poin</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="q-difficulty">⚡ Tingkat Kesulitan: HOTS (Sedang)</span>
+              <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400)" title="Ubah Ukuran Font">Aa</button>
+            </div>
+          </div>
+
+          <div class="question-text">
+            Perhatikan sketsa penampang silinder tertutup dengan tabung gas bertekanan tinggi di bawah ini. Sebuah perusahaan manufaktur merancang wadah penyimpanan dengan volume total <strong>V = 432π cm³</strong>. Wadah tersebut terdiri atas silinder lingkaran tegak berjari-jari <em>r</em> dan tinggi <em>t</em>, yang diapit oleh dua buah setengah bola pada bagian atas dan bawahnya.
+          </div>
+
+          <div class="question-img-box">
+            <div class="q-diagram">🫙</div>
+            <div class="q-specs">
+              <div class="spec-title">ℹ️ Keterangan Spesifikasi:</div>
+              <ul>
+                <li>Biaya pembuatan bagian kubah bola adalah <strong>Rp 30.000 / cm²</strong>, sedangkan biaya permukaan dinding silinder tegak adalah <strong>Rp 20.000 / cm²</strong>.</li>
+              </ul>
+              <div class="q-hint">Gunakan rumus turunan pertama dk/dr = 0 untuk meminimumkan biaya produksi.</div>
+            </div>
+          </div>
+
+          <div class="question-text">
+            Agar total biaya produksi material wadah tersebut menjadi minimum (<em>cost-effective</em>), berapakah nilai jari-jari penampang <em>r</em> (dalam satuan cm) yang paling tepat?
+          </div>
+
+          <!-- ANSWER OPTIONS -->
+          <div class="answer-options">
+            <div class="answer-opt" onclick="selectAnswer(this,'A')" id="ans-A">
+              <div class="opt-letter">A</div>
+              <div class="opt-text">r = 3 cm — <code>dengan rasio tinggi tabung t = 12 cm</code></div>
+            </div>
+            <div class="answer-opt" onclick="selectAnswer(this,'B')" id="ans-B">
+              <div class="opt-letter">B</div>
+              <div class="opt-text">r = 6 cm — <code>dengan rasio tinggi tabung t = 4 cm</code></div>
+            </div>
+            <div class="answer-opt selected" onclick="selectAnswer(this,'C')" id="ans-C">
+              <div class="opt-letter">C</div>
+              <div class="opt-text">r = <strong style="color:var(--blue-600)">6 cm</strong> — <code>dengan rasio tinggi tabung t = 8 cm</code></div>
+            </div>
+            <div class="answer-opt" onclick="selectAnswer(this,'D')" id="ans-D">
+              <div class="opt-letter">D</div>
+              <div class="opt-text">r = 9 cm — <code>dengan rasio tinggi tabung t = 2 cm</code></div>
+            </div>
+            <div class="answer-opt" onclick="selectAnswer(this,'E')" id="ans-E">
+              <div class="opt-letter">E</div>
+              <div class="opt-text">r = 12 cm — <code>dengan rasio tinggi tabung t = 0 cm (bentuk bola murni)</code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="cbt-sidebar-right">
+        <h4>Nomor Soal <span>20 Butir</span></h4>
+
+        <div class="progress-bar-wrap">
+          <div class="pb-label"><span>Progres Subtes</span><span>14 / 20 (70%)</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div>
+        </div>
+
+        <div class="soal-grid">
+          <div class="soal-num answered">01</div>
+          <div class="soal-num answered">02</div>
+          <div class="soal-num answered">03</div>
+          <div class="soal-num doubt">04</div>
+          <div class="soal-num answered">05</div>
+          <div class="soal-num answered">06</div>
+          <div class="soal-num answered">07</div>
+          <div class="soal-num doubt">08</div>
+          <div class="soal-num answered">09</div>
+          <div class="soal-num answered">10</div>
+          <div class="soal-num answered">11</div>
+          <div class="soal-num answered">12</div>
+          <div class="soal-num answered">13</div>
+          <div class="soal-num current">14</div>
+          <div class="soal-num">15</div>
+          <div class="soal-num">16</div>
+          <div class="soal-num">17</div>
+          <div class="soal-num">18</div>
+          <div class="soal-num">19</div>
+          <div class="soal-num">20</div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px">Keterangan Warna:</div>
+        <div class="soal-legend">
+          <div class="legend-item"><div class="legend-dot answered"></div><span>Sudah Dijawab (12)</span></div>
+          <div class="legend-item"><div class="legend-dot doubt"></div><span>Ragu-ragu (2)</span></div>
+          <div class="legend-item"><div class="legend-dot current"></div><span>Aktif / Posisi Ini</span></div>
+          <div class="legend-item"><div class="legend-dot empty"></div><span>Belum Dijawab (6)</span></div>
+        </div>
+
+        <div class="cbt-tips">
+          <strong>💡 Tips Ujian UTBK</strong>
+          <p>Jangan biarkan ada jawaban kosong karena sistem penilaian IRT tidak memiliki pengurangan nilai (skor minus).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CBT FOOTER -->
+    <div class="cbt-footer">
+      <div class="cbt-footer-status">
+        <span><span class="autosave-dot"></span> Status Autosave: Tersinkronisasi ke server & IndexedDB lokal (2 dtk lalu)</span>
+        <span>✅ Proctoring AI Aktif</span>
+      </div>
+      <div class="cbt-footer-nav">
+        <button class="btn-prev" onclick="prevSoal()">← Soal Sebelumnya</button>
+        <button class="btn-ragu" id="btn-ragu" onclick="toggleRagu()">
+          <span id="ragu-icon">☐</span> Ragu-ragu
+        </button>
+        <button class="btn-next" onclick="nextSoal()">Simpan & Lanjut →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

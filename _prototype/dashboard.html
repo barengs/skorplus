@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Siswa — SkorPluss Learning Center</title>
+  <meta name="description" content="Dashboard belajar siswa SkorPluss — pantau progres, jadwal, dan hasil CBT Anda.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">S+</div>
+      <div class="logo-text">
+        <span class="logo-skor">Skor</span><span class="logo-pluss">Pluss</span>
+        <small>Learning Center</small>
+      </div>
+    </div>
+    <nav class="sidebar-menu">
+      <div class="menu-group-label">Menu Utama</div>
+      <a href="dashboard.html" class="menu-item active">
+        <span class="menu-icon">🏠</span> Beranda / Overview
+      </a>
+      <a href="cbt.html" class="menu-item">
+        <span class="menu-icon">📝</span> Ujian CBT Potensi Akademik
+      </a>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">🧭</span> Analisa Minat & Bakat (RIASEC)
+      </a>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">🎬</span> E-Learning & Video Modul
+      </a>
+      <a href="forum.html" class="menu-item">
+        <span class="menu-icon">💬</span> Tanya Jawab (Q&A Forum)
+      </a>
+      <div class="menu-group-label" style="margin-top:16px">Sistem</div>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">⚙️</span> Pengaturan
+      </a>
+    </nav>
+    <div class="verified-badge">
+      🛡️ Akun Terverifikasi<br><small style="font-weight:400;color:rgba(96,165,250,0.8)">Siswa Aktif TP 2024/2025</small>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-av">👨‍🎓</div>
+      <div class="sidebar-user-info">
+        <strong>Fathur Rahman</strong>
+        <span>NISN: 0064821901</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-context-tag" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-100);color:var(--blue-600);font-size:12px;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:4px;">
+          🎓 Kelas 12 SMA — Target SNBT 2025
+        </div>
+        <h4>Selamat Datang, Fathur! 👋</h4>
+        <p>Jumat, 04 September 2026 • 42 hari menuju UTBK</p>
+      </div>
+      <div class="topbar-right">
+        <button class="notif-btn" id="notif-btn">🔔<span class="notif-dot"></span></button>
+        <div class="user-chip">
+          <div class="uc-av">👨‍🎓</div>
+          <div>
+            <strong>Fathur Rahman</strong>
+            <small>Siswa Aktif</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content">
+      <div class="page-header">
+        <h2>📊 Overview Belajar</h2>
+        <p>Pantau progres dan persiapan UTBK-SNBT kamu hari ini</p>
+      </div>
+
+      <!-- STATS ROW -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon blue">📈</div>
+          <div class="stat-info">
+            <strong>756.5</strong>
+            <span>Skor CBT Terakhir</span>
+            <span class="stat-trend">↑ +24 dari minggu lalu</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">⏱️</div>
+          <div class="stat-info">
+            <strong>128</strong>
+            <span>Jam Belajar Bulan Ini</span>
+            <span class="stat-trend">↑ +18 jam dari target</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div class="stat-info">
+            <strong>2.840</strong>
+            <span>Soal Diselesaikan</span>
+            <span class="stat-trend">↑ 94.3% akurasi</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">🏆</div>
+          <div class="stat-info">
+            <strong>Top 5%</strong>
+            <span>Peringkat Nasional</span>
+            <span class="stat-trend">↑ Naik 12 peringkat</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD GRID -->
+      <div class="dash-grid">
+        <div>
+          <!-- Jadwal Belajar Hari Ini -->
+          <div class="dash-card" style="margin-bottom:20px">
+            <h3>📅 Jadwal Belajar Hari Ini <a href="#">Lihat Semua →</a></h3>
+            <div class="schedule-list">
+              <div class="sched-item">
+                <div class="sched-time">07:00 - 08:30</div>
+                <div class="sched-icon" style="font-size:20px">📐</div>
+                <div class="sched-info">
+                  <strong>Matematika — Kalkulus & Integral</strong>
+                  <span>Kak Aditya S.T. (Alumni ITB) • Zoom Live</span>
+                </div>
+                <span class="sched-status live">● Live Sekarang</span>
+              </div>
+              <div class="sched-item">
+                <div class="sched-time">10:00 - 11:30</div>
+                <div class="sched-icon" style="font-size:20px">🔬</div>
+                <div class="sched-info">
+                  <strong>Fisika — Dinamika Rotasi & Torsi</strong>
+                  <span>Kak Dimas P. (Alumni UI) • Zoom Live</span>
+                </div>
+                <span class="sched-status upcoming">Segera</span>
+              </div>
+              <div class="sched-item">
+                <div class="sched-time">13:00 - 15:00</div>
+                <div class="sched-icon" style="font-size:20px">📝</div>
+                <div class="sched-info">
+                  <strong>Simulasi CBT TPS Seri 04 — 100 Soal</strong>
+                  <span>Self-paced • CBT AI Adaptive</span>
+                </div>
+                <span class="sched-status upcoming">Dijadwalkan</span>
+              </div>
+              <div class="sched-item">
+                <div class="sched-time">19:00 - 20:00</div>
+                <div class="sched-icon" style="font-size:20px">💬</div>
+                <div class="sched-info">
+                  <strong>Sesi Konsultasi Forum — Penyelesaian PR</strong>
+                  <span>Kak Sarah M. (Alumni UGM) • Q&A Tutor</span>
+                </div>
+                <span class="sched-status upcoming">Malam ini</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progres Per Mata Pelajaran -->
+          <div class="dash-card">
+            <h3>📚 Progres Per Mata Pelajaran <a href="#">Detail →</a></h3>
+            <div class="subject-progress">
+              <div class="subj-item">
+                <div class="subj-header">
+                  <span>🔢 Penalaran Matematika</span>
+                  <span class="subj-score">88% • Skor: 740/808</span>
+                </div>
+                <div class="subj-bar"><div class="subj-fill" style="width:88%"></div></div>
+              </div>
+              <div class="subj-item">
+                <div class="subj-header">
+                  <span>⚗️ Pengetahuan Kuantitatif</span>
+                  <span class="subj-score">76% • Skor: 680/808</span>
+                </div>
+                <div class="subj-bar"><div class="subj-fill orange" style="width:76%"></div></div>
+              </div>
+              <div class="subj-item">
+                <div class="subj-header">
+                  <span>📖 Literasi Bahasa Indonesia</span>
+                  <span class="subj-score">92% • Skor: 780/808</span>
+                </div>
+                <div class="subj-bar"><div class="subj-fill green" style="width:92%"></div></div>
+              </div>
+              <div class="subj-item">
+                <div class="subj-header">
+                  <span>🌍 Literasi Bahasa Inggris</span>
+                  <span class="subj-score">64% • Skor: 620/808</span>
+                </div>
+                <div class="subj-bar"><div class="subj-fill purple" style="width:64%"></div></div>
+              </div>
+              <div class="subj-item">
+                <div class="subj-header">
+                  <span>💡 Penalaran Umum</span>
+                  <span class="subj-score">85% • Skor: 720/808</span>
+                </div>
+                <div class="subj-bar"><div class="subj-fill" style="width:85%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div>
+          <!-- Quick Actions -->
+          <div class="dash-card" style="margin-bottom:20px">
+            <h3>⚡ Aksi Cepat</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <a href="cbt.html" class="btn-primary btn-full" style="margin-top:0">🖥️ Mulai Simulasi CBT</a>
+              <a href="forum.html" class="btn-outline btn-full" style="margin-top:0">💬 Tanya Ke Tutor</a>
+              <a href="#" class="btn-outline btn-full" style="margin-top:0;color:var(--purple-500);border-color:var(--purple-500)">🎬 Lanjut Video Belajar</a>
+            </div>
+          </div>
+
+          <!-- Hasil CBT Terbaru -->
+          <div class="dash-card" style="margin-bottom:20px">
+            <h3>🏅 CBT Terbaru <a href="cbt.html">Lihat →</a></h3>
+            <div class="cbt-results">
+              <div class="cbt-result-item">
+                <div class="cbt-result-icon">📐</div>
+                <div class="cbt-result-info">
+                  <strong>TPS Seri 04</strong>
+                  <span>3 hari lalu • 100 soal</span>
+                </div>
+                <div class="cbt-result-score">756</div>
+              </div>
+              <div class="cbt-result-item">
+                <div class="cbt-result-icon">🔬</div>
+                <div class="cbt-result-info">
+                  <strong>Tryout Nasional #12</strong>
+                  <span>1 minggu lalu • 150 soal</span>
+                </div>
+                <div class="cbt-result-score">731</div>
+              </div>
+              <div class="cbt-result-item">
+                <div class="cbt-result-icon">📖</div>
+                <div class="cbt-result-info">
+                  <strong>Mini Quiz Litind</strong>
+                  <span>8 hari lalu • 30 soal</span>
+                </div>
+                <div class="cbt-result-score">780</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Motivasi -->
+          <div class="dash-card" style="background:linear-gradient(135deg,var(--blue-600),#1a3578);color:white;border:none">
+            <h3 style="color:white">🎯 Tetap Semangat!</h3>
+            <p style="color:rgba(255,255,255,0.8);font-size:14px;line-height:1.7;margin-bottom:12px">
+              "Kamu sudah di <strong style="color:var(--orange-400)">Top 5% Nasional</strong> 🏆. Tinggal 42 hari lagi, fokus dan konsisten belajar setiap hari!"
+            </p>
+            <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.9)">
+              🎯 Target: UI Kedokteran 2025 • Skor Minimal 750
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

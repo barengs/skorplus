@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Pendaftaran — SkorPluss Learning Center</title>
+  <meta name="description" content="Daftar program bimbel SkorPluss — langkah mudah untuk memulai persiapan UTBK terdepan.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="daftar-layout">
+
+  <!-- HEADER -->
+  <header class="daftar-header">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon">S+</div>
+      <div class="logo-text">
+        <span class="logo-skor">Skor</span><span class="logo-pluss">Pluss</span>
+        <small>Learning Center</small>
+      </div>
+    </a>
+    <div class="header-right">
+      <span><span class="online-dot"></span>Gelombang 1 Dibuka (Sisa 14 Kursi)</span>
+      <span>📞 Bantuan CS: 0812-3456-7890</span>
+    </div>
+  </header>
+
+  <!-- STEPS BAR -->
+  <div class="steps-bar">
+    <div class="steps-bar-inner">
+      <div class="steps-track">
+        <div class="step-item">
+          <div class="step-circle active" id="step-c-1">1</div>
+          <div class="step-label">
+            <span>LANGKAH 1</span>
+            <strong class="active-text">Data Diri Calon Siswa</strong>
+          </div>
+        </div>
+        <div class="step-line" id="line-1"></div>
+        <div class="step-item">
+          <div class="step-circle" id="step-c-2">2</div>
+          <div class="step-label">
+            <span>LANGKAH 2</span>
+            <strong>Pilih Program Belajar</strong>
+          </div>
+        </div>
+        <div class="step-line" id="line-2"></div>
+        <div class="step-item">
+          <div class="step-circle" id="step-c-3">3</div>
+          <div class="step-label">
+            <span>LANGKAH 3</span>
+            <strong>Unggah Berkas Prestasi</strong>
+          </div>
+        </div>
+        <div class="step-line" id="line-3"></div>
+        <div class="step-item">
+          <div class="step-circle" id="step-c-4">4</div>
+          <div class="step-label">
+            <span>LANGKAH 4</span>
+            <strong>Review & Pembayaran</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN FORM + SUMMARY -->
+  <div class="daftar-main" id="daftar-main">
+
+    <!-- LEFT: FORM STEPS -->
+    <div id="form-steps">
+
+      <!-- STEP 1: Data Diri -->
+      <div class="form-step" id="form-step-1">
+        <div class="form-card">
+          <div class="form-section-label">👤 IDENTITAS PELAJAR</div>
+          <h3>Data Pribadi & Asal Sekolah</h3>
+          <p>Lengkapi informasi resmi sesuai kartu pelajar atau rapor sekolah untuk sinkronisasi akun CBT.</p>
+
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Nama Lengkap Siswa <span>*</span></label>
+              <div class="input-wrap">
+                <span class="input-icon">👤</span>
+                <input class="form-input" type="text" id="nama" placeholder="Muhammad Farhan Syahputra" value="Muhammad Farhan Syahputra">
+              </div>
+              <div class="form-hint">Digunakan untuk sertifikat tryout dan kelulusan.</div>
+            </div>
+            <div class="form-group">
+              <label>NISN (Nomor Induk Siswa Nasional) <span>*</span></label>
+              <div class="input-wrap">
+                <span class="input-icon">🏫</span>
+                <input class="form-input" type="text" id="nisn" placeholder="0088492041" value="0088492041">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Asal Sekolah Saat Ini <span>*</span></label>
+              <div class="input-wrap">
+                <span class="input-icon">🏛️</span>
+                <input class="form-input" type="text" id="sekolah" placeholder="SMAN 8 Jakarta Selatan" value="SMAN 8 Jakarta Selatan">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Jenjang / Tingkat Kelas <span>*</span></label>
+              <select class="form-select" id="jenjang">
+                <option>Kelas 12 SMA / SMK / MA (Persiapan UTBK)</option>
+                <option>Kelas 11 SMA / SMK / MA</option>
+                <option>Alumni / Gap Year</option>
+                <option>Mahasiswa (Pindah/Transfer)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Email Aktif Siswa <span>*</span></label>
+              <div class="input-wrap">
+                <span class="input-icon">✉️</span>
+                <input class="form-input" type="email" id="email" placeholder="nama@email.com" value="farhan.syahputra@gmail.com">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Nomor WhatsApp Siswa <span>*</span></label>
+              <div class="input-wrap">
+                <span class="input-icon">📱</span>
+                <input class="form-input" type="tel" id="wa-siswa" placeholder="08xxxxxxxxx" value="081389024512">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Nomor WhatsApp Orang Tua / Wali <span>*</span></label>
+              <div class="input-wrap">
+                <span class="input-icon">👨‍👩‍👧</span>
+                <input class="form-input" type="tel" id="wa-ortu" placeholder="08xxxxxxxxx" value="081299881100">
+              </div>
+            </div>
+          </div>
+
+          <!-- Target PTN -->
+          <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:16px;margin-top:20px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:700;font-size:14px">
+              🎯 Target Perguruan Tinggi Impian
+            </div>
+            <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Membantu master tutor menyusun rencana studi diagnostik awal Anda.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="background:var(--blue-100);color:var(--blue-600);font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;border:2px solid var(--blue-500)">UI - Pendidikan Dokter</div>
+              <div style="background:var(--gray-100);color:var(--gray-600);font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer">ITB - STEI</div>
+              <div style="background:var(--gray-100);color:var(--gray-600);font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer">UGM - Teknik</div>
+              <div style="background:var(--gray-100);color:var(--gray-600);font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer">+ Tambah Lagi</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <a href="index.html" class="btn-ghost">← Kembali ke Beranda</a>
+          <button class="btn-primary" onclick="goStep(2)">Lanjut: Pilih Program →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Pilih Program -->
+      <div class="form-step" id="form-step-2" style="display:none">
+        <div class="form-card">
+          <div class="form-section-label">📚 PROGRAM KURIKULUM</div>
+          <h3>Pilih Modalitas & Cabang Belajar</h3>
+
+          <div style="display:flex;gap:8px;margin-bottom:20px">
+            <button class="btn-primary" style="font-size:13px;padding:6px 14px">Tahun Ajaran Intensif</button>
+            <button class="btn-outline" style="font-size:13px;padding:6px 14px">Semester Pendek</button>
+          </div>
+
+          <div class="program-options">
+            <div class="prog-option selected" id="opt-karantina" onclick="selectProg('karantina')">
+              <div class="prog-recommended">⭐ REKOMENDASI 98% LOLOS</div>
+              <div class="check-circle" id="check-karantina">✓</div>
+              <div class="prog-opt-icon">📖</div>
+              <h4>Karantina & VIP Tatap Muka</h4>
+              <p>Belajar interaktif di Center Tebet / Salemba + Akses Penuh SkorPluss LMS Cloud Pro.</p>
+              <ul class="prog-opt-features">
+                <li>Kelas Kecil Max 10 Siswa / Tutor Spesialis</li>
+                <li>30x Simulasi IRT CBT Standar BPPP Kemendikbud</li>
+                <li>Konsultasi Jurusan Rasionalisasi Nilai 1-on-1</li>
+              </ul>
+              <div class="prog-opt-price"><s>Rp 12.500.000</s> Rp 8.750.000 <span style="font-size:12px;color:var(--gray-400);font-weight:400">/program</span></div>
+            </div>
+
+            <div class="prog-option" id="opt-online" onclick="selectProg('online')">
+              <div class="check-circle" id="check-online"></div>
+              <div class="prog-opt-icon">💻</div>
+              <h4>Online Live & LMS Ultra</h4>
+              <p>Zoom Live Masterclass 5x seminggu dengan bank soal adaptif berteknologi AI rekomendasi materi.</p>
+              <ul class="prog-opt-features">
+                <li>Live Class Zoom Interactive + Rekaman 24/7</li>
+                <li>Modul Cetak Fisik Dikirim Bebas Ongkir</li>
+                <li>Group Diskusi WhatsApp 24 Jam Bersama Asisten Tutor</li>
+              </ul>
+              <div class="prog-opt-price"><s>Rp 5.200.000</s> Rp 3.490.000 <span style="font-size:12px;color:var(--gray-400);font-weight:400">/program</span></div>
+            </div>
+          </div>
+
+          <!-- Lokasi -->
+          <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:16px;margin-top:20px">
+            <div style="font-size:13px;font-weight:700;margin-bottom:12px">📍 Pilih Lokasi Sentra Belajar (Cabang Mitra):</div>
+            <div class="lokasi-options">
+              <label class="lokasi-option">
+                <input type="radio" name="lokasi" value="jakarta-sel" checked>
+                <div>
+                  <strong>Jakarta Selatan</strong>
+                  <small>Tebet Eco Park Plaza</small>
+                </div>
+              </label>
+              <label class="lokasi-option">
+                <input type="radio" name="lokasi" value="jakarta-pus">
+                <div>
+                  <strong>Jakarta Pusat</strong>
+                  <small>Salemba Medical Center</small>
+                </div>
+              </label>
+              <label class="lokasi-option">
+                <input type="radio" name="lokasi" value="bandung">
+                <div>
+                  <strong>Bandung Raya</strong>
+                  <small>Dago Graha Edukasi</small>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-ghost" onclick="goStep(1)">← Kembali</button>
+          <button class="btn-primary" onclick="goStep(3)">Lanjut: Unggah Berkas →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Unggah Berkas -->
+      <div class="form-step" id="form-step-3" style="display:none">
+        <div class="form-card">
+          <div class="form-section-label">🎓 VERIFIKASI AKADEMIK</div>
+          <h3>Unggah Berkas Rapor & Portofolio</h3>
+          <p>Dokumen ini digunakan oleh tim psikotes dan konselor untuk menyusun kurikulum remedial terukur.</p>
+
+          <div class="upload-area" id="upload-area">
+            <div class="upload-icon">📁</div>
+            <h4>Tarik & Letakkan Berkas Rapor di sini</h4>
+            <p>Format yang didukung: PDF, JPG, atau PNG (Maks. 15MB per berkas). Pastikan nilai Semester 1-5 terlihat jelas.</p>
+            <div>
+              <span class="upload-btn" onclick="document.getElementById('file-input').click()">Pilih File Dari Perangkat</span>
+              <span style="font-size:13px;color:var(--gray-400)">atau scan via HP</span>
+            </div>
+            <input type="file" id="file-input" style="display:none" multiple accept=".pdf,.jpg,.jpeg,.png">
+          </div>
+
+          <div class="upload-files" id="upload-files">
+            <div class="upload-file-item">
+              <span class="uf-icon">📄</span>
+              <div class="uf-info">
+                <strong>Scan_Raport_Smt1-4_Farhan.pdf</strong>
+                <small>4.2 MB • Terverifikasi Otomatis OCR</small>
+              </div>
+              <span class="uf-status">✅</span>
+              <span class="uf-del" onclick="this.parentElement.remove()">🗑️</span>
+            </div>
+            <div class="upload-file-item">
+              <span class="uf-icon">🏆</span>
+              <div class="uf-info">
+                <strong>Sertifikat_Juara1_OSN_Fisika_Provinsi.jpg</strong>
+                <small>1.8 MB • Diskon Beasiswa Prestasi 15% Aktif</small>
+              </div>
+              <span class="uf-status">✅</span>
+              <span class="uf-del" onclick="this.parentElement.remove()">🗑️</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-ghost" onclick="goStep(2)">← Kembali</button>
+          <button class="btn-primary" onclick="goStep(4)">Simpan & Lanjut ke Pembayaran →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Review & Bayar -->
+      <div class="form-step" id="form-step-4" style="display:none">
+        <div class="form-card">
+          <div class="form-section-label">💳 REVIEW & PEMBAYARAN</div>
+          <h3>Konfirmasi & Selesaikan Pendaftaran</h3>
+          <p>Periksa kembali informasi pendaftaran Anda sebelum melanjutkan pembayaran.</p>
+
+          <!-- Review Data -->
+          <div style="display:grid;gap:12px;margin-bottom:24px">
+            <div style="background:var(--gray-50);border-radius:12px;padding:16px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:10px">👤 Data Siswa</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+                <div><span style="color:var(--gray-400)">Nama:</span> <strong>Muhammad Farhan Syahputra</strong></div>
+                <div><span style="color:var(--gray-400)">NISN:</span> <strong>0088492041</strong></div>
+                <div><span style="color:var(--gray-400)">Sekolah:</span> <strong>SMAN 8 Jakarta Selatan</strong></div>
+                <div><span style="color:var(--gray-400)">Kelas:</span> <strong>12 SMA (Persiapan UTBK)</strong></div>
+              </div>
+            </div>
+            <div style="background:var(--gray-50);border-radius:12px;padding:16px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:10px">📚 Program Dipilih</div>
+              <div style="font-size:13px">
+                <div style="font-weight:700;color:var(--blue-600);font-size:15px;margin-bottom:4px">Karantina & VIP Tatap Muka</div>
+                <div style="color:var(--gray-500)">📍 Jakarta Selatan — Tebet Eco Park Plaza</div>
+                <div style="color:var(--gray-500)">📅 Tahun Ajaran Intensif 2025</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Methods -->
+          <div style="font-weight:700;margin-bottom:12px">💳 Pilih Metode Pembayaran</div>
+          <div style="display:grid;gap:8px;margin-bottom:16px">
+            <label style="display:flex;align-items:center;gap:12px;border:2px solid var(--blue-500);border-radius:10px;padding:12px 16px;cursor:pointer;background:rgba(37,99,235,0.03)">
+              <input type="radio" name="payment" value="transfer" checked style="accent-color:var(--blue-500)">
+              <span style="font-size:20px">🏦</span>
+              <div><strong style="font-size:14px">Transfer Bank</strong><br><span style="font-size:12px;color:var(--gray-400)">BCA, BRI, BNI, Mandiri</span></div>
+            </label>
+            <label style="display:flex;align-items:center;gap:12px;border:1.5px solid var(--gray-200);border-radius:10px;padding:12px 16px;cursor:pointer">
+              <input type="radio" name="payment" value="cicilan" style="accent-color:var(--blue-500)">
+              <span style="font-size:20px">💳</span>
+              <div><strong style="font-size:14px">Cicilan 0% Kartu Kredit</strong><br><span style="font-size:12px;color:var(--gray-400)">3-12 bulan • Tanpa bunga</span></div>
+            </label>
+            <label style="display:flex;align-items:center;gap:12px;border:1.5px solid var(--gray-200);border-radius:10px;padding:12px 16px;cursor:pointer">
+              <input type="radio" name="payment" value="ewallet" style="accent-color:var(--blue-500)">
+              <span style="font-size:20px">📱</span>
+              <div><strong style="font-size:14px">E-Wallet</strong><br><span style="font-size:12px;color:var(--gray-400)">GoPay, OVO, Dana, ShopeePay</span></div>
+            </label>
+          </div>
+
+          <button class="btn-primary btn-lg btn-full" style="font-size:16px;margin-top:8px">
+            🔒 Lanjut ke Pembayaran Aman
+          </button>
+          <div class="pay-security" style="margin-top:12px">
+            <span>🛡️ Garansi Lolos PTN</span>
+            <span>🔐 256-bit SSL Terenkripsi</span>
+            <span>💰 Uang Kembali 100%</span>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-ghost" onclick="goStep(3)">← Kembali</button>
+          <div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: SUMMARY CARD -->
+    <div>
+      <div class="summary-card">
+        <h3>Ringkasan Pendaftaran</h3>
+        <p>Tahun Ajaran Baru 2025/2026</p>
+
+        <div class="summary-prog">
+          <div class="sp-icon">🛡️</div>
+          <div>
+            <strong>VIP Tatap Muka & Karantina</strong>
+            <small>Cabang Tebet Jakarta Selatan<br>Status: Siap Registrasi</small>
+          </div>
+        </div>
+
+        <div class="summary-line">
+          <span>Biaya Program Reguler</span>
+          <span>Rp 12.500.000</span>
+        </div>
+        <div class="summary-line discount">
+          <span>Diskon Early Bird Gelombang 1</span>
+          <span>- Rp 3.750.000</span>
+        </div>
+        <div class="summary-line">
+          <span>Biaya Formulir & Akun CBT</span>
+          <span>Rp 250.000</span>
+        </div>
+        <div class="summary-line discount">
+          <span>🎟️ Voucher PRESTASI2025</span>
+          <span>- Rp 500.000</span>
+        </div>
+        <div class="summary-line total">
+          <span>TOTAL TAGIHAN</span>
+          <div>
+            <div style="font-size:11px;color:var(--gray-400);font-weight:500">Bisa cicilan 0% 3-6 bulan</div>
+            <div class="summary-total-val">Rp 8.500.000</div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:14px 0 6px">Kode Promo / Beasiswa</div>
+        <div class="promo-input">
+          <input type="text" id="promo-code" value="PRESTASI2025" placeholder="Masukkan kode promo">
+          <button onclick="applyPromo()">Gunakan</button>
+        </div>
+        <div class="promo-success" id="promo-msg">✅ Potongan Rp 500.000 berhasil diterapkan!</div>
+
+        <button class="btn-primary btn-full" style="margin-top:0">🔒 Lanjut ke Pembayaran Aman</button>
+        <div class="pay-security">
+          <span>🛡️ Garansi Lolos PTN</span>
+          <span>🔐 256-bit SSL</span>
+        </div>
+
+        <!-- Testimoni -->
+        <div class="summary-testi">
+          <div class="st-stars">★★★★★</div>
+          <p>"Sistem bank soal IRT di SkorPluss bener-beneran akurat sama ujian aslinya. Pembahasan tutornya to-the-point dan drill soalnya bikin terbiasa sama soal HOTS."</p>
+          <div class="st-author">
+            <div class="st-av">👩‍🎓</div>
+            <div>
+              <strong>Nabila Zahra (Alumni 2024)</strong>
+              <small>Lolos Kedokteran UI • Skor UTBK: 738.5</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forum Tanya Jawab — SkorPluss Learning Center</title>
+  <meta name="description" content="Diskusi & konsultasi soal dengan master tutor alumni UI/ITB — tanya, diskusi, dan bedah soal HOTS bersama.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">S+</div>
+      <div class="logo-text">
+        <span class="logo-skor">Skor</span><span class="logo-pluss">Pluss</span>
+        <small>Learning Center</small>
+      </div>
+    </div>
+    <nav class="sidebar-menu">
+      <div class="menu-group-label">Menu Utama</div>
+      <a href="dashboard.html" class="menu-item">
+        <span class="menu-icon">🏠</span> Beranda / Overview
+      </a>
+      <a href="cbt.html" class="menu-item">
+        <span class="menu-icon">📝</span> Ujian CBT Potensi Akademik
+      </a>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">🧭</span> Analisa Minat & Bakat (RIASEC)
+      </a>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">🎬</span> E-Learning & Video Modul
+      </a>
+      <a href="forum.html" class="menu-item active">
+        <span class="menu-icon">💬</span> Tanya Jawab (Q&A Forum)
+      </a>
+      <div class="menu-group-label" style="margin-top:16px">Sistem</div>
+      <a href="#" class="menu-item">
+        <span class="menu-icon">⚙️</span> Pengaturan
+      </a>
+    </nav>
+    <div class="verified-badge">
+      🛡️ Akun Terverifikasi<br><small style="font-weight:400;color:rgba(96,165,250,0.8)">Siswa Aktif TP 2024/2025</small>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-av">👨‍🎓</div>
+      <div class="sidebar-user-info">
+        <strong>Fathur Rahman</strong>
+        <span>NISN: 0064821901</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <!-- FORUM TOPBAR -->
+    <div class="forum-topbar">
+      <div>
+        <div style="font-size:11px;color:var(--gray-400);font-weight:700">FORUM KONSULTASI PRESTASI • ⚡ Respons Rata-rata: &lt; 14 Menit</div>
+      </div>
+      <div class="topbar-right">
+        <button class="notif-btn">🔔<span class="notif-dot"></span></button>
+        <div class="user-chip">
+          <div class="uc-av">👨‍🎓</div>
+          <div>
+            <strong>Fathur Rahman</strong>
+            <small>NISN: 0064821901</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORUM CONTENT -->
+    <div class="forum-content">
+
+      <!-- LEFT: POSTS -->
+      <div>
+        <!-- HEADER -->
+        <div class="forum-header">
+          <div class="forum-header-text">
+            <h2>Diskusi & Bedah Soal HOTS</h2>
+            <p>Tanyakan kendala pemahaman konsep, kalkulasi rumit, dan trik kilat langsung ke Master Tutor terverifikasi.</p>
+          </div>
+          <button class="btn-tanya" onclick="toggleAskModal()">
+            ➕ Tanya Soal Baru
+          </button>
+        </div>
+
+        <!-- SEARCH -->
+        <div class="forum-search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="forum-search" placeholder="Cari pembahasan soal matematika, fisika, kimia, atau bahasa..." oninput="filterPosts(this.value)">
+          <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--gray-400)" title="Filter">⚙️</button>
+        </div>
+
+        <!-- TOPIC FILTERS -->
+        <div class="forum-topics">
+          <button class="topic-tag active" onclick="filterTopic(this,'semua')">Semua Topik</button>
+          <button class="topic-tag" onclick="filterTopic(this,'mat')">Matematika Saintek</button>
+          <button class="topic-tag" onclick="filterTopic(this,'fis')">Fisika Quantum & Mekanika</button>
+          <button class="topic-tag" onclick="filterTopic(this,'bio')">Biologi Molekuler</button>
+          <button class="topic-tag" onclick="filterTopic(this,'tps')">TPS Skolastik & Penalaran</button>
+          <button class="topic-tag" onclick="filterTopic(this,'ter')">● Terjawab</button>
+        </div>
+
+        <!-- ASK MODAL (inline) -->
+        <div class="ask-modal" id="ask-modal" style="display:none">
+          <div class="ask-modal-header">
+            <h4>📋 Ajukan Tiket Konsultasi Soal</h4>
+            <button onclick="toggleAskModal()">✕</button>
+          </div>
+          <p style="font-size:12px;color:var(--gray-500);margin-bottom:12px">Lampirkan foto dan deskripsikan bagian mana yang Anda belum mengerti.</p>
+
+          <div class="ask-grid">
+            <div>
+              <label style="font-size:12px;font-weight:700;color:var(--gray-600);display:block;margin-bottom:4px">Mata Pelajaran</label>
+              <select class="ask-select" id="ask-mapel">
+                <option>Matematika Lanjut (Kalkulus / In</option>
+                <option>Fisika — Mekanika & Dinamika</option>
+                <option>Kimia — Stoikiometri & Termokimia</option>
+                <option>Penalaran Umum — TPS</option>
+                <option>Bahasa Indonesia — Literasi</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:var(--gray-600);display:block;margin-bottom:4px">Bab / Sub-Kompetensi</label>
+              <input class="ask-select" type="text" placeholder="Contoh: Integral Parsial & Luas Dae" style="padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;width:100%;outline:none;font-family:inherit">
+            </div>
+          </div>
+
+          <label style="font-size:12px;font-weight:700;color:var(--gray-600);display:block;margin-bottom:4px">Deskripsi Kendala & Pertanyaan Spesifik</label>
+          <textarea class="ask-desc" id="ask-desc" placeholder="Tuliskan letak kebingungan Anda (misal: 'Saya bingung penentuan batas integral di sumbu-y pada langkah kedua...')"></textarea>
+
+          <label style="font-size:12px;font-weight:700;color:var(--gray-600);display:block;margin-bottom:6px">Upload Foto Soal / Catatan Pensil</label>
+          <div class="ask-upload-mini" onclick="document.getElementById('ask-file').click()">
+            <div class="au-icon">📸</div>
+            <p>Klik untuk unggah atau seret foto soal ke sini<br><span style="font-size:11px">Mendukung format JPG, PNG, atau HEIC (Maks. 8 MB per file)</span></p>
+            <button style="background:var(--blue-100);color:var(--blue-600);border:none;border-radius:6px;padding:6px 14px;font-weight:700;font-size:12px;cursor:pointer;margin-top:6px">
+              🔍 Resolusi Tajam
+            </button>
+            <button style="background:var(--gray-100);color:var(--gray-600);border:none;border-radius:6px;padding:6px 14px;font-weight:700;font-size:12px;cursor:pointer;margin-top:6px;margin-left:6px">
+              ✂️ Auto-Crop Soal
+            </button>
+          </div>
+          <input type="file" id="ask-file" style="display:none" accept="image/*">
+
+          <div class="ask-tags">
+            <span class="ask-tag">#UTBK2025</span>
+            <span class="ask-tag">#HOTS</span>
+            <span class="ask-tag">#DilemaMatematika</span>
+            <span class="ask-tag">#KedinasanSTAN</span>
+            <span class="ask-tag">#TrikCepat</span>
+          </div>
+
+          <div class="ask-footer">
+            <button class="btn-batal" onclick="toggleAskModal()">Batal</button>
+            <button class="btn-kirim" onclick="submitQuestion()">▶ Kirimkan ke Antrean Tutor</button>
+          </div>
+        </div>
+
+        <!-- FORUM POSTS -->
+        <div class="forum-posts" id="forum-posts">
+
+          <!-- POST 1 — WITH ANSWER -->
+          <div class="forum-post" data-topic="mat">
+            <div class="post-author">
+              <div class="post-av">👩‍🎓</div>
+              <div class="post-meta">
+                <strong>
+                  Nadira Az-Zahra
+                  <span class="post-school">SMA Negeri 8 Jakarta</span>
+                  <span class="post-tag-label">#UTBK-SNBT 2025</span>
+                </strong>
+                <small>12 menit lalu • Matematika Saintek</small>
+              </div>
+            </div>
+
+            <div class="post-title">
+              Bagaimana cara menyederhanakan integral tak wajar ∫₀^{∞} x ⋅ e^{-2x} dx tanpa terbalik memilih nilai $u$ dan $dv$?
+            </div>
+            <div class="post-body">
+              Mohon bantuannya Kak, saya selalu keliru memakai aturan LIATE ketika ada perkalian polinomial dan eksponensial di batas tak hingga. Hasil kalkulasi saya selalu bernilai negatif tak hingga.
+            </div>
+
+            <div class="post-img-thumb">
+              <div style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:16px">
+                <div style="font-size:36px">📓</div>
+                <div style="font-size:13px;color:var(--gray-500)">Catatan Soal Halaman 44.jpg</div>
+              </div>
+            </div>
+
+            <!-- ANSWER -->
+            <div class="post-answer">
+              <div class="answer-header">
+                <div class="answer-av">👨‍🏫</div>
+                <div class="answer-who">
+                  <strong>Kak Aris Setiawan, S.T <span class="master-badge">✓ Master Tutor EduMaestro</span></strong>
+                  <small>Alumni STEI ITB • 99.8% Jawaban Akurat (3.420+ Soal Terpecahkan)</small>
+                </div>
+                <div class="answer-time">Dijawab 5 menit setelah posting</div>
+              </div>
+
+              <div class="answer-text">Halo Nadira! Kuncinya terletak pada <strong>Metode Tabular (D-I Method)</strong> atau rumus standar Integrasi Parsial:</div>
+              <div class="answer-formula">∫ u · dv = u·v − ∫ v · du</div>
+
+              <div style="font-size:12px;font-weight:700;color:var(--gray-600);display:flex;justify-content:space-between;margin-bottom:8px">
+                <span>RUMUS INTI INTEGRASI PARSIAL</span>
+                <span>Langkah Cepat UTBK</span>
+              </div>
+
+              <div class="answer-steps">
+                <div class="answer-step">
+                  <span class="step-n">1</span>
+                  <div><strong>Penetapan Variabel Derivatif:</strong> Pilih fungsi aljabar yang dapat diturunkan hingga nol sebagai $u$:<br><code style="font-size:12px;background:var(--gray-100);padding:2px 6px;border-radius:4px">u = x ⟹ du = dx, dan dv = e^{-2x} dx ⟹ v = -1/2 · e^{-2x}</code></div>
+                </div>
+                <div class="answer-step">
+                  <span class="step-n">2</span>
+                  <div><strong>Substitusi ke Persamaan:</strong><br><code style="font-size:12px;background:var(--gray-100);padding:2px 6px;border-radius:4px">[-1/2 · x · e^{-2x}]₀^∞ − ∫₀^∞ (-1/2 · e^{-2x}) dx</code></div>
+                </div>
+                <div class="answer-step">
+                  <span class="step-n">3</span>
+                  <div><strong>Penerapan Limit Tak Hingga (L'Hôpital):</strong> Saat x→∞, suku pertama menuju 0. Suku kedua menghasilkan:<br><code style="font-size:12px;background:var(--gray-100);padding:2px 6px;border-radius:4px">[-1/4 · e^{-2x}]₀^∞ = 0 − (-1/4) = 1/4</code></div>
+                </div>
+              </div>
+
+              <div class="answer-result">🎯 Hasil Akhir = 1/4 (atau 0.25)</div>
+              <div class="answer-tip">*Input tips kilat: Bila $m=1$, n=2, a=2 implies ∫₀^∞ x^m·e^{-ax} = m!/a^{m+1} = 1!/2² = 1/4. Di sini m=1, a=2 implies 1/2²=1/4.*</div>
+            </div>
+
+            <div class="post-actions">
+              <button class="action-btn">👍 Sangat Membantu <span class="count">42</span></button>
+              <button class="action-btn">💬 Balas <span class="count">3</span></button>
+              <button class="btn-selesai">✅ Tandai Selesai & Paham</button>
+            </div>
+
+            <!-- Follow-up -->
+            <div style="margin-top:12px;padding:10px 14px;background:var(--gray-50);border-radius:10px;font-size:13px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <div class="post-av" style="width:28px;height:28px;font-size:14px">👩‍🎓</div>
+                <strong>Nadira Az-Zahra (Penanya)</strong>
+                <small style="color:var(--gray-400)">3 menit lalu</small>
+              </div>
+              Makasih paham Kak Ariel Formula kilat $m!/a^{m+1}$ sangat menghemat waktu ngerjain TPS. Terima kasih!
+            </div>
+          </div>
+
+          <!-- POST 2 — BEING ANSWERED -->
+          <div class="forum-post" data-topic="fis">
+            <div class="post-author">
+              <div class="post-av">👦</div>
+              <div class="post-meta">
+                <strong>
+                  Rafi Raditya
+                  <span class="post-school">SMA Pradita Dirgantara</span>
+                  <span class="being-answered">⏳ Sedang Dijawab Tutor</span>
+                </strong>
+                <small>35 menit lalu • Fisika Mekanika</small>
+              </div>
+            </div>
+
+            <div class="post-title">
+              Menghitung Torsi & Momen Inersia pada Silinder Pejal Menggelinding tanpa sliding pada Bidang Miring Kasar 30°
+            </div>
+            <div class="post-body">
+              Apakah gaya gesek statis melakukan usaha mekanik total pada benda tegar yang mengalami rolling without slipping? Bila tidak, dari mana hilangnya energi rotasi bila ada percepatan sudut?
+            </div>
+
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+              <span style="background:var(--gray-100);color:var(--gray-600);font-size:12px;font-weight:700;padding:3px 10px;border-radius:100px">#MekanikaBendaTegar</span>
+              <span style="background:var(--gray-100);color:var(--gray-600);font-size:12px;font-weight:700;padding:3px 10px;border-radius:100px">#HOTS</span>
+            </div>
+
+            <div class="post-actions">
+              <button class="action-btn">👀 <span class="count">128</span> siswa melihat</button>
+              <button class="action-btn">🤝 Ikut Menjawab / Beri Argumen</button>
+            </div>
+          </div>
+
+          <!-- POST 3 — NEW -->
+          <div class="forum-post" data-topic="tps">
+            <div class="post-author">
+              <div class="post-av">👩‍💻</div>
+              <div class="post-meta">
+                <strong>
+                  Syifa Aulia
+                  <span class="post-school">SMAN 3 Bandung</span>
+                  <span class="post-tag-label">#TPS-Penalaran</span>
+                </strong>
+                <small>1 jam lalu • TPS Skolastik & Penalaran</small>
+              </div>
+            </div>
+
+            <div class="post-title">
+              Soal barisan & deret aritmetika geometri campuran — cara cepat identifikasi pola tanpa terlalu lama kalkulasi?
+            </div>
+            <div class="post-body">
+              Di soal TPS kemarin, ada barisan: 2, 6, 12, 20, 30, ... dan saya harus temukan suku ke-10. Saya coba cari beda dan rasio tapi tidak konsisten. Ada tips cepat mengenali pola ini?
+            </div>
+
+            <div class="post-actions">
+              <button class="action-btn">👍 <span class="count">8</span></button>
+              <button class="action-btn">💬 Balas</button>
+              <button class="action-btn" style="color:var(--blue-500)">✉️ Kirim ke Tutor</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="forum-sidebar">
+
+        <!-- Tutor On Duty -->
+        <div class="forum-sidebar-card">
+          <h4>🟢 Tutor On-Duty <span class="tod-status">6 Siap Jawab</span></h4>
+          <div class="tutor-list">
+            <div class="tutor-item">
+              <div class="tutor-item-av">👩‍🏫</div>
+              <div class="tutor-item-info">
+                <strong>Kak Sarah Maulida, M.Sc.</strong>
+                <small>📐 Matematika & Kalkulus (UGM)</small>
+              </div>
+              <div class="tutor-active-dot"></div>
+              <div class="tutor-chat-icon">💬</div>
+            </div>
+            <div class="tutor-item">
+              <div class="tutor-item-av">👨‍🔬</div>
+              <div class="tutor-item-info">
+                <strong>Kak Dimas Prayoga, M.Si.</strong>
+                <small>⚗️ Fisika & Kimia Int (UI)</small>
+              </div>
+              <div class="tutor-active-dot"></div>
+              <div class="tutor-chat-icon">💬</div>
+            </div>
+            <div class="tutor-item">
+              <div class="tutor-item-av">👩‍💼</div>
+              <div class="tutor-item-info">
+                <strong>Kak Clarissa Widjaja, S.Ed.</strong>
+                <small>📖 TPS Penalaran & Literasi</small>
+              </div>
+              <div class="tutor-active-dot"></div>
+              <div class="tutor-chat-icon">💬</div>
+            </div>
+          </div>
+          <div class="tutor-hours">
+            ⏰ Jam Layanan Klat: 07:00 - 22:00 WIB. Diluar jam tersebut dijawab keesokan paginya.
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="forum-sidebar-card">
+          <h4>❓ FAQ Tanya Jawab</h4>
+          <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px">Panduan operasional konsultasi akademik Anda</p>
+          <div class="faq-list">
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q"><span>Berapa lama rata-rata tutor menjawab soal?</span> <span>›</span></div>
+            </div>
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q"><span>Apakah bisa request sesi live 1-on-1?</span> <span>›</span></div>
+            </div>
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q"><span>Jadwal bimbingan live streaming minggu ini?</span> <span>›</span></div>
+            </div>
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q"><span>Berapa kuota pertanyaan yang saya miliki?</span> <span>›</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Webinar -->
+        <div class="forum-sidebar-card" style="padding:0;overflow:hidden">
+          <div class="webinar-card">
+            <div class="wb-badge">Live Webinar Eksklusif!</div>
+            <p><strong>Kupas Tuntas 100 Soal Jebakan TPS</strong><br>Bersama peraih skor UTBK 812.23 & Top 10 Tim Pengajar Nasional.</p>
+            <button onclick="alert('Reservasi kursi berhasil! Cek email Anda.')">Reservasi Kursi Gratis</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
