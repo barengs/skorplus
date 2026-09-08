@@ -16,7 +16,7 @@ class LandingPageSeeder extends Seeder
     {
         // 1. Landing Hero
         LandingHero::create([
-            'title' => 'Raih Kampus Impian',
+            'title' => 'Raih Impian-mu',
             'subtitle' => 'Bersama SkorPluss',
             'description' => 'Persiapan komprehensif UTBK-SNBT, Kedinasan, dan Olimpiade melalui CBT prediktif adaptif, tutor berpengalaman, dan analitik belajar berbasis data.',
             'badge_text' => 'Platform Bimbel & LMS #1 untuk UTBK-SNBT dan Kedinasan',
