@@ -39,6 +39,15 @@ export const logoutUser = createAsyncThunk('auth/logout', async (_, { dispatch }
   dispatch(logout());
 });
 
+export const fetchSettings = createAsyncThunk('auth/settings', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get('/settings');
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data);
+  }
+});
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
@@ -47,6 +56,7 @@ const authSlice = createSlice({
     loading: false,
     error: null,
     isLocked: false,
+    settings: { app_name: 'SkorPluss', tagline: '', logo_url: '' },
   },
   reducers: {
     logout(state) {
@@ -80,7 +90,10 @@ const authSlice = createSlice({
       .addCase(register.pending, pending).addCase(register.fulfilled, fulfilled).addCase(register.rejected, rejected)
       .addCase(fetchMe.pending, (state) => { state.loading = true; })
       .addCase(fetchMe.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; })
-      .addCase(fetchMe.rejected, (state) => { state.loading = false; });
+      .addCase(fetchMe.rejected, (state) => { state.loading = false; })
+      .addCase(fetchSettings.fulfilled, (state, action) => {
+        state.settings = action.payload;
+      });
   },
 });
 

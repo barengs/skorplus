@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Input from '../../../atoms/Input';
 import FormField from '../../../molecules/FormField';
 import api from '../../../../services/api';
@@ -134,11 +135,17 @@ export default function AdminRolesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {matrix.map((menu) => (
+                {matrix.map((menu) => {
+                  const isFa = typeof menu.icon === 'string' && menu.icon.startsWith('fa-');
+                  const iconName = isFa ? menu.icon.replace('fa-', '') : null;
+                  
+                  return (
                   <tr key={menu.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">{menu.icon}</span>
+                        <span className="text-xl">
+                          {isFa ? <FontAwesomeIcon icon={['fas', iconName]} /> : menu.icon}
+                        </span>
                         <div>
                           <p className="font-bold text-slate-900 dark:text-slate-100">{menu.label}</p>
                           <p className="text-xs text-slate-500">{menu.path}</p>
@@ -167,7 +174,8 @@ export default function AdminRolesPage() {
                       );
                     })}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

@@ -12,9 +12,23 @@ class ElearningController extends Controller
 {
     public function courses()
     {
-        $courses = Course::where('is_active', true)
+        $user = auth('api')->user();
+        
+        $courses = Course::withCount('enrollments')
+            ->where('is_active', true)
+            ->when($user, function ($q) use ($user) {
+                $q->with(['enrollments' => function ($eq) use ($user) {
+                    $eq->where('user_id', $user->id);
+                }]);
+            })
             ->orderBy('sort_order')
             ->get();
+
+        $courses = $courses->map(function ($c) {
+            $c->participants = $c->enrollments_count ?? 0;
+            $c->is_enrolled = $c->enrollments && $c->enrollments->count() > 0;
+            return $c;
+        });
 
         return response()->json($courses);
     }

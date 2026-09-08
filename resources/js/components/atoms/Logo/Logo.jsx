@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 export default function Logo({ collapsed = false, href = '/' }) {
   return (
     <Link to={href} className="flex items-center gap-2.5 group no-underline">
-      <div className="w-9 h-9 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center font-black text-white text-sm shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-        S+
-      </div>
+      <img 
+        src="/assets/skorpluss_logo.png" 
+        alt="SkorPluss Logo" 
+        className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" 
+      />
       {!collapsed && (
         <div className="flex flex-col leading-none">
           <span className="font-black text-base text-slate-100">

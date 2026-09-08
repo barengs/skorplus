@@ -169,7 +169,6 @@ export default function AdminLandingPage() {
           {[
             { id: 'hero', label: '🎯 Hero Section' },
             { id: 'promo', label: '📢 Promo Banner' },
-            { id: 'programs', label: '📦 Paket Belajar' },
             { id: 'features', label: '⚡ Fitur' },
             { id: 'testimonials', label: '💬 Testimoni' },
             { id: 'stats', label: '📊 Statistik' },

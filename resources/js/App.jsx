@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMe } from './features/auth/authSlice';
+import { fetchMe, fetchSettings, logoutUser } from './features/auth/authSlice';
 
 // Pages
 import LandingPage from './components/pages/Landing';
@@ -11,12 +11,13 @@ import DashboardPage from './components/pages/Dashboard';
 import CbtPage from './components/pages/Cbt';
 import ForumPage from './components/pages/Forum';
 import ElearningPage from './components/pages/Elearning';
-import RiasecPage from './components/pages/Riasec';
 import AdminLandingPage from './components/pages/Admin/Landing';
 import AdminUsersPage from './components/pages/Admin/Users';
 import AdminElearningPage, { AdminElearningCurriculumPage } from './components/pages/Admin/Elearning';
 import { AdminCbtPage, AdminExamQuestionsPage } from './components/pages/Admin/Cbt';
 import AdminRolesPage from './components/pages/Admin/Roles';
+import AdminSettingsPage from './components/pages/Admin/Settings/AdminSettingsPage';
+import AdminLearningPackagePage from './components/pages/Admin/LearningPackage/AdminLearningPackagePage';
 
 // Route guard — redirects to /login if no token
 function PrivateRoute({ children }) {
@@ -40,7 +41,22 @@ export default function App() {
 
   // Restore user from token on mount
   useEffect(() => {
-    if (token) dispatch(fetchMe());
+    dispatch(fetchSettings());
+    
+    if (token) {
+      // Check if session is still valid
+      const lastActivity = localStorage.getItem('lastActivity');
+      if (lastActivity) {
+        const idleTime = Date.now() - parseInt(lastActivity, 10);
+        // 55 minutes logout threshold
+        if (idleTime > 55 * 60 * 1000) {
+          dispatch(logoutUser());
+          localStorage.removeItem('lastActivity');
+          return;
+        }
+      }
+      dispatch(fetchMe());
+    }
   }, []);
 
   return (
@@ -57,7 +73,7 @@ export default function App() {
       <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
       <Route path="/cbt" element={<PrivateRoute><CbtPage /></PrivateRoute>} />
       <Route path="/elearning" element={<PrivateRoute><ElearningPage /></PrivateRoute>} />
-      <Route path="/riasec" element={<PrivateRoute><RiasecPage /></PrivateRoute>} />
+      <Route path="/elearning/:courseSlug" element={<PrivateRoute><ElearningPage /></PrivateRoute>} />
       <Route path="/forum" element={<PrivateRoute><ForumPage /></PrivateRoute>} />
 
       {/* Admin routes */}
@@ -68,6 +84,8 @@ export default function App() {
       <Route path="/admin/cbt" element={<PrivateRoute><AdminCbtPage /></PrivateRoute>} />
       <Route path="/admin/cbt/:examId/questions" element={<PrivateRoute><AdminExamQuestionsPage /></PrivateRoute>} />
       <Route path="/admin/roles" element={<PrivateRoute><AdminRolesPage /></PrivateRoute>} />
+      <Route path="/admin/settings" element={<PrivateRoute><AdminSettingsPage /></PrivateRoute>} />
+      <Route path="/admin/learning-packages" element={<PrivateRoute><AdminLearningPackagePage /></PrivateRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -49,7 +49,7 @@ class ForumController extends Controller
             'user_id' => auth('api')->id(),
             'subject' => $request->subject,
             'title'   => $request->title,
-            'content' => $request->content,
+            'content' => $request->input('content'),
         ]);
 
         $post->load('user:id,name,school');
@@ -81,7 +81,7 @@ class ForumController extends Controller
         $reply = ForumReply::create([
             'forum_post_id'   => $post->id,
             'user_id'         => $user->id,
-            'content'         => $request->content,
+            'content'         => $request->input('content'),
             'is_tutor_answer' => $isTutor,
         ]);
 

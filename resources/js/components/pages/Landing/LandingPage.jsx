@@ -6,6 +6,8 @@ import Logo from '../../atoms/Logo';
 import Badge from '../../atoms/Badge';
 import Button from '../../atoms/Button';
 import ThemeToggle from '../../atoms/ThemeToggle';
+import { formatRupiah } from '../../../utils/currencyHelper';
+import PackageDetailModal from '../../molecules/PackageDetailModal';
 
 // ── Countdown Component ──────────────────────────────────────────────────────
 function PromoCountdown({ seconds }) {
@@ -111,13 +113,40 @@ function LandingNav({ promo }) {
 // ── Main Landing Page ─────────────────────────────────────────────────────────
 export default function LandingPage() {
   const [data, setData] = useState(null);
+  const [settings, setSettings] = useState({ app_name: 'SkorPluss', tagline: '' });
   const [loading, setLoading] = useState(true);
+  const [selectedPackage, setSelectedPackage] = useState(null);
   const { token } = useSelector((s) => s.auth);
 
   useEffect(() => {
-    axios.get('/api/landing')
-      .then((res) => {
-        setData(res.data);
+    Promise.all([
+      axios.get('/api/landing'),
+      axios.get('/api/settings'),
+      axios.get('/api/learning-packages')
+    ])
+      .then(([resLanding, resSettings, resPackages]) => {
+        const landingData = resLanding.data;
+        
+        // Transform learning_packages to programs format
+        const packagesData = (resPackages.data || []).map((pkg, idx) => ({
+          id: pkg.id,
+          name: pkg.name,
+          icon: idx === 1 ? '🚀' : idx === 2 ? '🏆' : '📚',
+          color: idx === 1 ? 'from-blue-700 to-violet-700' : idx === 2 ? 'from-yellow-500 to-orange-600' : 'from-slate-700 to-slate-800',
+          price: formatRupiah(pkg.price),
+          price_period: '/paket',
+          features: pkg.features || [],
+          is_popular: idx === 1,
+          is_active: pkg.is_published,
+          originalData: pkg
+        }));
+        
+        setData({
+          ...landingData,
+          programs: packagesData
+        });
+        setSettings(resSettings.data);
+        document.title = resSettings.data.app_name || 'SkorPluss';
         setLoading(false);
       })
       .catch((err) => {
@@ -243,13 +272,15 @@ export default function LandingPage() {
                         </li>
                       ))}
                     </ul>
-                    <Link to="/daftar">
-                      <Button variant={p.is_popular ? 'primary' : 'ghost'} className="w-full">
+                      <Button 
+                        variant={p.is_popular ? 'primary' : 'ghost'} 
+                        className="w-full"
+                        onClick={() => setSelectedPackage(p.originalData)}
+                      >
                         Pilih {p.name}
                       </Button>
-                    </Link>
+                    </div>
                   </div>
-                </div>
               ))}
             </div>
           </div>
@@ -399,6 +430,11 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Package Detail Modal */}
+      {selectedPackage && (
+        <PackageDetailModal pkg={selectedPackage} onClose={() => setSelectedPackage(null)} />
+      )}
     </div>
   );
 }

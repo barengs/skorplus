@@ -7,6 +7,10 @@ import Badge from '../../../atoms/Badge';
 import FormField from '../../../molecules/FormField';
 import api from '../../../../services/api';
 import { toast } from 'react-toastify';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { toEmbedUrl } from '../../../../utils/videoHelper';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 export default function AdminElearningCurriculumPage() {
   const { courseId } = useParams();
@@ -20,6 +24,7 @@ export default function AdminElearningCurriculumPage() {
   
   const [editingModuleId, setEditingModuleId] = useState(null);
   const [moduleForm, setModuleForm] = useState({ title: '' });
+  const [previewLesson, setPreviewLesson] = useState(null);
 
   const [activeModuleId, setActiveModuleId] = useState(null);
   const [editingLessonId, setEditingLessonId] = useState(null);
@@ -180,11 +185,14 @@ export default function AdminElearningCurriculumPage() {
                   ) : (
                     <div className="space-y-2 mb-4">
                       {mod.lessons.map((lesson, lIdx) => (
-                        <div key={lesson.id} className="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-800 rounded hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        <div key={lesson.id} className="group flex items-center justify-between p-3 border border-slate-100 dark:border-slate-800 rounded hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer" onClick={() => openLessonModal(mod.id, lesson)}>
                           <div className="flex items-center gap-3">
                             <span className="text-slate-400 font-mono text-sm">{idx + 1}.{lIdx + 1}</span>
-                            <span className="text-xl">
-                              {lesson.type === 'video' ? '📺' : lesson.type === 'quiz' ? '📝' : lesson.type === 'assignment' ? '💻' : '📄'}
+                            <span className="text-lg w-6 text-center text-slate-500">
+                              {lesson.type === 'video' ? <FontAwesomeIcon icon={['fas', 'video']} /> : 
+                               lesson.type === 'quiz' ? <FontAwesomeIcon icon={['fas', 'circle-question']} /> : 
+                               lesson.type === 'assignment' ? <FontAwesomeIcon icon={['fas', 'pen-to-square']} /> : 
+                               <FontAwesomeIcon icon={['fas', 'book-open']} />}
                             </span>
                             <div>
                               <p className="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -194,9 +202,30 @@ export default function AdminElearningCurriculumPage() {
                               <p className="text-xs text-slate-500 capitalize">{lesson.type} • {lesson.duration_seconds > 0 ? Math.round(lesson.duration_seconds/60) + ' mnt' : '-'}</p>
                             </div>
                           </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 hover:opacity-100">
-                            <Button variant="ghost" size="sm" onClick={() => openLessonModal(mod.id, lesson)}>Edit</Button>
-                            <Button variant="ghost" size="sm" className="text-red-500" onClick={() => deleteLesson(mod.id, lesson.id)}>Hapus</Button>
+                          <div className="flex gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                            {lesson.type === 'video' && lesson.video_url && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setPreviewLesson(lesson); }}
+                                className="p-2 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded flex items-center justify-center w-8 h-8"
+                                title="Preview Video"
+                              >
+                                <FontAwesomeIcon icon={['fas', 'play']} />
+                              </button>
+                            )}
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); openLessonModal(mod.id, lesson); }}
+                              className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded flex items-center justify-center w-8 h-8"
+                              title="Edit"
+                            >
+                              <FontAwesomeIcon icon={['fas', 'pen-to-square']} />
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); deleteLesson(mod.id, lesson.id); }}
+                              className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded flex items-center justify-center w-8 h-8"
+                              title="Hapus"
+                            >
+                              <FontAwesomeIcon icon={['fas', 'trash-can']} />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -260,8 +289,16 @@ export default function AdminElearningCurriculumPage() {
                 )}
 
                 {(lessonForm.type === 'reading' || lessonForm.type === 'assignment') && (
-                  <FormField label="Konten (HTML Didukung)">
-                    <textarea rows={6} className="w-full p-2 border border-slate-300 dark:border-slate-700 rounded-md bg-transparent" value={lessonForm.content} onChange={e => setLessonForm({...lessonForm, content: e.target.value})} placeholder="Ketik materi atau instruksi tugas di sini..." />
+                  <FormField label="Konten / Instruksi Materi">
+                    <div className="bg-white text-slate-900 rounded-md overflow-hidden border border-slate-300">
+                      <ReactQuill 
+                        theme="snow" 
+                        value={lessonForm.content || ''} 
+                        onChange={val => setLessonForm({...lessonForm, content: val})} 
+                        className="h-48 pb-10"
+                        placeholder="Ketik materi atau instruksi tugas di sini..." 
+                      />
+                    </div>
                   </FormField>
                 )}
 
@@ -277,6 +314,38 @@ export default function AdminElearningCurriculumPage() {
                   <Button type="submit">Simpan Materi</Button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {/* Video Preview Modal */}
+        {previewLesson && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewLesson(null)}>
+            <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-white dark:bg-slate-900 rounded-lg overflow-hidden shadow-2xl">
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100">{previewLesson.title}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Preview Video</p>
+                  </div>
+                  <button
+                    onClick={() => setPreviewLesson(null)}
+                    className="w-8 h-8 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-900 dark:text-slate-100"
+                  >
+                    <FontAwesomeIcon icon={['fas', 'xmark']} />
+                  </button>
+                </div>
+                <div className="aspect-video bg-slate-900">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src={toEmbedUrl(previewLesson.video_url)}
+                    title={previewLesson.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}

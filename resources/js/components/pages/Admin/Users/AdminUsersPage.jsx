@@ -22,13 +22,14 @@ export default function AdminUsersPage() {
   const [filterProgram, setFilterProgram] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [availableRoles, setAvailableRoles] = useState([]);
+  const [availablePrograms, setAvailablePrograms] = useState([]);
   
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    program: 'mandiri',
+    program: '',
     phone: '',
     role: 'siswa',
     is_active: true,
@@ -37,6 +38,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     dispatch(fetchAdminUsers());
     api.get('/admin/roles').then((res) => setAvailableRoles(res.data)).catch(() => {});
+    api.get('/learning-packages').then((res) => setAvailablePrograms(res.data)).catch(() => {});
   }, [dispatch]);
 
   const openModal = (user = null) => {
@@ -44,7 +46,7 @@ export default function AdminUsersPage() {
       setFormData({
         name: user.name,
         email: user.email,
-        program: user.program || 'mandiri',
+        program: user.program || '',
         phone: user.phone || '',
         role: user.roles?.[0] || 'siswa',
         is_active: user.is_active,
@@ -55,7 +57,7 @@ export default function AdminUsersPage() {
       setFormData({
         name: '',
         email: '',
-        program: 'mandiri',
+        program: '',
         phone: '',
         role: 'siswa',
         is_active: true,
@@ -91,7 +93,10 @@ export default function AdminUsersPage() {
     }
   };
 
-  const programBadge = { mandiri: 'slate', intensif: 'blue', garansi: 'gold' };
+  const getProgramBadgeColor = (val) => {
+    const colors = { mandiri: 'slate', intensif: 'blue', garansi: 'gold' };
+    return colors[val?.toLowerCase()] || 'purple';
+  };
 
   const [activeTab, setActiveTab] = useState('siswa');
 
@@ -125,7 +130,7 @@ export default function AdminUsersPage() {
         header: 'Program',
         cell: (info) => {
           const val = info.getValue();
-          return val ? <Badge color={programBadge[val]}>{val}</Badge> : '-';
+          return val ? <Badge color={getProgramBadgeColor(val)}>{val}</Badge> : '-';
         },
       },
       {
@@ -214,9 +219,9 @@ export default function AdminUsersPage() {
               className="px-4 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Semua Program</option>
-              <option value="mandiri">Mandiri</option>
-              <option value="intensif">Intensif</option>
-              <option value="garansi">Garansi</option>
+              {availablePrograms.map((p) => (
+                <option key={p.id} value={p.name}>{p.name}</option>
+              ))}
             </select>
           )}
           <Button variant="ghost" onClick={() => dispatch(fetchAdminUsers())}>
@@ -268,9 +273,10 @@ export default function AdminUsersPage() {
                     onChange={(e) => setFormData({ ...formData, program: e.target.value })}
                     className="w-full px-4 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="mandiri">Mandiri</option>
-                    <option value="intensif">Intensif</option>
-                    <option value="garansi">Garansi</option>
+                    <option value="">Pilih Program</option>
+                    {availablePrograms.map((p) => (
+                      <option key={p.id} value={p.name}>{p.name}</option>
+                    ))}
                   </select>
                 </div>
 

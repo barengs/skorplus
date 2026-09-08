@@ -17,4 +17,9 @@ class Course extends Model
     {
         return $this->hasMany(Module::class)->orderBy('sort_order');
     }
+
+    public function enrollments()
+    {
+        return $this->hasMany(CourseEnrollment::class);
+    }
 }

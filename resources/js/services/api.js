@@ -27,6 +27,17 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
+
+    // Prevent interceptor deadlock if the refresh request itself fails
+    if (original.url?.includes('/auth/refresh')) {
+      processQueue(err, null);
+      localStorage.removeItem('skorpluss_token');
+      localStorage.removeItem('lastActivity');
+      store.dispatch(logout());
+      window.location.href = '/login';
+      return Promise.reject(err);
+    }
+
     if (err.response?.status === 401 && !original._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -51,6 +62,8 @@ api.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         localStorage.removeItem('skorpluss_token');
+        localStorage.removeItem('lastActivity');
+        store.dispatch(logout());
         window.location.href = '/login';
         return Promise.reject(refreshErr);
       } finally {

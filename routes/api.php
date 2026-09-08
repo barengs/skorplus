@@ -5,7 +5,6 @@ use App\Http\Controllers\Api\CbtController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ForumController;
 use App\Http\Controllers\Api\LandingController;
-use App\Http\Controllers\Api\RiasecController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\TestimonialController;
@@ -26,6 +25,7 @@ use App\Http\Controllers\Api\Admin\RoleMenuController;
 
 // Public routes
 Route::get('landing', [LandingController::class, 'index']);
+Route::get('learning-packages', [App\Http\Controllers\Api\LearningPackageController::class, 'index']);
 Route::get('elearning/courses', [ElearningController::class, 'courses']);
 Route::get('elearning/courses/{slug}', [ElearningController::class, 'courseDetail']);
 
@@ -36,6 +36,9 @@ Route::prefix('auth')->group(function () {
 });
 
 // Protected routes
+// Public settings (no auth required)
+Route::get('settings', [App\Http\Controllers\Api\SettingsController::class, 'getPublicSettings']);
+
 Route::middleware('auth:api')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
@@ -46,15 +49,7 @@ Route::middleware('auth:api')->group(function () {
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index']);
 
-    // E-Learning
-    Route::post('elearning/lessons/{lesson}/complete', [ElearningController::class, 'markComplete']);
 
-    // Riasec
-    Route::prefix('riasec')->group(function () {
-        Route::get('questions', [RiasecController::class, 'questions']);
-        Route::post('submit', [RiasecController::class, 'submit']);
-        Route::get('result', [RiasecController::class, 'result']);
-    });
 
     // CBT
     Route::prefix('cbt')->group(function () {
@@ -75,8 +70,16 @@ Route::middleware('auth:api')->group(function () {
     // Menus
     Route::get('my-menus', [RoleMenuController::class, 'myMenus']);
 
-    // Admin Landing Page Management
+    // Student E-Learning
+    Route::post('elearning/courses/{id}/enroll', [App\Http\Controllers\Api\StudentElearningController::class, 'enroll']);
+    Route::post('elearning/lessons/{id}/complete', [App\Http\Controllers\Api\StudentElearningController::class, 'markComplete']);
+    Route::get('elearning/courses/{id}/progress', [App\Http\Controllers\Api\StudentElearningController::class, 'getProgress']);
+
+    // Admin Routes
     Route::prefix('admin')->group(function () {
+        // Settings
+        Route::put('settings', [App\Http\Controllers\Api\SettingsController::class, 'updateSettings']);
+        
         Route::get('roles/matrix', [RoleMenuController::class, 'index']);
         Route::post('roles/matrix/toggle', [RoleMenuController::class, 'toggle']);
         Route::apiResource('roles', AdminRoleController::class);
@@ -87,7 +90,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('stats', StatController::class);
         Route::post('upload/thumbnail', [App\Http\Controllers\Api\UploadController::class, 'uploadThumbnail']);
         
-        // E-Learning
+        // E-Learning Admin
         Route::apiResource('elearning/courses', AdminElearningController::class);
         Route::apiResource('elearning/courses.modules', AdminCourseModuleController::class);
         Route::apiResource('elearning/modules.lessons', AdminModuleLessonController::class);
@@ -99,5 +102,9 @@ Route::middleware('auth:api')->group(function () {
 
         Route::get('landing-promo', [LandingPromoController::class, 'show']);
         Route::put('landing-promo', [LandingPromoController::class, 'update']);
+
+        // Learning Packages
+        Route::get('learning-packages/courses', [App\Http\Controllers\Admin\LearningPackageController::class, 'getCourses']);
+        Route::apiResource('learning-packages', App\Http\Controllers\Admin\LearningPackageController::class);
     });
 });

@@ -9,6 +9,11 @@ import App from './App';
 import './app.css';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
+// FontAwesome setup
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { fas } from '@fortawesome/free-solid-svg-icons';
+library.add(fas);
+
 function ThemedToastContainer() {
   const { isDark } = useTheme();
   return (

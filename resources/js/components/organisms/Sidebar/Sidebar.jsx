@@ -15,7 +15,7 @@ import { toast } from 'react-toastify';
 export default function Sidebar({ collapsed = false }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const user = useSelector((s) => s.auth.user);
+  const { user, settings } = useSelector((s) => s.auth);
   const token = useSelector((s) => s.auth.token);
   
   const [menus, setMenus] = React.useState({ main: [], system: [] });
@@ -60,35 +60,53 @@ export default function Sidebar({ collapsed = false }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 flex flex-col gap-1">
-        {!collapsed && <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-3 mb-1">Menu Utama</p>}
-        {menus.main.map((item) => (
-          <NavItem key={item.path} to={item.path} icon={item.icon} label={item.label} collapsed={collapsed} />
-        ))}
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6 scrollbar-hide">
+        {menus.main.length > 0 && (
+          <div>
+            <div className={`px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider ${collapsed ? 'text-center' : ''}`}>
+              {!collapsed ? 'Menu Utama' : '•••'}
+            </div>
+            <ul className="space-y-1">
+              {menus.main.map((menu) => (
+                <NavItem key={menu.id} icon={menu.icon} label={menu.label} to={menu.path} collapsed={collapsed} />
+              ))}
+            </ul>
+          </div>
+        )}
 
-        <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
-        {!collapsed && <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-3 mb-1">Sistem</p>}
-        {menus.system.map((item) => (
-          <NavItem key={item.path} to={item.path} icon={item.icon} label={item.label} collapsed={collapsed} />
-        ))}
+        {menus.system.length > 0 && (
+          <div>
+            <div className={`px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider ${collapsed ? 'text-center' : ''}`}>
+              {!collapsed ? 'Sistem' : '•••'}
+            </div>
+            <ul className="space-y-1">
+              {menus.system.map((menu) => (
+                <NavItem key={menu.id} icon={menu.icon} label={menu.label} to={menu.path} collapsed={collapsed} />
+              ))}
+            </ul>
+          </div>
+        )}
       </nav>
 
       {/* User info & Logout */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-800">
         {user ? (
           !collapsed && (
-            <div className="flex items-center gap-3 p-3 rounded-md bg-white dark:bg-slate-900 mb-2">
-              <Avatar name={user.name} src={user.avatar} size="sm" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{user.name}</p>
-                <p className="text-[10px] text-slate-500 truncate">{user.nisn ?? user.email}</p>
-              </div>
-              {user.program && (
-                <Badge color={programBadge[user.program] ?? 'slate'} className="text-[10px]">
-                  {user.program}
-                </Badge>
-              )}
+            <div className="flex items-center gap-2.5 px-2">
+          {settings?.logo_url ? (
+            <img src={settings.logo_url} alt="Logo" className="w-8 h-8 object-contain rounded" />
+          ) : (
+            <img src="/assets/skorpluss_logo.png" alt="Logo" className="w-8 h-8 object-contain shrink-0" />
+          )}
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="font-bold text-slate-900 dark:text-white leading-tight">
+                {settings?.app_name || 'SkorPluss'}
+              </span>
+              <span className="text-[10px] text-slate-500 font-medium">Learning Center</span>
             </div>
+          )}
+        </div>
           )
         ) : (
           !collapsed && (
