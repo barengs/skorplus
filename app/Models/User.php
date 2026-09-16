@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -10,7 +12,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
         'name',
@@ -50,12 +52,17 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
-    public function cbtSessions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function profile(): HasOne
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
+    public function cbtSessions(): HasMany
     {
         return $this->hasMany(CbtSession::class);
     }
 
-    public function forumPosts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function forumPosts(): HasMany
     {
         return $this->hasMany(ForumPost::class);
     }

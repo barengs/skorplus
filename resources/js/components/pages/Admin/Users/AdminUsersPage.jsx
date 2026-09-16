@@ -31,6 +31,11 @@ export default function AdminUsersPage() {
     email: '',
     program: '',
     phone: '',
+    school: '',
+    nisn: '',
+    gender: '',
+    birth_year: '',
+    address: '',
     role: 'siswa',
     is_active: true,
   });
@@ -48,6 +53,11 @@ export default function AdminUsersPage() {
         email: user.email,
         program: user.program || '',
         phone: user.phone || '',
+        school: user.school || '',
+        nisn: user.nisn || '',
+        gender: user.gender || '',
+        birth_year: user.birth_year ? String(user.birth_year) : '',
+        address: user.address || '',
         role: user.roles?.[0] || 'siswa',
         is_active: user.is_active,
       });
@@ -59,6 +69,11 @@ export default function AdminUsersPage() {
         email: '',
         program: '',
         phone: '',
+        school: '',
+        nisn: '',
+        gender: '',
+        birth_year: '',
+        address: '',
         role: 'siswa',
         is_active: true,
       });
@@ -235,15 +250,15 @@ export default function AdminUsersPage() {
         {/* Modal */}
         {modalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-md p-6">
-              <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 mb-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">
                 {editingUser ? 'Edit Pengguna' : 'Tambah Pengguna'}
               </h2>
 
               <form onSubmit={handleSave} className="space-y-4">
                 <div>
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Nama
+                    Nama Lengkap <span className="text-red-500">*</span>
                   </label>
                   <Input
                     value={formData.name}
@@ -254,7 +269,7 @@ export default function AdminUsersPage() {
 
                 <div>
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Email
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <Input
                     type="email"
@@ -264,48 +279,119 @@ export default function AdminUsersPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Program
-                  </label>
-                  <select
-                    value={formData.program}
-                    onChange={(e) => setFormData({ ...formData, program: e.target.value })}
-                    className="w-full px-4 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Pilih Program</option>
-                    {availablePrograms.map((p) => (
-                      <option key={p.id} value={p.name}>{p.name}</option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Program
+                    </label>
+                    <select
+                      value={formData.program}
+                      onChange={(e) => setFormData({ ...formData, program: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      <option value="">Pilih Program</option>
+                      {availablePrograms.map((p) => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Role Pengguna
+                    </label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      {availableRoles.map(role => (
+                        <option key={role.id} value={role.name}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Nomor HP / WA
+                    </label>
+                    <Input
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="08123456789"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Jenis Kelamin
+                    </label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      <option value="">Pilih Gender</option>
+                      <option value="laki-laki">Laki-laki</option>
+                      <option value="perempuan">Perempuan</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Tahun Lahir
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.birth_year}
+                      onChange={(e) => setFormData({ ...formData, birth_year: e.target.value })}
+                      placeholder="Contoh: 2006"
+                      min="1950"
+                      max="2030"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      NISN
+                    </label>
+                    <Input
+                      value={formData.nisn}
+                      onChange={(e) => setFormData({ ...formData, nisn: e.target.value })}
+                      placeholder="10 digit NISN"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Role Pengguna
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-4 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {availableRoles.map(role => (
-                      <option key={role.id} value={role.name}>{role.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Nomor Telepon
+                    Asal Sekolah
                   </label>
                   <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    value={formData.school}
+                    onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                    placeholder="Contoh: SMAN 1 Jakarta"
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Alamat Lengkap
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="Alamat domisili atau tempat tinggal"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
                   <input
                     type="checkbox"
                     id="is_active"

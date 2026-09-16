@@ -2,24 +2,25 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Course;
-use App\Models\Module;
-use App\Models\Lesson;
 use App\Models\LearningPackage;
+use App\Models\Lesson;
+use App\Models\Module;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CourseModuleLessonSeeder extends Seeder
 {
     public function run(): void
     {
-        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         Course::truncate();
         Module::truncate();
         Lesson::truncate();
         LearningPackage::truncate();
-        \Illuminate\Support\Facades\DB::table('learning_package_course')->truncate();
-        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        DB::table('learning_package_course')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 1. Create Course 1: Penalaran Umum (TPS)
         $course1 = Course::create([
@@ -32,7 +33,7 @@ class CourseModuleLessonSeeder extends Seeder
             'has_certificate' => true,
             'rating' => 4.8,
             'total_reviews' => 125,
-            'instructor_id' => 2 // tutor role
+            'instructor_id' => 2, // tutor role
         ]);
 
         $c1m1 = Module::create(['course_id' => $course1->id, 'title' => 'Bab 1: Silogisme & Logika Posisi', 'sort_order' => 1]);
@@ -55,7 +56,7 @@ class CourseModuleLessonSeeder extends Seeder
             'has_certificate' => true,
             'rating' => 4.9,
             'total_reviews' => 320,
-            'instructor_id' => 2
+            'instructor_id' => 2,
         ]);
 
         $c2m1 = Module::create(['course_id' => $course2->id, 'title' => 'Aljabar Lanjut', 'sort_order' => 1]);
@@ -70,11 +71,11 @@ class CourseModuleLessonSeeder extends Seeder
             'discount_price' => 299000,
             'thumbnail' => 'https://dummyimage.com/800x600/f59e0b/fff.png&text=UTBK+Intensif',
             'features' => ['Akses 12 Bulan', 'Tryout CBT Premium 10x', 'Forum Diskusi Tanya Tutor', 'PDF Modul Super Lengkap'],
-            'is_published' => true
+            'is_published' => true,
         ]);
-        
+
         $package->courses()->sync([$course1->id, $course2->id]);
-        
+
         $package2 = LearningPackage::create([
             'name' => 'Paket Literasi Bahasa',
             'slug' => Str::slug('Paket Literasi Bahasa'),
@@ -83,7 +84,7 @@ class CourseModuleLessonSeeder extends Seeder
             'discount_price' => 150000,
             'thumbnail' => 'https://dummyimage.com/800x600/10b981/fff.png&text=Paket+Literasi',
             'features' => ['Akses 6 Bulan', 'Bedah Soal Harian', 'Bank Soal Update'],
-            'is_published' => true
+            'is_published' => true,
         ]);
 
         $package3 = LearningPackage::create([
@@ -94,7 +95,7 @@ class CourseModuleLessonSeeder extends Seeder
             'discount_price' => 250000,
             'thumbnail' => 'https://dummyimage.com/800x600/10b981/fff.png&text=Paket+Literasi',
             'features' => ['Akses 6 Bulan', 'Bedah Soal Harian', 'Bank Soal Update'],
-            'is_published' => true
+            'is_published' => true,
         ]);
     }
 }

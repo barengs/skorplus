@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Menu;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
 
 class MenuSeeder extends Seeder
@@ -31,10 +33,10 @@ class MenuSeeder extends Seeder
             ['label' => 'Pengaturan', 'path' => '/admin/settings', 'icon' => 'fa-gear', 'section' => 'system', 'sort_order' => 7, 'roles' => [$admin->id]],
         ];
 
-        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
-        \Illuminate\Support\Facades\DB::table('menu_role')->truncate();
+        Schema::disableForeignKeyConstraints();
+        DB::table('menu_role')->truncate();
         Menu::truncate();
-        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+        Schema::enableForeignKeyConstraints();
 
         foreach ($menus as $m) {
             $menu = Menu::create([
@@ -46,7 +48,7 @@ class MenuSeeder extends Seeder
             ]);
             $menu->roles()->sync($m['roles']);
         }
-        
+
         $this->command->info('Menus & Matrix seeded.');
     }
 }

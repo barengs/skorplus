@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
@@ -7,12 +7,18 @@ import Input from '../../../atoms/Input';
 import FormField from '../../../molecules/FormField';
 import api from '../../../../services/api';
 import { toast } from 'react-toastify';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 export default function AdminExamQuestionsPage() {
   const { examId } = useParams();
   const [exam, setExam] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Form states
   const [modalOpen, setModalOpen] = useState(false);
@@ -111,6 +117,62 @@ export default function AdminExamQuestionsPage() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await api.get(`/admin/cbt/exams/${examId}/export`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `soal-${exam?.title?.replace(/\s+/g, '-') || examId}-${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('File Excel berhasil diunduh!');
+    } catch (err) {
+      toast.error('Gagal mengexport soal');
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) {
+      toast.error('Pilih file Excel terlebih dahulu');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', importFile);
+
+    try {
+      setImporting(true);
+      const response = await api.post(`/admin/cbt/exams/${examId}/import`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      
+      toast.success(response.data.message || 'Soal berhasil diimport!');
+      if (response.data.imported) {
+        toast.info(`${response.data.imported} soal berhasil diimport`);
+      }
+      
+      setImportModalOpen(false);
+      setImportFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      fetchData();
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      if (errors) {
+        errors.forEach(e => toast.error(e));
+      } else {
+        toast.error(err.response?.data?.message || 'Gagal mengimport soal');
+      }
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <AppLayout title="Manajemen Soal Ujian">
       <div className="max-w-6xl mx-auto pb-16">
@@ -124,7 +186,13 @@ export default function AdminExamQuestionsPage() {
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">Total Soal: {questions.length}</p>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
+            <Button variant="ghost" onClick={handleExport}>
+              📥 Export Excel
+            </Button>
+            <Button variant="secondary" onClick={() => setImportModalOpen(true)}>
+              📤 Import Excel
+            </Button>
             <Button onClick={() => openModal()}>+ Tambah Soal</Button>
           </div>
         </div>
@@ -167,6 +235,47 @@ export default function AdminExamQuestionsPage() {
           </div>
         )}
 
+        {/* Import Modal */}
+        {importModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md w-full max-w-lg p-6">
+              <h3 className="text-xl font-bold mb-4">Import Soal dari Excel</h3>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 font-semibold mb-2">📋 Format Excel:</p>
+                  <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
+                    <li>Kolom 1-5: Mata Pelajaran, Sub Test, Pertanyaan, Poin, Penjelasan</li>
+                    <li>Kolom 6: Status (AKTIF/NONAKTIF)</li>
+                    <li>Kolom 7-16: Pilihan A-E dan Benar A-E (Y/N)</li>
+                  </ul>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                    💡 Tips: Export dulu untuk melihat contoh format yang benar.
+                  </p>
+                </div>
+                
+                <FormField label="File Excel">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={(e) => setImportFile(e.target.files[0])}
+                    className="w-full p-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent"
+                  />
+                </FormField>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button type="button" variant="ghost" onClick={() => setImportModalOpen(false)} disabled={importing}>
+                    Batal
+                  </Button>
+                  <Button onClick={handleImport} loading={importing}>
+                    Import
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modal form */}
         {modalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto">
@@ -193,8 +302,15 @@ export default function AdminExamQuestionsPage() {
                   </FormField>
                 </div>
                 
-                <FormField label="Pertanyaan (Bisa menggunakan HTML dasar)">
-                  <textarea rows={4} className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent font-mono text-sm" value={formData.question_text} onChange={e => setFormData({...formData, question_text: e.target.value})} required placeholder="<p>Masukkan teks soal di sini...</p>" />
+                <FormField label="Pertanyaan">
+                  <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700">
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.question_text}
+                      onChange={(content) => setFormData({...formData, question_text: content})}
+                      className="h-48 mb-10"
+                    />
+                  </div>
                 </FormField>
 
                 <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
@@ -215,7 +331,14 @@ export default function AdminExamQuestionsPage() {
                 </div>
 
                 <FormField label="Penjelasan (Pembahasan)">
-                  <textarea rows={3} className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-sm" value={formData.explanation_text} onChange={e => setFormData({...formData, explanation_text: e.target.value})} placeholder="Pembahasan soal (opsional)" />
+                  <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700">
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.explanation_text}
+                      onChange={(content) => setFormData({...formData, explanation_text: content})}
+                      className="h-32 mb-10"
+                    />
+                  </div>
                 </FormField>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">

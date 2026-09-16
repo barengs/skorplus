@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
 import Badge from '../../../atoms/Badge';
@@ -10,6 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { formatRupiah } from '../../../../utils/currencyHelper';
 
 export default function AdminLearningPackagePage() {
+  const navigate = useNavigate();
   const [packages, setPackages] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -177,35 +179,84 @@ export default function AdminLearningPackagePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {packages.map((pkg) => (
-              <div key={pkg.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                {pkg.thumbnail && (
-                  <div className="h-32 bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                    <img src={pkg.thumbnail} alt={pkg.name} className="w-full h-full object-cover" />
+              <div
+                key={pkg.id}
+                onClick={() => navigate(`/admin/learning-packages/${pkg.id}`)}
+                className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 cursor-pointer flex flex-col"
+              >
+                {pkg.thumbnail ? (
+                  <div className="h-36 bg-slate-100 dark:bg-slate-800 overflow-hidden relative">
+                    <img
+                      src={pkg.thumbnail}
+                      alt={pkg.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                      <span className="text-white text-xs font-semibold flex items-center gap-1">
+                        <FontAwesomeIcon icon={['fas', 'eye']} /> Klik untuk lihat detil
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-28 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                    <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="text-3xl" />
                   </div>
                 )}
-                <div className="p-4">
+                <div className="p-4 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-slate-900 dark:text-slate-100 line-clamp-2">{pkg.name}</h3>
-                    {pkg.is_published && <Badge color="emerald" size="sm">Publish</Badge>}
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                      {pkg.name}
+                    </h3>
+                    {pkg.is_published ? (
+                      <Badge color="emerald" size="sm">Publish</Badge>
+                    ) : (
+                      <Badge color="slate" size="sm">Draft</Badge>
+                    )}
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">{pkg.description}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
+                    {pkg.description || 'Tidak ada deskripsi'}
+                  </p>
                   
-                  <div className="mb-3">
-                    <div className="text-lg font-bold text-blue-600">{formatRupiah(pkg.price)}</div>
+                  <div className="mb-3 mt-auto">
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatRupiah(pkg.price)}</div>
                     {pkg.discount_price && (
-                      <div className="text-sm text-slate-500 line-through">{formatRupiah(pkg.discount_price)}</div>
+                      <div className="text-sm text-slate-400 line-through">{formatRupiah(pkg.discount_price)}</div>
                     )}
                   </div>
 
-                  <div className="text-xs text-slate-500 mb-3">
-                    <FontAwesomeIcon icon={['fas', 'book']} className="mr-1" /> {pkg.courses?.length || 0} kursus
+                  <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
+                    <span>
+                      <FontAwesomeIcon icon={['fas', 'book']} className="mr-1 text-blue-500" /> {pkg.courses?.length || 0} kursus
+                    </span>
+                    <span className="text-blue-600 dark:text-blue-400 font-semibold group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                      Detil <FontAwesomeIcon icon={['fas', 'chevron-right']} className="text-[10px]" />
+                    </span>
                   </div>
 
-                  <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <Button variant="ghost" size="sm" className="flex-1 text-blue-600" onClick={() => openModal(pkg)}>
+                  <div
+                    className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openModal(pkg);
+                      }}
+                    >
                       <FontAwesomeIcon icon={['fas', 'pen-to-square']} className="mr-1" /> Edit
                     </Button>
-                    <Button variant="ghost" size="sm" className="flex-1 text-red-600" onClick={() => deletePackage(pkg.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deletePackage(pkg.id);
+                      }}
+                    >
                       <FontAwesomeIcon icon={['fas', 'trash-can']} className="mr-1" /> Hapus
                     </Button>
                   </div>

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Testimonial;
+use Illuminate\Http\Request;
 
 class TestimonialController extends Controller
 {
@@ -28,6 +28,7 @@ class TestimonialController extends Controller
         ]);
 
         $testimonial = Testimonial::create($validated);
+
         return response()->json($testimonial, 201);
     }
 
@@ -51,12 +52,14 @@ class TestimonialController extends Controller
         ]);
 
         $testimonial->update($validated);
+
         return response()->json($testimonial);
     }
 
     public function destroy(Testimonial $testimonial)
     {
         $testimonial->delete();
+
         return response()->json(['message' => 'Testimonial deleted successfully']);
     }
 }

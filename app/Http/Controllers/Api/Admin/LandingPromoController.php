@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\LandingPromo;
+use Illuminate\Http\Request;
 
 class LandingPromoController extends Controller
 {
     public function show()
     {
-        $promo = LandingPromo::latest()->first() ?? new LandingPromo();
+        $promo = LandingPromo::latest()->first() ?? new LandingPromo;
+
         return response()->json($promo);
     }
 

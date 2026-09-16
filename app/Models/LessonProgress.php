@@ -15,6 +15,8 @@ class LessonProgress extends Model
     protected $casts = [
         'is_completed' => 'boolean',
         'completed_at' => 'datetime',
+        'score_percentage' => 'integer',
+        'quiz_attempt_data' => 'array',
     ];
 
     public function user(): BelongsTo

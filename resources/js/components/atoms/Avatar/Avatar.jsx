@@ -1,6 +1,6 @@
 import React from 'react';
 
-const sizes = { sm: 'w-7 h-7 text-xs', md: 'w-9 h-9 text-sm', lg: 'w-12 h-12 text-base', xl: 'w-16 h-16 text-xl' };
+const sizes = { sm: 'w-7 h-7 text-xs', md: 'w-9 h-9 text-sm', lg: 'w-12 h-12 text-base', xl: 'w-16 h-16 text-xl', '2xl': 'w-24 h-24 text-3xl' };
 
 export default function Avatar({ name = '', src = null, size = 'md', className = '' }) {
   const initials = name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);

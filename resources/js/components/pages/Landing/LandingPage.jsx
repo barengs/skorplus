@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import Logo from '../../atoms/Logo';
@@ -32,9 +32,11 @@ function PromoCountdown({ seconds }) {
 }
 
 // ── Navbar ────────────────────────────────────────────────────────────────────
-function LandingNav({ promo }) {
+export function LandingNav({ promo }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const isKursusPage = location.pathname.startsWith('/kursus');
 
   const { token } = useSelector((s) => s.auth);
 
@@ -44,8 +46,16 @@ function LandingNav({ promo }) {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
+  const navLinks = [
+    { href: isKursusPage ? '/#program' : '#program', label: 'Program', isAnchor: !isKursusPage },
+    { href: isKursusPage ? '/#fitur' : '#fitur', label: 'Fitur', isAnchor: !isKursusPage },
+    { href: '/kursus', label: 'Kursus', isRoute: true },
+    { href: isKursusPage ? '/#testimoni' : '#testimoni', label: 'Testimoni', isAnchor: !isKursusPage },
+    { href: isKursusPage ? '/#about' : '#about', label: 'Tentang', isAnchor: !isKursusPage },
+  ];
+
   return (
-    <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-slate-50 dark:bg-slate-950/95 backdrop-blur shadow-lg shadow-black/20 border-b border-slate-200 dark:border-slate-800' : 'bg-transparent'}`}>
+    <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled || isKursusPage ? 'bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur shadow-lg shadow-black/5 dark:shadow-black/20 border-b border-slate-200 dark:border-slate-800' : 'bg-transparent'}`}>
       {/* Promo bar */}
       {promo && promo.is_active && (
         <div className="bg-gradient-to-r from-blue-600 to-violet-600 text-white text-center py-2 text-xs font-semibold flex items-center justify-center gap-3">
@@ -59,11 +69,33 @@ function LandingNav({ promo }) {
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-1">
-          {[['#program', 'Program'], ['#fitur', 'Fitur'], ['#testimoni', 'Testimoni'], ['#about', 'Tentang']].map(([href, label]) => (
-            <a key={href} href={href} className="px-4 py-2 rounded-md text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-              {label}
-            </a>
-          ))}
+          {navLinks.map((item) => {
+            const isActive = item.isRoute && location.pathname === item.href;
+            if (item.isRoute) {
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    isActive
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+            return (
+              <a
+                key={item.label}
+                href={item.href}
+                className="px-4 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -90,9 +122,34 @@ function LandingNav({ promo }) {
 
       {mobileOpen && (
         <div className="md:hidden bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex flex-col gap-2">
-          {[['#program', 'Program'], ['#fitur', 'Fitur'], ['#testimoni', 'Testimoni']].map(([href, label]) => (
-            <a key={href} href={href} onClick={() => setMobileOpen(false)} className="py-2 text-slate-700 dark:text-slate-300 text-sm">{label}</a>
-          ))}
+          {navLinks.map((item) => {
+            if (item.isRoute) {
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`py-2 text-sm font-medium ${
+                    location.pathname === item.href
+                      ? 'text-blue-600 dark:text-blue-400 font-bold'
+                      : 'text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+            return (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className="py-2 text-slate-700 dark:text-slate-300 text-sm font-medium"
+              >
+                {item.label}
+              </a>
+            );
+          })}
           <div className="flex gap-3 pt-2 items-center">
             <ThemeToggle />
             {token ? (
@@ -127,23 +184,30 @@ export default function LandingPage() {
       .then(([resLanding, resSettings, resPackages]) => {
         const landingData = resLanding.data;
         
-        // Transform learning_packages to programs format
-        const packagesData = (resPackages.data || []).map((pkg, idx) => ({
-          id: pkg.id,
-          name: pkg.name,
-          icon: idx === 1 ? '🚀' : idx === 2 ? '🏆' : '📚',
-          color: idx === 1 ? 'from-blue-700 to-violet-700' : idx === 2 ? 'from-yellow-500 to-orange-600' : 'from-slate-700 to-slate-800',
-          price: formatRupiah(pkg.price),
-          price_period: '/paket',
-          features: pkg.features || [],
-          is_popular: idx === 1,
-          is_active: pkg.is_published,
-          originalData: pkg
-        }));
+        // Use programs from landing API or fallback to learning packages
+        const programsData = (landingData.programs && landingData.programs.length > 0)
+          ? landingData.programs.map((p) => ({
+              ...p,
+              slug: p.slug || String(p.name).toLowerCase().replace(/\s+/g, '-'),
+              originalData: p,
+            }))
+          : (resPackages.data || []).map((pkg, idx) => ({
+              id: pkg.id,
+              name: pkg.name,
+              slug: pkg.slug || String(pkg.name).toLowerCase().replace(/\s+/g, '-'),
+              icon: idx === 1 ? '🚀' : idx === 2 ? '🏆' : '📚',
+              color: idx === 1 ? 'from-blue-700 to-violet-700' : idx === 2 ? 'from-yellow-500 to-orange-600' : 'from-slate-700 to-slate-800',
+              price: formatRupiah(pkg.price),
+              price_period: '/paket',
+              features: pkg.features || [],
+              is_popular: idx === 1,
+              is_active: pkg.is_published,
+              originalData: pkg,
+            }));
         
         setData({
           ...landingData,
-          programs: packagesData
+          programs: programsData,
         });
         setSettings(resSettings.data);
         document.title = resSettings.data.app_name || 'SkorPluss';
@@ -272,13 +336,21 @@ export default function LandingPage() {
                         </li>
                       ))}
                     </ul>
-                      <Button 
-                        variant={p.is_popular ? 'primary' : 'ghost'} 
-                        className="w-full"
-                        onClick={() => setSelectedPackage(p.originalData)}
-                      >
-                        Pilih {p.name}
-                      </Button>
+                      <div className="space-y-2 mt-auto">
+                        <Link to={`/program/${p.slug || p.id}`} className="block">
+                          <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span>Lihat Detail & Learning Path</span>
+                            <span>→</span>
+                          </button>
+                        </Link>
+                        <Button 
+                          variant={p.is_popular ? 'primary' : 'ghost'} 
+                          className="w-full"
+                          onClick={() => setSelectedPackage(p.originalData)}
+                        >
+                          Pilih {p.name}
+                        </Button>
+                      </div>
                     </div>
                   </div>
               ))}

@@ -13,13 +13,14 @@ class AdminCourseModuleController extends Controller
     {
         $course = Course::findOrFail($courseId);
         $modules = $course->modules()->with('lessons')->orderBy('sort_order')->get();
+
         return response()->json($modules);
     }
 
     public function store(Request $request, $courseId)
     {
         $course = Course::findOrFail($courseId);
-        
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
         ]);
@@ -27,7 +28,7 @@ class AdminCourseModuleController extends Controller
         $sortOrder = $course->modules()->max('sort_order') + 1;
         $module = $course->modules()->create([
             'title' => $validated['title'],
-            'sort_order' => $sortOrder
+            'sort_order' => $sortOrder,
         ]);
 
         return response()->json($module->load('lessons'), 201);
@@ -51,6 +52,7 @@ class AdminCourseModuleController extends Controller
     {
         $module = Module::where('course_id', $courseId)->findOrFail($moduleId);
         $module->delete();
+
         return response()->json(null, 204);
     }
 }

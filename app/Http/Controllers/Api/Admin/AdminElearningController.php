@@ -22,19 +22,27 @@ class AdminElearningController extends Controller
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'thumbnail' => 'nullable|string',
+            'program_id' => 'nullable|exists:programs,id',
+            'program_name' => 'nullable|string|max:255',
+            'instructor_name' => 'nullable|string|max:255',
+            'is_popular' => 'boolean',
+            'is_bestseller' => 'boolean',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'total_reviews' => 'nullable|integer|min:0',
         ]);
 
-        $validated['slug'] = Str::slug($validated['title']) . '-' . time();
+        $validated['slug'] = Str::slug($validated['title']).'-'.time();
         $validated['sort_order'] = Course::max('sort_order') + 1;
         $validated['has_certificate'] = true; // Always true per request
 
         $course = Course::create($validated);
+
         return response()->json($course, 201);
     }
 
     public function show($id)
     {
-        return response()->json(Course::findOrFail($id));
+        return response()->json(Course::with(['program', 'instructor'])->findOrFail($id));
     }
 
     public function update(Request $request, $id)
@@ -47,19 +55,28 @@ class AdminElearningController extends Controller
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'thumbnail' => 'nullable|string',
+            'program_id' => 'nullable|exists:programs,id',
+            'program_name' => 'nullable|string|max:255',
+            'instructor_name' => 'nullable|string|max:255',
+            'is_popular' => 'boolean',
+            'is_bestseller' => 'boolean',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'total_reviews' => 'nullable|integer|min:0',
         ]);
 
         if (isset($validated['title']) && $validated['title'] !== $course->title) {
-            $validated['slug'] = Str::slug($validated['title']) . '-' . time();
+            $validated['slug'] = Str::slug($validated['title']).'-'.time();
         }
 
         $course->update($validated);
+
         return response()->json($course);
     }
 
     public function destroy($id)
     {
         Course::destroy($id);
+
         return response()->json(null, 204);
     }
 }

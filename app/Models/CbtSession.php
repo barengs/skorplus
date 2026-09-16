@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CbtSession extends Model
 {
@@ -11,6 +13,7 @@ class CbtSession extends Model
 
     protected $fillable = [
         'user_id',
+        'exam_id',
         'exam_type',
         'exam_title',
         'started_at',
@@ -18,6 +21,11 @@ class CbtSession extends Model
         'score',
         'duration_seconds',
         'status', // ongoing, submitted, expired
+        'total_score',
+        'subtest_scores',
+        'strengths',
+        'weaknesses',
+        'predicted_score',
     ];
 
     protected function casts(): array
@@ -25,15 +33,23 @@ class CbtSession extends Model
         return [
             'started_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'subtest_scores' => 'array',
+            'strengths' => 'array',
+            'weaknesses' => 'array',
         ];
     }
 
-    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function answers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function exam(): BelongsTo
+    {
+        return $this->belongsTo(Exam::class);
+    }
+
+    public function answers(): HasMany
     {
         return $this->hasMany(CbtAnswer::class);
     }

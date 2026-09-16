@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Program;
-use App\Models\Testimonial;
 use App\Models\Feature;
-use App\Models\Stat;
 use App\Models\LandingHero;
 use App\Models\LandingPromo;
+use App\Models\Program;
+use App\Models\Stat;
+use App\Models\Testimonial;
+use Illuminate\Database\Seeder;
 
 class LandingPageSeeder extends Seeder
 {
@@ -41,7 +41,9 @@ class LandingPageSeeder extends Seeder
             ['label' => 'Rata-rata Respons Tutor', 'value' => '14 mnt', 'sort_order' => 3],
             ['label' => 'Bank Soal Premium', 'value' => '50.000+', 'sort_order' => 4],
         ];
-        foreach ($stats as $s) Stat::create($s);
+        foreach ($stats as $s) {
+            Stat::create($s);
+        }
 
         // 4. Features
         $features = [
@@ -52,7 +54,9 @@ class LandingPageSeeder extends Seeder
             ['icon' => '🎬', 'title' => 'E-Learning Video', 'description' => 'Ribuan video modul dari tutor berpengalaman, bisa ditonton kapan saja dan di mana saja.', 'sort_order' => 5],
             ['icon' => '🏅', 'title' => 'Garansi Masuk PTN', 'description' => 'Jika tidak lolos, biaya bimbingan dikembalikan penuh. Komitmen kami untuk kesuksesan Anda.', 'sort_order' => 6],
         ];
-        foreach ($features as $f) Feature::create($f);
+        foreach ($features as $f) {
+            Feature::create($f);
+        }
 
         // 5. Testimonials
         $testimonials = [
@@ -61,7 +65,9 @@ class LandingPageSeeder extends Seeder
             ['name' => 'Rizky Fadillah', 'school' => 'SMAN 1 Yogyakarta', 'university' => 'Hukum UGM', 'score' => 718, 'avatar_text' => 'RF', 'avatar_color' => 'from-orange-500 to-amber-600', 'sort_order' => 3],
             ['name' => 'Naura Azahra', 'school' => 'SMAN 8 Jakarta', 'university' => 'STAN Kedinasan', 'score' => 729, 'avatar_text' => 'NA', 'avatar_color' => 'from-violet-500 to-pink-600', 'sort_order' => 4],
         ];
-        foreach ($testimonials as $t) Testimonial::create($t);
+        foreach ($testimonials as $t) {
+            Testimonial::create($t);
+        }
 
         // 6. Programs
         $programs = [
@@ -91,8 +97,10 @@ class LandingPageSeeder extends Seeder
                 'ring_color' => 'ring-amber-400 dark:ring-amber-500',
                 'is_popular' => false,
                 'sort_order' => 3,
-            ]
+            ],
         ];
-        foreach ($programs as $p) Program::create($p);
+        foreach ($programs as $p) {
+            Program::updateOrCreate(['slug' => $p['slug']], $p);
+        }
     }
 }

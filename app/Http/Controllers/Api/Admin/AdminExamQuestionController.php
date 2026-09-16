@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\Question;
-use App\Models\QuestionOption;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +17,7 @@ class AdminExamQuestionController extends Controller
 
         return response()->json([
             'exam' => $exam,
-            'questions' => $questions
+            'questions' => $questions,
         ]);
     }
 
@@ -70,6 +69,7 @@ class AdminExamQuestionController extends Controller
             return response()->json($question->load('options'), 201);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['message' => 'Gagal menyimpan soal', 'error' => $e->getMessage()], 500);
         }
     }
@@ -135,6 +135,7 @@ class AdminExamQuestionController extends Controller
             return response()->json($question->load('options'));
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['message' => 'Gagal memperbarui soal', 'error' => $e->getMessage()], 500);
         }
     }
@@ -143,10 +144,10 @@ class AdminExamQuestionController extends Controller
     {
         $exam = Exam::findOrFail($examId);
         $question = $exam->questions()->findOrFail($questionId);
-        
+
         $exam->questions()->detach($questionId);
         $question->delete(); // this will cascade delete options
-        
+
         $exam->update(['total_questions' => $exam->questions()->count()]);
 
         return response()->json(null, 204);

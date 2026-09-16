@@ -5,15 +5,15 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create roles
         $siswa = Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
@@ -24,12 +24,12 @@ class RolePermissionSeeder extends Seeder
         $demoSiswa = User::firstOrCreate(
             ['email' => 'siswa@skorpluss.com'],
             [
-                'name'     => 'Fathur Rahman',
+                'name' => 'Fathur Rahman',
                 'password' => Hash::make('password'),
-                'nisn'     => '0064821901',
-                'school'   => 'SMAN 8 Jakarta',
-                'program'  => 'intensif',
-                'phone'    => '08123456789',
+                'nisn' => '0064821901',
+                'school' => 'SMAN 8 Jakarta',
+                'program' => 'intensif',
+                'phone' => '08123456789',
                 'is_active' => true,
             ]
         );
@@ -38,10 +38,10 @@ class RolePermissionSeeder extends Seeder
         $demoTutor = User::firstOrCreate(
             ['email' => 'tutor@skorpluss.com'],
             [
-                'name'     => 'Dr. Ahmad Fadli',
+                'name' => 'Dr. Ahmad Fadli',
                 'password' => Hash::make('password'),
-                'school'   => 'Alumni ITB Fisika',
-                'program'  => 'mandiri',
+                'school' => 'Alumni ITB Fisika',
+                'program' => 'mandiri',
                 'is_active' => true,
             ]
         );
@@ -50,7 +50,7 @@ class RolePermissionSeeder extends Seeder
         $demoAdmin = User::firstOrCreate(
             ['email' => 'admin@skorpluss.com'],
             [
-                'name'     => 'Admin SkorPluss',
+                'name' => 'Admin SkorPluss',
                 'password' => Hash::make('password'),
                 'is_active' => true,
             ]

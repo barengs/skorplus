@@ -41,7 +41,7 @@ class SettingsController extends Controller
 
         return response()->json([
             'message' => 'Pengaturan berhasil diperbarui',
-            'settings' => $this->getPublicSettings()->original
+            'settings' => $this->getPublicSettings()->original,
         ]);
     }
 }

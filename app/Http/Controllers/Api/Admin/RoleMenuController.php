@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Menu;
+use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
 class RoleMenuController extends Controller
@@ -14,7 +14,7 @@ class RoleMenuController extends Controller
     {
         $menus = Menu::orderBy('section')->orderBy('sort_order')->get();
         $roles = Role::where('guard_name', 'api')->get();
-        
+
         $matrix = [];
         foreach ($menus as $menu) {
             $menuRoles = $menu->roles->pluck('id')->toArray();
@@ -29,7 +29,7 @@ class RoleMenuController extends Controller
 
         return response()->json([
             'menus' => $matrix,
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 
@@ -39,11 +39,11 @@ class RoleMenuController extends Controller
         $validated = $request->validate([
             'menu_id' => 'required|exists:menus,id',
             'role_id' => 'required|exists:roles,id',
-            'has_access' => 'required|boolean'
+            'has_access' => 'required|boolean',
         ]);
 
         $menu = Menu::findOrFail($validated['menu_id']);
-        
+
         if ($validated['has_access']) {
             $menu->roles()->syncWithoutDetaching([$validated['role_id']]);
         } else {
@@ -57,18 +57,20 @@ class RoleMenuController extends Controller
     public function myMenus(Request $request)
     {
         $user = $request->user();
-        if (!$user) return response()->json([]);
+        if (! $user) {
+            return response()->json([]);
+        }
 
         // Get all role IDs of the user
         $roleIds = $user->roles->pluck('id')->toArray();
 
         // Get menus attached to any of those roles
-        $menus = Menu::whereHas('roles', function($q) use ($roleIds) {
+        $menus = Menu::whereHas('roles', function ($q) use ($roleIds) {
             $q->whereIn('roles.id', $roleIds);
         })
-        ->where('is_active', true)
-        ->orderBy('sort_order')
-        ->get();
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
 
         return response()->json($menus);
     }

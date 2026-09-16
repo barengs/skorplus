@@ -23,6 +23,7 @@ class AdminCbtController extends Controller
 
         $exam = Exam::create($validated);
         $exam->total_questions = 0; // default total_questions
+
         return response()->json($exam, 201);
     }
 
@@ -42,15 +43,16 @@ class AdminCbtController extends Controller
         ]);
 
         $exam->update($validated);
-        
+
         $exam = Exam::withCount('questions')->find($id);
-        
+
         return response()->json($exam);
     }
 
     public function destroy($id)
     {
         Exam::destroy($id);
+
         return response()->json(null, 204);
     }
 }

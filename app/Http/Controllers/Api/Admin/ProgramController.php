@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Program;
+use Illuminate\Http\Request;
 
 class ProgramController extends Controller
 {
@@ -31,6 +31,7 @@ class ProgramController extends Controller
         ]);
 
         $program = Program::create($validated);
+
         return response()->json($program, 201);
     }
 
@@ -43,7 +44,7 @@ class ProgramController extends Controller
     {
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'slug' => 'sometimes|required|string|max:255|unique:programs,slug,' . $program->id,
+            'slug' => 'sometimes|required|string|max:255|unique:programs,slug,'.$program->id,
             'icon' => 'nullable|string',
             'price' => 'sometimes|required|string',
             'price_period' => 'nullable|string',
@@ -57,12 +58,14 @@ class ProgramController extends Controller
         ]);
 
         $program->update($validated);
+
         return response()->json($program);
     }
 
     public function destroy(Program $program)
     {
         $program->delete();
+
         return response()->json(['message' => 'Program deleted successfully']);
     }
 }

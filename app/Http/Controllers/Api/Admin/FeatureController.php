@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Feature;
+use Illuminate\Http\Request;
 
 class FeatureController extends Controller
 {
@@ -24,6 +24,7 @@ class FeatureController extends Controller
         ]);
 
         $feature = Feature::create($validated);
+
         return response()->json($feature, 201);
     }
 
@@ -43,12 +44,14 @@ class FeatureController extends Controller
         ]);
 
         $feature->update($validated);
+
         return response()->json($feature);
     }
 
     public function destroy(Feature $feature)
     {
         $feature->delete();
+
         return response()->json(['message' => 'Feature deleted successfully']);
     }
 }

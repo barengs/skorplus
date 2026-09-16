@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class AdminRoleController extends Controller
 {
@@ -21,13 +21,13 @@ class AdminRoleController extends Controller
                 'required', 'string', 'max:255',
                 Rule::unique('roles')->where(function ($query) {
                     return $query->where('guard_name', 'api');
-                })
-            ]
+                }),
+            ],
         ]);
 
         $role = Role::create([
             'name' => strtolower($validated['name']),
-            'guard_name' => 'api'
+            'guard_name' => 'api',
         ]);
 
         return response()->json($role, 201);
@@ -47,8 +47,8 @@ class AdminRoleController extends Controller
                 'required', 'string', 'max:255',
                 Rule::unique('roles')->where(function ($query) {
                     return $query->where('guard_name', 'api');
-                })->ignore($role->id)
-            ]
+                })->ignore($role->id),
+            ],
         ]);
 
         $role->update(['name' => strtolower($validated['name'])]);
@@ -65,6 +65,7 @@ class AdminRoleController extends Controller
         }
 
         $role->delete();
+
         return response()->json(null, 204);
     }
 }

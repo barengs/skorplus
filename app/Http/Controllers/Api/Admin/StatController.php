@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Stat;
+use Illuminate\Http\Request;
 
 class StatController extends Controller
 {
@@ -23,6 +23,7 @@ class StatController extends Controller
         ]);
 
         $stat = Stat::create($validated);
+
         return response()->json($stat, 201);
     }
 
@@ -41,12 +42,14 @@ class StatController extends Controller
         ]);
 
         $stat->update($validated);
+
         return response()->json($stat);
     }
 
     public function destroy(Stat $stat)
     {
         $stat->delete();
+
         return response()->json(['message' => 'Stat deleted successfully']);
     }
 }

@@ -5,12 +5,29 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CbtAnswer;
 use App\Models\CbtSession;
+use App\Models\Exam;
+use App\Models\Question;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class CbtController extends Controller
 {
+    /**
+     * List all available active exams.
+     */
+    public function availableExams(): JsonResponse
+    {
+        $exams = Exam::where('is_active', true)
+            ->withCount('questions')
+            ->having('questions_count', '>', 0)
+            ->latest()
+            ->get();
+
+        return response()->json(['exams' => $exams]);
+    }
+
     /**
      * List all sessions for the authenticated user.
      */
@@ -29,8 +46,9 @@ class CbtController extends Controller
     public function startSession(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'exam_type'        => 'required|string',
-            'exam_title'       => 'required|string',
+            'exam_id' => 'nullable|exists:exams,id',
+            'exam_type' => 'required_without:exam_id|string',
+            'exam_title' => 'required_without:exam_id|string',
             'duration_seconds' => 'nullable|integer|min:60',
         ]);
 
@@ -38,20 +56,30 @@ class CbtController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $exam = null;
+        $questions = [];
+
+        // If exam_id provided, use exam from database
+        if ($request->exam_id) {
+            $exam = Exam::findOrFail($request->exam_id);
+            $questions = $this->getQuestionsFromExam($exam);
+        } else {
+            // Fallback to legacy mode (dummy questions)
+            $questions = $this->getDummyQuestions($request->exam_type);
+        }
+
         $session = CbtSession::create([
-            'user_id'          => auth('api')->id(),
-            'exam_type'        => $request->exam_type,
-            'exam_title'       => $request->exam_title,
-            'duration_seconds' => $request->duration_seconds ?? 5400,
-            'started_at'       => now(),
-            'status'           => 'ongoing',
+            'user_id' => auth('api')->id(),
+            'exam_id' => $exam?->id,
+            'exam_type' => $request->exam_type,
+            'exam_title' => $request->exam_title,
+            'duration_seconds' => $request->duration_seconds ?? ($exam?->duration_minutes ?? 90) * 60,
+            'started_at' => now(),
+            'status' => 'ongoing',
         ]);
 
-        // Return dummy questions for now
-        $questions = $this->getDummyQuestions($request->exam_type);
-
         return response()->json([
-            'session'   => $session,
+            'session' => $session,
             'questions' => $questions,
         ], 201);
     }
@@ -71,7 +99,7 @@ class CbtController extends Controller
         $validator = Validator::make($request->all(), [
             'question_number' => 'required|integer|min:1',
             'selected_option' => 'nullable|in:A,B,C,D,E',
-            'is_flagged'      => 'boolean',
+            'is_flagged' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -98,33 +126,90 @@ class CbtController extends Controller
             return response()->json(['message' => 'Sesi sudah disubmit.'], 422);
         }
 
-        // ponytail: dummy scoring — replace with real answer key when available
-        $answered = CbtAnswer::where('cbt_session_id', $session->id)
+        // Get questions from exam if available
+        $questions = $session->exam_id
+            ? $this->getQuestionsFromExam(Exam::find($session->exam_id))
+            : [];
+
+        $answers = CbtAnswer::where('cbt_session_id', $session->id)
             ->whereNotNull('selected_option')
-            ->count();
-        $score = min(100, (int) ($answered / 20 * 100));
+            ->get()
+            ->keyBy('question_number');
+
+        $totalScore = 0;
+        $correctCount = 0;
+        $totalQuestions = count($questions);
+
+        // Calculate score based on correct answers
+        foreach ($questions as $index => $questionData) {
+            $questionNumber = $index + 1;
+            $userAnswer = $answers->get($questionNumber);
+
+            if ($userAnswer && isset($questionData['correct_option'])) {
+                if ($userAnswer->selected_option === $questionData['correct_option']) {
+                    $correctCount++;
+                    $totalScore += $questionData['points'] ?? 1;
+                }
+            }
+        }
+
+        // Normalize score to 0-100
+        $maxScore = $totalQuestions; // Assuming 1 point per question for normalization
+        $normalizedScore = $maxScore > 0 ? round(($correctCount / $maxScore) * 100) : 0;
 
         $session->update([
-            'status'       => 'submitted',
+            'status' => 'submitted',
             'submitted_at' => now(),
-            'score'        => $score,
+            'score' => $normalizedScore,
+            'total_score' => $totalScore,
         ]);
 
         return response()->json([
             'message' => 'Ujian berhasil diselesaikan.',
-            'score'   => $score,
+            'score' => $normalizedScore,
+            'correct_count' => $correctCount,
+            'total_questions' => $totalQuestions,
             'session' => $session->fresh(),
         ]);
     }
 
+    /**
+     * Get questions from an exam with correct answers.
+     */
+    private function getQuestionsFromExam(Exam $exam): array
+    {
+        $questions = $exam->questions()
+            ->where('is_active', true)
+            ->with('options')
+            ->orderBy('id')
+            ->get();
+
+        return $questions->map(function ($question, $index) {
+            $correctOption = $question->options->firstWhere('is_correct', true);
+
+            return [
+                'number' => $index + 1,
+                'id' => $question->id,
+                'subject' => $question->subject,
+                'text' => $question->question_text,
+                'options' => $question->options->pluck('option_text', 'option_key')->toArray(),
+                'correct_option' => $correctOption?->option_key, // Hidden from frontend, used for scoring
+                'points' => $question->points,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get dummy questions for legacy mode.
+     */
     private function getDummyQuestions(string $type): array
     {
         $questions = [];
         for ($i = 1; $i <= 20; $i++) {
             $questions[] = [
-                'number'  => $i,
+                'number' => $i,
                 'subject' => $type,
-                'text'    => "Pertanyaan No. {$i} — {$type}: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pilih jawaban yang paling tepat.",
+                'text' => "Pertanyaan No. {$i} — {$type}: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pilih jawaban yang paling tepat.",
                 'options' => [
                     'A' => 'Pilihan A — Jawaban pertama yang memungkinkan',
                     'B' => 'Pilihan B — Jawaban kedua yang memungkinkan',
@@ -134,6 +219,7 @@ class CbtController extends Controller
                 ],
             ];
         }
+
         return $questions;
     }
 }

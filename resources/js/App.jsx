@@ -5,6 +5,8 @@ import { fetchMe, fetchSettings, logoutUser } from './features/auth/authSlice';
 
 // Pages
 import LandingPage from './components/pages/Landing';
+import CoursesPage, { CourseDetailPage } from './components/pages/Courses';
+import ProgramDetailPage from './components/pages/Program';
 import LoginPage from './components/pages/Login';
 import RegisterPage from './components/pages/Register';
 import DashboardPage from './components/pages/Dashboard';
@@ -18,6 +20,8 @@ import { AdminCbtPage, AdminExamQuestionsPage } from './components/pages/Admin/C
 import AdminRolesPage from './components/pages/Admin/Roles';
 import AdminSettingsPage from './components/pages/Admin/Settings/AdminSettingsPage';
 import AdminLearningPackagePage from './components/pages/Admin/LearningPackage/AdminLearningPackagePage';
+import AdminLearningPackageDetailPage from './components/pages/Admin/LearningPackage/AdminLearningPackageDetailPage';
+import ProfilePage from './components/pages/Profile';
 
 // Route guard — redirects to /login if no token
 function PrivateRoute({ children }) {
@@ -64,6 +68,9 @@ export default function App() {
       <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/kursus" element={<CoursesPage />} />
+      <Route path="/kursus/:slug" element={<CourseDetailPage />} />
+      <Route path="/program/:slug" element={<ProgramDetailPage />} />
 
       {/* Guest routes */}
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
@@ -75,6 +82,7 @@ export default function App() {
       <Route path="/elearning" element={<PrivateRoute><ElearningPage /></PrivateRoute>} />
       <Route path="/elearning/:courseSlug" element={<PrivateRoute><ElearningPage /></PrivateRoute>} />
       <Route path="/forum" element={<PrivateRoute><ForumPage /></PrivateRoute>} />
+      <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin/landing" element={<PrivateRoute><AdminLandingPage /></PrivateRoute>} />
@@ -86,6 +94,7 @@ export default function App() {
       <Route path="/admin/roles" element={<PrivateRoute><AdminRolesPage /></PrivateRoute>} />
       <Route path="/admin/settings" element={<PrivateRoute><AdminSettingsPage /></PrivateRoute>} />
       <Route path="/admin/learning-packages" element={<PrivateRoute><AdminLearningPackagePage /></PrivateRoute>} />
+      <Route path="/admin/learning-packages/:id" element={<PrivateRoute><AdminLearningPackageDetailPage /></PrivateRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

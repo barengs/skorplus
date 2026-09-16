@@ -6,6 +6,7 @@ import Button from '../../../atoms/Button';
 import Badge from '../../../atoms/Badge';
 import Input from '../../../atoms/Input';
 import FormField from '../../../molecules/FormField';
+import DataTable from '../../../organisms/DataTable/DataTable';
 import { fetchAdminExams, createAdminExam, updateAdminExam, deleteAdminExam } from '../../../../features/admin/adminCbtSlice';
 import { toast } from 'react-toastify';
 
@@ -20,6 +21,49 @@ export default function AdminCbtPage() {
   useEffect(() => {
     dispatch(fetchAdminExams());
   }, [dispatch]);
+
+  const columns = React.useMemo(() => [
+    {
+      accessorKey: 'title',
+      header: 'Judul Paket',
+      cell: (info) => <span className="font-bold">{info.getValue()}</span>,
+    },
+    {
+      accessorKey: 'duration_minutes',
+      header: 'Durasi',
+      cell: (info) => <span className="text-slate-500">{info.getValue()} menit</span>,
+    },
+    {
+      accessorKey: 'questions_count',
+      header: 'Jumlah Soal',
+      cell: (info) => <span className="text-slate-500">{info.getValue() || 0} soal</span>,
+    },
+    {
+      accessorKey: 'is_active',
+      header: 'Status',
+      cell: (info) => (
+        <Badge color={info.getValue() ? 'emerald' : 'slate'}>
+          {info.getValue() ? 'Aktif' : 'Draft'}
+        </Badge>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Aksi',
+      cell: ({ row }) => {
+        const exam = row.original;
+        return (
+          <div className="flex gap-2 justify-end">
+            <Link to={`/admin/cbt/${exam.id}/questions`}>
+              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">Kelola Soal</Button>
+            </Link>
+            <Button variant="ghost" size="sm" onClick={() => openModal(exam)}>Edit</Button>
+            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(exam.id)}>Hapus</Button>
+          </div>
+        );
+      },
+    }
+  ], []);
 
   const openModal = (exam = null) => {
     if (exam) {
@@ -75,44 +119,14 @@ export default function AdminCbtPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="flex justify-center p-12">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">Judul Paket</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">Durasi</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">Jumlah Soal</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {exams.map(exam => (
-                  <tr key={exam.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <td className="px-6 py-4 font-bold">{exam.title}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{exam.duration_minutes} menit</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{exam.questions_count || 0} soal</td>
-                    <td className="px-6 py-4">
-                      <Badge color={exam.is_active ? 'emerald' : 'slate'}>
-                        {exam.is_active ? 'Aktif' : 'Draft'}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <Link to={`/admin/cbt/${exam.id}/questions`}>
-                        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">Kelola Soal</Button>
-                      </Link>
-                      <Button variant="ghost" size="sm" onClick={() => openModal(exam)}>Edit</Button>
-                      <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(exam.id)}>Hapus</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <div className="p-4">
+            <DataTable 
+              columns={columns} 
+              data={exams} 
+              loading={loading} 
+              onSearch={true} 
+            />
+          </div>
         </div>
 
         {modalOpen && (

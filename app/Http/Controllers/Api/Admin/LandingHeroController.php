@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\LandingHero;
+use Illuminate\Http\Request;
 
 class LandingHeroController extends Controller
 {
     public function show()
     {
-        $hero = LandingHero::latest()->first() ?? new LandingHero();
+        $hero = LandingHero::latest()->first() ?? new LandingHero;
+
         return response()->json($hero);
     }
 

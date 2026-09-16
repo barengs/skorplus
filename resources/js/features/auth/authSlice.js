@@ -39,6 +39,15 @@ export const logoutUser = createAsyncThunk('auth/logout', async (_, { dispatch }
   dispatch(logout());
 });
 
+export const updateProfile = createAsyncThunk('auth/updateProfile', async (payload, { rejectWithValue }) => {
+  try {
+    const { data } = await api.put('/auth/profile', payload);
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || err.response?.data?.errors || 'Gagal memperbarui profil.');
+  }
+});
+
 export const fetchSettings = createAsyncThunk('auth/settings', async (_, { rejectWithValue }) => {
   try {
     const { data } = await api.get('/settings');
@@ -93,6 +102,18 @@ const authSlice = createSlice({
       .addCase(fetchMe.rejected, (state) => { state.loading = false; })
       .addCase(fetchSettings.fulfilled, (state, action) => {
         state.settings = action.payload;
+      })
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

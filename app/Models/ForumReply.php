@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ForumReply extends Model
 {
@@ -20,12 +21,12 @@ class ForumReply extends Model
         ];
     }
 
-    public function post(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function post(): BelongsTo
     {
         return $this->belongsTo(ForumPost::class);
     }
 
-    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

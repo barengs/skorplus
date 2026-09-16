@@ -17,7 +17,7 @@ class LearningPackage extends Model
         'discount_price',
         'thumbnail',
         'features',
-        'is_published'
+        'is_published',
     ];
 
     protected $casts = [
@@ -28,7 +28,7 @@ class LearningPackage extends Model
     public function courses()
     {
         return $this->belongsToMany(Course::class, 'learning_package_course')
-                    ->withPivot('sort_order')
-                    ->orderBy('learning_package_course.sort_order');
+            ->withPivot('sort_order')
+            ->orderBy('learning_package_course.sort_order');
     }
 }

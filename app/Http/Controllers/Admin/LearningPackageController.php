@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\LearningPackage;
-use App\Models\Course;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Course;
+use App\Models\LearningPackage;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class LearningPackageController extends Controller
@@ -13,6 +13,7 @@ class LearningPackageController extends Controller
     public function index()
     {
         $packages = LearningPackage::with('courses')->paginate(15);
+
         return response()->json($packages);
     }
 
@@ -33,7 +34,7 @@ class LearningPackageController extends Controller
 
         $package = LearningPackage::create($validated);
 
-        if (!empty($validated['course_ids'])) {
+        if (! empty($validated['course_ids'])) {
             $package->courses()->sync($validated['course_ids']);
         }
 
@@ -42,7 +43,13 @@ class LearningPackageController extends Controller
 
     public function show($id)
     {
-        $package = LearningPackage::with('courses')->findOrFail($id);
+        $package = LearningPackage::with([
+            'courses' => function ($query) {
+                $query->withCount(['modules', 'enrollments'])
+                    ->with(['instructor', 'modules.lessons']);
+            },
+        ])->findOrFail($id);
+
         return response()->json($package);
     }
 
@@ -78,12 +85,14 @@ class LearningPackageController extends Controller
     {
         $package = LearningPackage::findOrFail($id);
         $package->delete();
+
         return response()->json(null, 204);
     }
 
     public function getCourses()
     {
         $courses = Course::select('id', 'title', 'slug', 'thumbnail')->get();
+
         return response()->json($courses);
     }
 }

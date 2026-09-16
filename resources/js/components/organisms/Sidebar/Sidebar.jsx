@@ -91,23 +91,25 @@ export default function Sidebar({ collapsed = false }) {
       {/* User info & Logout */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-800">
         {user ? (
-          !collapsed && (
-            <div className="flex items-center gap-2.5 px-2">
-          {settings?.logo_url ? (
-            <img src={settings.logo_url} alt="Logo" className="w-8 h-8 object-contain rounded" />
-          ) : (
-            <img src="/assets/skorpluss_logo.png" alt="Logo" className="w-8 h-8 object-contain shrink-0" />
-          )}
-          {!collapsed && (
-            <div className="flex flex-col">
-              <span className="font-bold text-slate-900 dark:text-white leading-tight">
-                {settings?.app_name || 'SkorPluss'}
-              </span>
-              <span className="text-[10px] text-slate-500 font-medium">Learning Center</span>
-            </div>
-          )}
-        </div>
-          )
+          <button
+            onClick={() => navigate('/profile')}
+            className={`w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-900 transition-all text-left mb-2 cursor-pointer group ${
+              collapsed ? 'justify-center' : ''
+            }`}
+            title="Profil Saya"
+          >
+            <Avatar name={user.name} src={user.avatar} size="sm" />
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                  {user.name}
+                </p>
+                <p className="text-[10px] text-slate-400 capitalize truncate">
+                  {user.roles?.[0] || 'siswa'} • Profil Saya
+                </p>
+              </div>
+            )}
+          </button>
         ) : (
           !collapsed && (
             <div className="flex items-center justify-center p-3 rounded-md bg-white dark:bg-slate-900 mb-2">

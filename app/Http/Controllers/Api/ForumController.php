@@ -24,7 +24,7 @@ class ForumController extends Controller
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', "%{$request->search}%")
-                  ->orWhere('content', 'like', "%{$request->search}%");
+                    ->orWhere('content', 'like', "%{$request->search}%");
             });
         }
 
@@ -37,7 +37,7 @@ class ForumController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'subject' => 'required|string|max:100',
-            'title'   => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'content' => 'required|string|min:10',
         ]);
 
@@ -48,7 +48,7 @@ class ForumController extends Controller
         $post = ForumPost::create([
             'user_id' => auth('api')->id(),
             'subject' => $request->subject,
-            'title'   => $request->title,
+            'title' => $request->title,
             'content' => $request->input('content'),
         ]);
 
@@ -79,9 +79,9 @@ class ForumController extends Controller
         $isTutor = $user->hasRole('tutor') || $user->hasRole('admin');
 
         $reply = ForumReply::create([
-            'forum_post_id'   => $post->id,
-            'user_id'         => $user->id,
-            'content'         => $request->input('content'),
+            'forum_post_id' => $post->id,
+            'user_id' => $user->id,
+            'content' => $request->input('content'),
             'is_tutor_answer' => $isTutor,
         ]);
 

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Admin\LandingHeroController;
 use App\Http\Controllers\Api\Admin\LandingPromoController;
 use App\Http\Controllers\Api\Admin\AdminElearningController;
 use App\Http\Controllers\Api\Admin\AdminCbtController;
+use App\Http\Controllers\Api\Admin\AdminCbtImportController;
 use App\Http\Controllers\Api\Admin\AdminExamQuestionController;
 use App\Http\Controllers\Api\Admin\AdminRoleController;
 use App\Http\Controllers\Api\Admin\AdminCourseModuleController;
@@ -96,6 +97,8 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('elearning/modules.lessons', AdminModuleLessonController::class);
         Route::apiResource('cbt/exams', AdminCbtController::class);
         Route::apiResource('cbt/exams.questions', AdminExamQuestionController::class);
+        Route::post('cbt/exams/{exam}/import', [AdminCbtImportController::class, 'import']);
+        Route::get('cbt/exams/{exam}/export', [AdminCbtImportController::class, 'export']);
 
         Route::get('landing-hero', [LandingHeroController::class, 'show']);
         Route::put('landing-hero', [LandingHeroController::class, 'update']);

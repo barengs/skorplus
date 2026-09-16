@@ -97,9 +97,23 @@ export default function DataTable({ columns, data, loading, onSearch }) {
       </div>
 
       {/* Pagination Controls */}
-      <div className="flex items-center justify-between py-4">
-        <div className="text-sm text-slate-600 dark:text-slate-400">
-          Menampilkan {table.getRowModel().rows.length} dari {table.getPrePaginationRowModel().rows.length} baris
+      <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-4">
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+          <span>Menampilkan</span>
+          <select
+            value={table.getState().pagination.pageSize}
+            onChange={e => {
+              table.setPageSize(Number(e.target.value))
+            }}
+            className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {[10, 20, 30, 40, 50].map(pageSize => (
+              <option key={pageSize} value={pageSize}>
+                {pageSize}
+              </option>
+            ))}
+          </select>
+          <span>baris dari {table.getPrePaginationRowModel().rows.length} data</span>
         </div>
         <div className="flex items-center gap-2">
           <Button
