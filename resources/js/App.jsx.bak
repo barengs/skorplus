@@ -16,8 +16,6 @@ import ElearningPage from './components/pages/Elearning';
 import AdminLandingPage from './components/pages/Admin/Landing';
 import AdminUsersPage from './components/pages/Admin/Users';
 import AdminElearningPage, { AdminElearningCurriculumPage } from './components/pages/Admin/Elearning';
-import AdminCourseFormPage from "./components/pages/Admin/Elearning/AdminCourseFormPage";
-import AdminLessonFormPage from "./components/pages/Admin/Elearning/AdminLessonFormPage";
 import { AdminCbtPage, AdminExamQuestionsPage } from './components/pages/Admin/Cbt';
 import AdminRolesPage from './components/pages/Admin/Roles';
 import AdminSettingsPage from './components/pages/Admin/Settings/AdminSettingsPage';

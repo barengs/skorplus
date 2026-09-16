@@ -13,6 +13,9 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             LandingPageSeeder::class,
             CourseModuleLessonSeeder::class,
+            CourseCatalogSeeder::class,
+            ExamSeeder::class,
+            // ElearningSeeder::class,
         ]);
     }
 }

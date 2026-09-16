@@ -1,6 +1,15 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import api from '../../services/api';
 
+export const fetchAvailableExams = createAsyncThunk('cbt/fetchAvailableExams', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get('/cbt/available-exams');
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message);
+  }
+});
+
 export const startSession = createAsyncThunk('cbt/start', async (payload, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/cbt/sessions', payload);
@@ -40,6 +49,7 @@ export const fetchSessions = createAsyncThunk('cbt/fetchSessions', async (_, { r
 const cbtSlice = createSlice({
   name: 'cbt',
   initialState: {
+    availableExams: [],
     sessions: [],
     currentSession: null,
     questions: [],
@@ -67,6 +77,7 @@ const cbtSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchAvailableExams.fulfilled, (state, action) => { state.availableExams = action.payload.exams; })
       .addCase(startSession.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(startSession.fulfilled, (state, action) => {
         state.loading = false;

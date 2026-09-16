@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import AppLayout from '../../templates/AppLayout';
@@ -7,7 +7,7 @@ import Badge from '../../atoms/Badge';
 import CbtAnswerOption from '../../molecules/CbtAnswerOption';
 import CbtNavigator from '../../organisms/CbtNavigator';
 import CountdownTimer from '../../atoms/CountdownTimer';
-import { startSession, submitSession, setCurrentQuestion, setLocalAnswer, toggleFlag, clearSession } from '../../../features/cbt/cbtSlice';
+import { fetchAvailableExams, fetchSessions, startSession, submitSession, setCurrentQuestion, setLocalAnswer, toggleFlag, clearSession } from '../../../features/cbt/cbtSlice';
 import { saveAnswer } from '../../../features/cbt/cbtSlice';
 
 const EXAM_TYPES = [
@@ -20,50 +20,138 @@ const EXAM_TYPES = [
 
 export default function CbtPage() {
   const dispatch = useDispatch();
-  const { currentSession, questions, answers, currentQuestion, loading, submitting, result } = useSelector((s) => s.cbt);
+  const { availableExams, sessions, currentSession, questions, answers, currentQuestion, loading, submitting, result } = useSelector((s) => s.cbt);
 
   const [selectedType, setSelectedType] = useState(null);
+  const [activeTab, setActiveTab] = useState('available');
+
+  useEffect(() => {
+    dispatch(fetchAvailableExams());
+    dispatch(fetchSessions());
+  }, [dispatch]);
 
   // Select screen
   if (!currentSession) {
     return (
       <AppLayout title="Ujian CBT">
         <div className="max-w-2xl mx-auto flex flex-col gap-6">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">Pilih Jenis Ujian</h2>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">Pilih subtes yang ingin Anda kerjakan hari ini.</p>
+          <div className="flex border-b border-slate-200 dark:border-slate-800">
+            <button 
+              onClick={() => setActiveTab('available')} 
+              className={`px-6 py-3 font-semibold text-sm border-b-2 transition-colors ${activeTab === 'available' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            >
+              Ujian Tersedia
+            </button>
+            <button 
+              onClick={() => setActiveTab('history')} 
+              className={`px-6 py-3 font-semibold text-sm border-b-2 transition-colors ${activeTab === 'history' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            >
+              Riwayat Mengerjakan
+            </button>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {EXAM_TYPES.map((et) => (
-              <button
-                key={et.id}
-                onClick={() => setSelectedType(et)}
-                className={`flex items-center gap-4 p-4 rounded-lg border-2 text-left transition-all
-                  ${selectedType?.id === et.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-600'}`}
+          {activeTab === 'available' ? (
+            <>
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">Pilih Jenis Ujian</h2>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">Pilih subtes yang ingin Anda kerjakan hari ini.</p>
+              </div>
+
+          {availableExams && availableExams.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {availableExams.map((exam) => (
+                <button
+                  key={exam.id}
+                  onClick={() => setSelectedType({
+                    id: exam.id,
+                    is_real: true,
+                    label: exam.title,
+                    duration: exam.duration_minutes * 60,
+                    total_questions: exam.questions_count,
+                  })}
+                  className={`flex items-center gap-4 p-4 rounded-lg border-2 text-left transition-all
+                    ${selectedType?.id === exam.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-600'}`}
+                >
+                  <span className="text-2xl">📝</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{exam.title}</p>
+                    <p className="text-xs text-slate-500">{exam.duration_minutes} menit · {exam.questions_count} soal</p>
+                  </div>
+                  {selectedType?.id === exam.id && <span className="text-blue-400 text-lg">✓</span>}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-sm rounded-lg border border-orange-200 dark:border-orange-800">
+                Belum ada paket ujian aktif dari admin. Menampilkan soal latihan (dummy).
+              </div>
+              <div className="flex flex-col gap-3">
+                {EXAM_TYPES.map((et) => (
+                  <button
+                    key={et.id}
+                    onClick={() => setSelectedType(et)}
+                    className={`flex items-center gap-4 p-4 rounded-lg border-2 text-left transition-all
+                      ${selectedType?.id === et.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-600'}`}
+                  >
+                    <span className="text-2xl">{et.icon}</span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">{et.label}</p>
+                      <p className="text-xs text-slate-500">{Math.floor(et.duration / 60)} menit · 20 soal</p>
+                    </div>
+                    {selectedType?.id === et.id && <span className="text-blue-400 text-lg">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+              <Button
+                size="lg"
+                disabled={!selectedType}
+                loading={loading}
+                onClick={() => dispatch(startSession({
+                  exam_id: selectedType.is_real ? selectedType.id : undefined,
+                  exam_type: selectedType.is_real ? 'REAL' : selectedType.id,
+                  exam_title: selectedType.label,
+                  duration_seconds: selectedType.duration,
+                }))}
               >
-                <span className="text-2xl">{et.icon}</span>
-                <div className="flex-1">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100">{et.label}</p>
-                  <p className="text-xs text-slate-500">{Math.floor(et.duration / 60)} menit · 20 soal</p>
+                Mulai Ujian Sekarang
+              </Button>
+            </>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">Riwayat Mengerjakan</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Daftar ujian CBT yang sudah pernah Anda kerjakan.</p>
+              
+              {sessions && sessions.length > 0 ? (
+                <div className="space-y-3">
+                  {sessions.map(session => (
+                    <div key={session.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl flex items-center justify-between shadow-sm transition-all hover:shadow-md">
+                      <div>
+                        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{session.exam_title}</h3>
+                        <p className="text-sm text-slate-500 mt-1">Dikerjakan pada: <span className="font-medium text-slate-700 dark:text-slate-300">{new Date(session.started_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></p>
+                        <Badge color={session.status === 'submitted' ? 'emerald' : 'orange'} className="mt-3 text-xs">
+                          {session.status === 'submitted' ? 'Selesai' : 'Sedang Dikerjakan'}
+                        </Badge>
+                      </div>
+                      <div className="text-center px-6 border-l border-slate-100 dark:border-slate-800">
+                        <div className="text-4xl font-black text-blue-600 dark:text-blue-400">{session.score !== null ? session.score : '-'}</div>
+                        <p className="text-xs text-slate-500 font-semibold uppercase mt-1">Nilai Akhir</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {selectedType?.id === et.id && <span className="text-blue-400 text-lg">✓</span>}
-              </button>
-            ))}
-          </div>
-
-          <Button
-            size="lg"
-            disabled={!selectedType}
-            loading={loading}
-            onClick={() => dispatch(startSession({
-              exam_type: selectedType.id,
-              exam_title: selectedType.label,
-              duration_seconds: selectedType.duration,
-            }))}
-          >
-            Mulai Ujian Sekarang
-          </Button>
+              ) : (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center">
+                  <span className="text-4xl mb-4 block">📝</span>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Belum Ada Riwayat</h3>
+                  <p className="text-slate-500">Anda belum pernah mengerjakan ujian CBT sama sekali.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </AppLayout>
     );
@@ -161,7 +249,10 @@ export default function CbtPage() {
               </div>
 
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
-                <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{question.text}</p>
+                <div 
+                  className="prose dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: question.text }}
+                />
               </div>
 
               <div className="flex flex-col gap-2.5">

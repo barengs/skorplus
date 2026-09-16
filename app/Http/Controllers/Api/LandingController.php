@@ -20,7 +20,9 @@ class LandingController extends Controller
             'stats' => Stat::where('is_active', true)->orderBy('sort_order')->get(),
             'features' => Feature::where('is_active', true)->orderBy('sort_order')->get(),
             'testimonials' => Testimonial::where('is_active', true)->orderBy('sort_order')->get(),
-            'programs' => Program::where('is_active', true)->orderBy('sort_order')->get(),
+            'programs' => Program::with(['courses' => function ($q) {
+                $q->where('is_active', true)->orderBy('sort_order');
+            }])->where('is_active', true)->orderBy('sort_order')->get(),
         ]);
     }
 

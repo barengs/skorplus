@@ -26,10 +26,8 @@ use App\Http\Controllers\Api\Admin\RoleMenuController;
 
 // Public routes
 Route::get('landing', [LandingController::class, 'index']);
-Route::get('programs/{slug}', [LandingController::class, 'programDetail']);
 Route::get('learning-packages', [App\Http\Controllers\Api\LearningPackageController::class, 'index']);
 Route::get('elearning/courses', [ElearningController::class, 'courses']);
-Route::get('elearning/catalog', [ElearningController::class, 'catalog']);
 Route::get('elearning/courses/{slug}', [ElearningController::class, 'courseDetail']);
 
 // Public auth routes
@@ -57,7 +55,6 @@ Route::middleware('auth:api')->group(function () {
     // CBT
     Route::prefix('cbt')->group(function () {
         Route::get('sessions', [CbtController::class, 'sessions']);
-        Route::get('available-exams', [CbtController::class, 'availableExams']);
         Route::post('sessions', [CbtController::class, 'startSession']);
         Route::post('sessions/{session}/answer', [CbtController::class, 'saveAnswer']);
         Route::post('sessions/{session}/submit', [CbtController::class, 'submit']);

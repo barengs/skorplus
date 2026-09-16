@@ -467,7 +467,7 @@ export default function AdminElearningCurriculumPage() {
                               </button>
                             )}
                             <button 
-                              onClick={(e) => { e.stopPropagation(); openLessonModal(mod.id, lesson); }}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/${lesson.id}/edit`); }}
                               className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded flex items-center justify-center w-8 h-8"
                               title="Edit"
                             >
@@ -495,7 +495,7 @@ export default function AdminElearningCurriculumPage() {
                             variant="ghost"
                             size="sm"
                             className="text-purple-600 dark:text-purple-400 flex-1 border border-dashed border-purple-300 dark:border-purple-900/50 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                            onClick={() => openLessonModal(mod.id, null, 'assignment')}
+                            onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create`)}
                           >
                             <FontAwesomeIcon icon={['fas', 'file-lines']} className="mr-1" /> + Tambah Tugas Akhir
                           </Button>
@@ -503,7 +503,7 @@ export default function AdminElearningCurriculumPage() {
                             variant="ghost"
                             size="sm"
                             className="text-blue-600 flex-1 border border-dashed border-blue-200 dark:border-blue-900"
-                            onClick={() => openLessonModal(mod.id, null, 'reading')}
+                            onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create`)}
                           >
                             + Tambah Panduan / Artikel
                           </Button>
@@ -517,7 +517,7 @@ export default function AdminElearningCurriculumPage() {
                           variant="ghost"
                           size="sm"
                           className="text-blue-600 flex-1 border border-dashed border-blue-200 dark:border-blue-900"
-                          onClick={() => openLessonModal(mod.id, null, 'video')}
+                          onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create`)}
                         >
                           + Tambah Materi
                         </Button>
@@ -525,7 +525,7 @@ export default function AdminElearningCurriculumPage() {
                           variant="ghost"
                           size="sm"
                           className="text-amber-600 dark:text-amber-400 flex-1 border border-dashed border-amber-300 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                          onClick={() => openLessonModal(mod.id, null, 'quiz')}
+                          onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create`)}
                         >
                           <FontAwesomeIcon icon={['fas', 'clipboard-question']} className="mr-1" /> + Tambah Kuis Akhir Section
                         </Button>
@@ -556,299 +556,6 @@ export default function AdminElearningCurriculumPage() {
           </div>
         )}
 
-        {/* Modal Lesson */}
-        {lessonModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-            <div className={`bg-white dark:bg-slate-900 rounded-xl w-full ${lessonForm.type === 'quiz' ? 'max-w-3xl' : 'max-w-xl'} p-6 max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 dark:border-slate-800`}>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {editingLessonId ? (lessonForm.type === 'quiz' ? 'Edit Kuis Akhir Section' : 'Edit Materi') : (lessonForm.type === 'quiz' ? 'Tambah Kuis Akhir Section' : 'Tambah Materi Baru')}
-                </h3>
-                <button onClick={() => setLessonModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
-                  <FontAwesomeIcon icon={['fas', 'xmark']} className="text-lg" />
-                </button>
-              </div>
-
-              <form onSubmit={saveLesson} className="space-y-4">
-                <FormField label="Judul Materi / Kuis" required>
-                  <Input value={lessonForm.title} onChange={e => setLessonForm({...lessonForm, title: e.target.value})} required placeholder="Contoh: Kuis Akhir Pemahaman Silogisme" />
-                </FormField>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField label="Tipe Materi">
-                    <select value={lessonForm.type} onChange={e => setLessonForm({...lessonForm, type: e.target.value})} className="w-full p-2 border border-slate-300 dark:border-slate-700 rounded-md bg-transparent text-sm">
-                      <option value="video">Video Pembelajaran</option>
-                      <option value="reading">Artikel / Teks</option>
-                      <option value="quiz">Kuis Pilihan Ganda (Dinamis)</option>
-                      <option value="assignment">Tugas Akhir / Proyek</option>
-                    </select>
-                  </FormField>
-                  <FormField label="Durasi Estimasi (Menit)">
-                    <Input type="number" min="0" value={Math.round(lessonForm.duration_seconds/60)} onChange={e => setLessonForm({...lessonForm, duration_seconds: parseInt(e.target.value || 0)*60})} />
-                  </FormField>
-                </div>
-
-                {lessonForm.type === 'video' && (
-                  <FormField label="URL Video (Youtube/Vimeo Embed URL)">
-                    <Input value={lessonForm.video_url} onChange={e => setLessonForm({...lessonForm, video_url: e.target.value})} placeholder="https://www.youtube.com/embed/..." />
-                  </FormField>
-                )}
-
-                {(lessonForm.type === 'reading' || lessonForm.type === 'assignment') && (
-                  <>
-                    <FormField label="Konten / Instruksi Materi">
-                      <div className="bg-white text-slate-900 rounded-md overflow-hidden border border-slate-300">
-                        <ReactQuill 
-                          theme="snow" 
-                          value={lessonForm.content || ''} 
-                          onChange={val => setLessonForm({...lessonForm, content: val})} 
-                          className="h-48 pb-10"
-                          placeholder="Ketik materi atau instruksi tugas di sini..." 
-                        />
-                      </div>
-                    </FormField>
-
-                    {/* Document attachment (PDF/DOCX) upload for Assignment or Reading */}
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                            <FontAwesomeIcon icon={['fas', 'file-arrow-up']} className="text-indigo-600 dark:text-indigo-400" />
-                            Dokumen / Lembar Panduan Tugas (PDF / DOCX)
-                          </span>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                            Unggah berkas soal atau format panduan agar siswa dan instruktur dapat langsung membacanya.
-                          </p>
-                        </div>
-                        {lessonForm.attachment_doc && (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewDocModal({
-                              isOpen: true,
-                              fileUrl: lessonForm.attachment_doc,
-                              fileName: lessonForm.attachment_name || 'Dokumen Panduan',
-                            })}
-                            className="px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded flex items-center gap-1"
-                          >
-                            <FontAwesomeIcon icon={['fas', 'eye']} />
-                            Preview Dokumen
-                          </button>
-                        )}
-                      </div>
-
-                      {lessonForm.attachment_doc ? (
-                        <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center shrink-0">
-                              <FontAwesomeIcon icon={['fas', 'file-pdf']} />
-                            </span>
-                            <div className="truncate">
-                              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                                {lessonForm.attachment_name || 'Dokumen terlampir'}
-                              </p>
-                              <a
-                                href={lessonForm.attachment_doc}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline truncate block"
-                              >
-                                {lessonForm.attachment_doc}
-                              </a>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setLessonForm({ ...lessonForm, attachment_doc: '', attachment_name: '' })}
-                            className="text-xs text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
-                          >
-                            Hapus Berkas
-                          </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg hover:border-indigo-500 cursor-pointer transition-colors bg-white dark:bg-slate-900">
-                            <FontAwesomeIcon icon={['fas', 'cloud-arrow-up']} className="text-2xl text-slate-400 mb-1" />
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                              {uploadingDoc ? 'Mengunggah...' : 'Klik untuk mengunggah dokumen PDF atau Word (DOCX)'}
-                            </span>
-                            <span className="text-[10px] text-slate-400">Maks. ukuran 20MB</span>
-                            <input
-                              type="file"
-                              accept=".pdf,.docx,.doc"
-                              className="hidden"
-                              onChange={handleDocumentUpload}
-                              disabled={uploadingDoc}
-                            />
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {/* DYNAMIC QUIZ BUILDER */}
-                {lessonForm.type === 'quiz' && (
-                  <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
-                      <FontAwesomeIcon icon={['fas', 'circle-info']} className="mt-0.5 shrink-0" />
-                      <div>
-                        <strong>Aturan Kelulusan:</strong> Siswa harus mencapai minimal persentase nilai kelulusan agar kelompok materi berikutnya terbuka. Pilihan jawaban berupa opsi langsung (tanpa kode A/B/C) dan jumlahnya dinamis.
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField label="Nilai Minimum Kelulusan (%)" required>
-                        <Input
-                          type="number"
-                          min="10"
-                          max="100"
-                          value={lessonForm.min_pass_score || 60}
-                          onChange={e => setLessonForm({...lessonForm, min_pass_score: parseInt(e.target.value || 60)})}
-                        />
-                      </FormField>
-                    </div>
-
-                    {/* Question List */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                          Daftar Soal Kuis ({(lessonForm.quiz_questions || []).length})
-                        </span>
-                        <Button type="button" size="sm" variant="ghost" className="text-blue-600 border border-blue-300 dark:border-blue-700" onClick={addQuizQuestion}>
-                          <FontAwesomeIcon icon={['fas', 'plus']} className="mr-1" /> Tambah Soal
-                        </Button>
-                      </div>
-
-                      {(lessonForm.quiz_questions || []).length === 0 ? (
-                        <div className="p-6 text-center border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-slate-400 text-xs">
-                          Belum ada soal. Klik "+ Tambah Soal" di atas untuk menambahkan pertanyaan kuis.
-                        </div>
-                      ) : (
-                        lessonForm.quiz_questions.map((q, qIdx) => (
-                          <div key={qIdx} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                                <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]">
-                                  {qIdx + 1}
-                                </span>
-                                Soal Nomor {qIdx + 1}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => removeQuizQuestion(qIdx)}
-                                className="text-red-500 hover:text-red-700 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                              >
-                                <FontAwesomeIcon icon={['fas', 'trash-can']} /> Hapus Soal
-                              </button>
-                            </div>
-
-                            <FormField label="Teks Pertanyaan">
-                              <textarea
-                                rows={2}
-                                value={q.question || ''}
-                                onChange={e => updateQuizQuestion(qIdx, 'question', e.target.value)}
-                                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-1 focus:ring-blue-500"
-                                placeholder="Ketik pertanyaan kuis di sini..."
-                                required
-                              />
-                            </FormField>
-
-                            {/* Dynamic Answer Options */}
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                  Pilihan Jawaban (Tandai lingkaran untuk Kunci Jawaban yang benar):
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => addQuizOption(qIdx)}
-                                  className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                                >
-                                  + Tambah Opsi Jawaban
-                                </button>
-                              </div>
-
-                              <div className="space-y-2">
-                                {(q.options || []).map((opt, optIdx) => {
-                                  const isCorrect = (q.correct_index === optIdx);
-                                  return (
-                                    <div
-                                      key={optIdx}
-                                      className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
-                                        isCorrect
-                                          ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/20'
-                                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
-                                      }`}
-                                    >
-                                      <label className="cursor-pointer flex items-center gap-1.5 shrink-0 px-1" title="Tandai sebagai jawaban yang benar">
-                                        <input
-                                          type="radio"
-                                          name={`correct_${qIdx}`}
-                                          checked={isCorrect}
-                                          onChange={() => updateQuizQuestion(qIdx, 'correct_index', optIdx)}
-                                          className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                                        />
-                                        <span className={`text-xs font-bold ${isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'}`}>
-                                          {isCorrect ? 'Benar' : 'Pilihan'}
-                                        </span>
-                                      </label>
-
-                                      <input
-                                        type="text"
-                                        value={opt}
-                                        onChange={e => updateQuizOptionText(qIdx, optIdx, e.target.value)}
-                                        placeholder={`Ketik pilihan jawaban ${optIdx + 1}...`}
-                                        className="flex-1 p-1.5 border border-slate-300 dark:border-slate-600 rounded bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        required
-                                      />
-
-                                      {(q.options || []).length > 2 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => removeQuizOption(qIdx, optIdx)}
-                                          className="text-slate-400 hover:text-red-500 p-1 cursor-pointer"
-                                          title="Hapus pilihan ini"
-                                        >
-                                          <FontAwesomeIcon icon={['fas', 'xmark']} />
-                                        </button>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            <FormField label="Pembahasan / Penjelasan Jawaban (Opsional)">
-                              <input
-                                type="text"
-                                value={q.explanation || ''}
-                                onChange={e => updateQuizQuestion(qIdx, 'explanation', e.target.value)}
-                                placeholder="Penjelasan kenapa jawaban tersebut benar..."
-                                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-sm"
-                              />
-                            </FormField>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <FormField label="Hak Akses">
-                  <label className="flex items-center gap-2 mt-1 cursor-pointer">
-                    <input type="checkbox" checked={lessonForm.is_preview} onChange={e => setLessonForm({...lessonForm, is_preview: e.target.checked})} className="w-4 h-4 text-gold-500" />
-                    <span>Jadikan Preview (Bisa diakses gratis tanpa enroll)</span>
-                  </label>
-                </FormField>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700 mt-6">
-                  <Button type="button" variant="ghost" onClick={() => setLessonModalOpen(false)}>Batal</Button>
-                  <Button type="submit">Simpan {lessonForm.type === 'quiz' ? 'Kuis' : 'Materi'}</Button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
         {/* Video Preview Modal */}
         {previewLesson && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewLesson(null)}>
