@@ -36,7 +36,7 @@ class ExamSeeder extends Seeder
                     ['option_key' => 'C', 'option_text' => 'Ikan paus adalah hewan yang hidup di laut', 'is_correct' => false],
                     ['option_key' => 'D', 'option_text' => 'Sebagian hewan mamalia bertelur', 'is_correct' => false],
                     ['option_key' => 'E', 'option_text' => 'Tidak dapat disimpulkan', 'is_correct' => false],
-                ]
+                ],
             ],
             [
                 'subject' => 'Pengetahuan Kuantitatif',
@@ -50,7 +50,7 @@ class ExamSeeder extends Seeder
                     ['option_key' => 'C', 'option_text' => 'Rp 100.000,00', 'is_correct' => true],
                     ['option_key' => 'D', 'option_text' => 'Rp 110.000,00', 'is_correct' => false],
                     ['option_key' => 'E', 'option_text' => 'Rp 120.000,00', 'is_correct' => false],
-                ]
+                ],
             ],
             [
                 'subject' => 'Pengetahuan Kuantitatif',
@@ -64,7 +64,7 @@ class ExamSeeder extends Seeder
                     ['option_key' => 'C', 'option_text' => '40', 'is_correct' => false],
                     ['option_key' => 'D', 'option_text' => '48', 'is_correct' => true],
                     ['option_key' => 'E', 'option_text' => '54', 'is_correct' => false],
-                ]
+                ],
             ],
             [
                 'subject' => 'Pemahaman Bacaan',
@@ -78,7 +78,7 @@ class ExamSeeder extends Seeder
                     ['option_key' => 'C', 'option_text' => 'Hujan deras mengguyur selama dua hari', 'is_correct' => false],
                     ['option_key' => 'D', 'option_text' => 'Warga kehilangan tempat tinggal', 'is_correct' => false],
                     ['option_key' => 'E', 'option_text' => 'Buruknya drainase memperparah banjir', 'is_correct' => false],
-                ]
+                ],
             ],
             [
                 'subject' => 'Penalaran Umum',
@@ -92,7 +92,7 @@ class ExamSeeder extends Seeder
                     ['option_key' => 'C', 'option_text' => '34', 'is_correct' => false],
                     ['option_key' => 'D', 'option_text' => '64', 'is_correct' => true],
                     ['option_key' => 'E', 'option_text' => '100', 'is_correct' => false],
-                ]
+                ],
             ],
         ];
 
@@ -100,9 +100,9 @@ class ExamSeeder extends Seeder
             $options = $qData['options'];
             unset($qData['options']);
             $qData['is_active'] = true;
-            
+
             $question = Question::create($qData);
-            
+
             // Simpan opsi jawaban
             foreach ($options as $opt) {
                 $question->options()->create($opt);

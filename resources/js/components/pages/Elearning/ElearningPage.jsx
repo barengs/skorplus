@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import AppLayout from '../../templates/AppLayout';
 import Button from '../../atoms/Button';
 import Badge from '../../atoms/Badge';
@@ -8,10 +8,18 @@ import api from '../../../services/api';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import CourseDetailModal from '../../molecules/CourseDetailModal';
 import { toEmbedUrl } from '../../../utils/videoHelper';
+import DailyCheckinModal from './DailyCheckinModal';
+import AcademySidebar from './AcademySidebar';
+import ProgressBelajarView from './ProgressBelajarView';
+import RuntutanBelajarView from './RuntutanBelajarView';
+import CourseCatalogView from './CourseCatalogView';
+import ReviewModal from '../../molecules/ReviewModal';
+import CertificateModal from '../../molecules/CertificateModal';
+import CourseDetailView from './CourseDetailView';
 
 export default function ElearningPage() {
+  const user = useSelector((s) => s.auth.user);
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [modules, setModules] = useState([]);
@@ -55,33 +63,204 @@ export default function ElearningPage() {
   const [view, setView] = useState('catalog');
   const [previewLesson, setPreviewLesson] = useState(null);
 
-  // Modal State for Course Detail
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalCourse, setModalCourse] = useState(null);
-  const [modalModules, setModalModules] = useState([]);
-  const [modalEnrollment, setModalEnrollment] = useState(null);
-  const [modalProgress, setModalProgress] = useState({});
+  // In-Dashboard Course Detail State
+  const [detailCourse, setDetailCourse] = useState(null);
+  const [detailModules, setDetailModules] = useState([]);
+  const [detailProgress, setDetailProgress] = useState({});
+  const [detailEnrollment, setDetailEnrollment] = useState(null);
 
   const { courseSlug } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Dicoding Academy Flat UI State
+  const initialTab = searchParams.get('tab');
+  const [academyTab, setAcademyTab] = useState(
+    initialTab && ['progress', 'streak', 'catalog'].includes(initialTab) ? initialTab : 'progress'
+  );
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['progress', 'streak', 'catalog'].includes(tabParam)) {
+      setAcademyTab(tabParam);
+    }
+  }, [searchParams]);
+
+  const [myProgressData, setMyProgressData] = useState({ active_courses: [], completed_courses: [], stats: {} });
+  const [streakData, setStreakData] = useState({});
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
+  const [checkinModalOpen, setCheckinModalOpen] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(false);
+
+  // Student Course Review State
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [userCourseReview, setUserCourseReview] = useState(null);
+
+  // Student Certificate Modal State
+  const [certModalOpen, setCertModalOpen] = useState(false);
+  const [certCourse, setCertCourse] = useState(null);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'certificate' && myProgressData.completed_courses?.length > 0) {
+      setCertCourse(myProgressData.completed_courses[0]);
+      setCertModalOpen(true);
+    }
+  }, [searchParams, myProgressData.completed_courses]);
+
+  const fetchUserCourseReview = async (courseId) => {
+    try {
+      const res = await api.get(`/courses/${courseId}/reviews`);
+      if (res.data?.user_review) {
+        setUserCourseReview(res.data.user_review);
+      } else {
+        setUserCourseReview(null);
+      }
+    } catch (e) {
+      console.error('Gagal mengambil ulasan kursus', e);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedCourse?.id) {
+      fetchUserCourseReview(selectedCourse.id);
+    }
+  }, [selectedCourse?.id]);
 
   useEffect(() => {
     fetchCourses();
+    fetchMyProgress();
+    fetchStreakData(new Date());
   }, []);
+
+  const fetchMyProgress = async () => {
+    try {
+      setLoadingProgress(true);
+      const res = await api.get('/elearning/my-progress');
+      setMyProgressData(res.data || { active_courses: [], completed_courses: [], stats: {} });
+    } catch (err) {
+      console.error('Gagal memuat progress belajar', err);
+    } finally {
+      setLoadingProgress(false);
+    }
+  };
+
+  const fetchStreakData = async (dateObj = currentCalendarMonth) => {
+    try {
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth() + 1;
+      const res = await api.get(`/elearning/streak-and-checkin?year=${year}&month=${month}`);
+      setStreakData(res.data || {});
+    } catch (err) {
+      console.error('Gagal memuat runtutan belajar', err);
+    }
+  };
+
+  const handleCheckinSuccess = () => {
+    fetchStreakData(currentCalendarMonth);
+    fetchMyProgress();
+  };
+
+  const handleMonthChange = (newDate) => {
+    setCurrentCalendarMonth(newDate);
+    fetchStreakData(newDate);
+  };
+
+  const handleContinueLearning = async (courseSummary) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/elearning/courses/${courseSummary.slug}`);
+      const fullCourse = res.data;
+      const fetchedModules = fullCourse.modules || [];
+
+      const progData = await syncCourseProgress(fullCourse.id);
+      const completedMap = {};
+      (progData?.completed_lesson_ids || []).forEach(id => completedMap[id] = true);
+
+      setSelectedCourse(fullCourse);
+      setModules(fetchedModules);
+      setDetailCourse(null);
+      setView('course');
+
+      const resumeLesson = findLastLesson(fetchedModules, completedMap);
+      if (resumeLesson) {
+        const parentModule = fetchedModules.find(m => m.id === resumeLesson.moduleId);
+        if (parentModule) {
+          setSelectedModule(parentModule);
+          setLessons(parentModule.lessons || []);
+          setSelectedLesson(resumeLesson);
+        }
+      } else if (fetchedModules.length > 0) {
+        selectModule(fetchedModules[0]);
+      }
+    } catch (err) {
+      console.error('Gagal membuka kelas', err);
+      toast.error('Gagal membuka kelas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenCourseDetail = async (courseSummary) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/elearning/courses/${courseSummary.slug || courseSummary.id}`);
+      const fullCourse = res.data;
+      const fetchedModules = fullCourse.modules || [];
+
+      let progMap = {};
+      let enr = null;
+      try {
+        const progRes = await api.get(`/elearning/courses/${fullCourse.id}/progress`);
+        enr = progRes.data.enrollment || null;
+        const completedIds = progRes.data.completed_lesson_ids || [];
+        completedIds.forEach(id => { progMap[id] = true; });
+      } catch (e) {
+        // Not enrolled or no progress yet
+      }
+
+      setDetailCourse(fullCourse);
+      setDetailModules(fetchedModules);
+      setDetailEnrollment(enr);
+      setDetailProgress(progMap);
+      setView('detail');
+
+      if (fullCourse.id) {
+        fetchUserCourseReview(fullCourse.id);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('Gagal membuka detil kelas', err);
+      toast.error('Gagal memuat detil kelas');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (courses.length > 0) {
       if (courseSlug) {
         const course = courses.find(c => c.slug === courseSlug);
         if (course && (!selectedCourse || selectedCourse.slug !== courseSlug)) {
-          openCourseModal(course, true);
+          handleContinueLearning(course);
         }
       } else {
-        setView('catalog');
+        if (view !== 'detail') {
+          setView('catalog');
+        }
         setSelectedCourse(null);
       }
     }
   }, [courseSlug, courses]);
+
+  useEffect(() => {
+    const detailSlug = searchParams.get('detail');
+    if (detailSlug && courses.length > 0 && view !== 'course') {
+      const course = courses.find(c => c.slug === detailSlug || String(c.id) === String(detailSlug));
+      if (course && (!detailCourse || detailCourse.slug !== detailSlug)) {
+        handleOpenCourseDetail(course);
+      }
+    }
+  }, [searchParams, courses]);
 
   const fetchCourses = async () => {
     try {
@@ -118,44 +297,6 @@ export default function ElearningPage() {
     }
   };
 
-  // Open modal on card click
-  const openCourseModal = async (course) => {
-    setModalCourse(course);
-    setModalOpen(true);
-    try {
-      const res = await api.get(`/elearning/courses/${course.slug}`);
-      const fetchedModules = res.data.modules || [];
-      setModalModules(fetchedModules);
-      
-      try {
-        const progRes = await api.get(`/elearning/courses/${course.id}/progress`);
-        const enr = progRes.data.enrollment || null;
-        setModalEnrollment(enr);
-        const completedIds = progRes.data.completed_lesson_ids || [];
-        const progMap = {};
-        completedIds.forEach(id => progMap[id] = true);
-        setModalProgress(progMap);
-      } catch (e) {
-        setModalEnrollment(null);
-        setModalProgress({});
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error('Gagal memuat detail modul');
-    }
-  };
-
-  const handleModalEnroll = async () => {
-    if (!modalCourse) return;
-    try {
-      const res = await api.post(`/elearning/courses/${modalCourse.id}/enroll`);
-      setModalEnrollment(res.data.enrollment);
-      toast.success('Berhasil mendaftar ke pelajaran ini!');
-    } catch (e) {
-      toast.error('Gagal mendaftar');
-    }
-  };
-
   const findLastLesson = (mods, prog) => {
     const flat = [];
     mods.forEach(m => {
@@ -170,32 +311,6 @@ export default function ElearningPage() {
       }
     }
     return flat[0] || null;
-  };
-
-  const handleStartLearning = async () => {
-    setView('course');
-    setSelectedCourse(modalCourse);
-    setModules(modalModules);
-    setEnrollment(modalEnrollment);
-    setProgress(modalProgress);
-    setModalOpen(false);
-
-    // Sync full progress with quiz benchmarks & locks
-    if (modalCourse) {
-      await syncCourseProgress(modalCourse.id);
-    }
-
-    const resumeLesson = findLastLesson(modalModules, modalProgress);
-    if (resumeLesson) {
-      const parentModule = modalModules.find(m => m.id === resumeLesson.moduleId);
-      if (parentModule) {
-        setSelectedModule(parentModule);
-        setLessons(parentModule.lessons || []);
-        setSelectedLesson(resumeLesson);
-      }
-    } else if (modalModules.length > 0) {
-      selectModule(modalModules[0]);
-    }
   };
 
   const selectModule = (module) => {
@@ -299,6 +414,12 @@ export default function ElearningPage() {
       if (selectedCourse) {
         await syncCourseProgress(selectedCourse.id);
       }
+
+      if (!nextLesson) {
+        setTimeout(() => {
+          setReviewModalOpen(true);
+        }, 800);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Gagal mengumpulkan tugas akhir');
     } finally {
@@ -336,6 +457,11 @@ export default function ElearningPage() {
 
       if (res.data.is_passed) {
         toast.success(res.data.message);
+        if (!nextLesson) {
+          setTimeout(() => {
+            setReviewModalOpen(true);
+          }, 800);
+        }
       } else {
         toast.error(res.data.message);
       }
@@ -413,6 +539,9 @@ export default function ElearningPage() {
         navigateToLesson(nextLesson);
       } else {
         toast.success('Selamat! Anda telah menyelesaikan seluruh materi.');
+        setTimeout(() => {
+          setReviewModalOpen(true);
+        }, 800);
       }
     } catch (err) {
       toast.error('Gagal menandai materi');
@@ -456,97 +585,123 @@ export default function ElearningPage() {
     return labels[type] || 'Materi';
   };
 
-  const [filterTab, setFilterTab] = useState('all');
-
-  if (view === 'catalog' && !selectedCourse) {
-    const filteredCourses = courses.filter(c => filterTab === 'all' || (filterTab === 'enrolled' && c.is_enrolled));
-
+  if ((view === 'catalog' || view === 'detail') && !selectedCourse) {
     return (
-      <AppLayout title="E-Learning">
-        <div className="max-w-7xl mx-auto pb-16">
-          <div className="mb-12">
-            <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 mb-2">Perpustakaan Pembelajaran</h1>
-            <p className="text-slate-600 dark:text-slate-400 text-lg">Tingkatkan kemampuanmu dengan ribuan materi dari tutor berpengalaman</p>
-          </div>
-
-          <div className="flex gap-4 mb-8 border-b border-slate-200 dark:border-slate-800">
-            <button
-              onClick={() => setFilterTab('all')}
-              className={`pb-3 font-semibold text-sm transition-colors ${filterTab === 'all' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}
-            >
-              Semua Kursus
-            </button>
-            <button
-              onClick={() => setFilterTab('enrolled')}
-              className={`pb-3 font-semibold text-sm transition-colors ${filterTab === 'enrolled' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}
-            >
-              Kursus Saya
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : filteredCourses.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-slate-600 dark:text-slate-400">Belum ada kursus tersedia di kategori ini.</p>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCourses.map((course) => (
-                <button
-                  key={course.id}
-                  onClick={() => navigate(`/elearning/${course.slug}`)}
-                  className="text-left group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg transition-all hover:border-slate-300 dark:hover:border-slate-700"
-                >
-                  <div className="relative overflow-hidden bg-slate-200 dark:bg-slate-800 aspect-video">
-                    {course.thumbnail ? (
-                      <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl text-slate-300">
-                        <FontAwesomeIcon icon={['fas', 'graduation-cap']} />
-                      </div>
-                    )}
-                    <div className="absolute top-2 right-2 bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                      <FontAwesomeIcon icon={['fas', 'award']} /> Sertifikat
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <Badge color="blue" className="mb-2">{course.category}</Badge>
-                    <h3 className="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 mb-2">{course.title}</h3>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3" dangerouslySetInnerHTML={{ __html: course.description }} />
-
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex gap-0.5 text-sm">{renderStars(course.rating)}</div>
-                      <span className="text-xs text-slate-500">
-                        {(Number(course.rating) || 0).toFixed(1)} ({course.participants || 0} peserta)
-                      </span>
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs font-semibold text-blue-600">
-                      <span>Lihat Detail Kurikulum</span>
-                      <span>→</span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Modal Course Detail */}
-          {modalOpen && modalCourse && (
-            <CourseDetailModal
-              course={modalCourse}
-              modules={modalModules}
-              enrollment={modalEnrollment}
-              progress={modalProgress}
-              onEnroll={handleModalEnroll}
-              onStartLearning={handleStartLearning}
-              onClose={() => { setModalOpen(false); navigate('/elearning'); }}
+      <AppLayout title={view === 'detail' && detailCourse ? detailCourse.title : "Academy E-Learning"}>
+        <div className="w-full pb-16 space-y-6">
+          {view === 'detail' && detailCourse ? (
+            <CourseDetailView
+              course={detailCourse}
+              modules={detailModules}
+              enrollment={detailEnrollment}
+              progress={detailProgress}
+              onBack={() => {
+                setView('catalog');
+                setDetailCourse(null);
+                if (searchParams.get('detail')) {
+                  const newParams = new URLSearchParams(searchParams);
+                  newParams.delete('detail');
+                  setSearchParams(newParams);
+                }
+                fetchMyProgress();
+              }}
+              onStartLearning={handleContinueLearning}
+              onOpenCertificate={(c) => {
+                setCertCourse(c);
+                setCertModalOpen(true);
+              }}
+              onOpenReview={() => setReviewModalOpen(true)}
+              userReview={userCourseReview}
+              renderStars={renderStars}
             />
+          ) : (
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              {/* Dicoding Flat Academy Sidebar */}
+              <AcademySidebar
+                activeTab={academyTab}
+                onTabChange={setAcademyTab}
+                currentStreak={streakData.current_streak || 0}
+                activeCoursesCount={(myProgressData.active_courses?.length || 0) + (myProgressData.completed_courses?.length || 0)}
+              />
+
+              {/* Main Academy View Area */}
+              <div className="flex-1 min-w-0">
+                {academyTab === 'progress' && (
+                  <ProgressBelajarView
+                    activeCourses={myProgressData.active_courses || []}
+                    completedCourses={myProgressData.completed_courses || []}
+                    loading={loadingProgress}
+                    streakData={streakData}
+                    initialSubTab={searchParams.get('status') || 'in_progress'}
+                    onOpenCheckin={() => setCheckinModalOpen(true)}
+                    onViewAllStreak={() => setAcademyTab('streak')}
+                    onContinueLearning={handleContinueLearning}
+                    onExploreCatalog={() => setAcademyTab('catalog')}
+                    onOpenCertificate={(c) => {
+                      setCertCourse(c);
+                      setCertModalOpen(true);
+                    }}
+                    onSelectCourse={handleOpenCourseDetail}
+                  />
+                )}
+
+                {academyTab === 'streak' && (
+                  <RuntutanBelajarView
+                    streakData={streakData}
+                    currentMonthDate={currentCalendarMonth}
+                    onMonthChange={handleMonthChange}
+                    onOpenCheckin={() => setCheckinModalOpen(true)}
+                    loading={loading}
+                  />
+                )}
+
+                {academyTab === 'catalog' && (
+                  <CourseCatalogView
+                    courses={courses}
+                    loading={loading}
+                    onSelectCourse={handleOpenCourseDetail}
+                    renderStars={renderStars}
+                  />
+                )}
+              </div>
+            </div>
           )}
+
+          {/* Daily Check-in Modal */}
+          <DailyCheckinModal
+            isOpen={checkinModalOpen}
+            onClose={() => setCheckinModalOpen(false)}
+            onCheckinSuccess={handleCheckinSuccess}
+            currentStreak={streakData.current_streak || 0}
+          />
+
+          {/* Modal Sertifikat Kelulusan */}
+          <CertificateModal
+            isOpen={certModalOpen}
+            onClose={() => setCertModalOpen(false)}
+            course={certCourse}
+            user={user}
+          />
+
+          {/* Review Modal untuk Kursus */}
+          <ReviewModal
+            isOpen={reviewModalOpen}
+            onClose={() => setReviewModalOpen(false)}
+            targetType="course"
+            targetId={detailCourse?.id || selectedCourse?.id}
+            targetTitle={detailCourse?.title || selectedCourse?.title}
+            initialReview={userCourseReview}
+            onSuccess={(data) => {
+              setUserCourseReview(data.review);
+              if (detailCourse) {
+                setDetailCourse({
+                  ...detailCourse,
+                  rating: data.rating,
+                  total_reviews: data.total_reviews,
+                });
+              }
+            }}
+          />
         </div>
       </AppLayout>
     );
@@ -555,21 +710,41 @@ export default function ElearningPage() {
   // ===== WORKSPACE VIEW =====
   const currentTab = view === 'catatan' ? 'catatan' : 'modul';
 
-  const completedCount = Object.values(progress).filter(Boolean).length;
-  const totalLessons = lessons.length;
-  const progressPercent = totalLessons ? Math.round((completedCount / totalLessons) * 100) : 0;
+  const courseTotalLessons = flatLessons.length;
+  const courseCompletedCount = flatLessons.filter(l => progress[l.id]).length;
+  const progressPercent = courseTotalLessons ? Math.round((courseCompletedCount / courseTotalLessons) * 100) : 0;
+  const completedCount = courseCompletedCount;
+  const totalLessons = courseTotalLessons;
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-slate-950 overflow-hidden font-sans">
       {/* ── TOP NAV ── */}
       <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0 z-20 relative shadow-sm">
         <button
-          onClick={() => { setView('catalog'); setSelectedCourse(null); }}
+          onClick={() => {
+            setView('catalog');
+            setSelectedCourse(null);
+            setDetailCourse(null);
+            fetchMyProgress();
+            fetchStreakData(currentCalendarMonth);
+          }}
           className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm font-bold flex items-center gap-2 transition-colors"
         >
-          <FontAwesomeIcon icon={['fas', 'arrow-left']} /> Kembali ke Katalog
+          <FontAwesomeIcon icon={['fas', 'arrow-left']} /> Kembali ke Dashboard Belajar
         </button>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {progressPercent === 100 && (
+            <button
+              onClick={() => {
+                setCertCourse(selectedCourse);
+                setCertModalOpen(true);
+              }}
+              className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+            >
+              <FontAwesomeIcon icon={['fas', 'award']} className="text-amber-200" />
+              <span>Ambil Sertifikat</span>
+            </button>
+          )}
           <Badge color="blue" className="hidden sm:flex">Mode Belajar Fokus</Badge>
         </div>
       </div>
@@ -604,6 +779,29 @@ export default function ElearningPage() {
                   {progressPercent}% Selesai
                 </div>
               </div>
+
+              {/* Tombol Ambil Sertifikat jika kelas selesai */}
+              {progressPercent === 100 && (
+                <button
+                  onClick={() => {
+                    setCertCourse(selectedCourse);
+                    setCertModalOpen(true);
+                  }}
+                  className="w-full mt-3 py-2 px-3 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  <FontAwesomeIcon icon={['fas', 'award']} className="text-amber-200" />
+                  <span>Ambil Sertifikat Kelulusan</span>
+                </button>
+              )}
+
+              {/* Tombol Beri / Edit Testimoni Kursus */}
+              <button
+                onClick={() => setReviewModalOpen(true)}
+                className="w-full mt-2.5 py-2 px-3 text-xs font-bold rounded-lg border border-amber-300/80 dark:border-amber-700/60 bg-amber-50/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 flex items-center justify-center gap-2 transition-colors shadow-xs cursor-pointer"
+              >
+                <FontAwesomeIcon icon={['fas', 'star']} className="text-amber-500" />
+                <span>{userCourseReview ? `Ubah Testimoni (${userCourseReview.rating}★)` : 'Beri Testimoni Kursus'}</span>
+              </button>
             </div>
           </div>
 
@@ -1353,6 +1551,34 @@ export default function ElearningPage() {
                         )}
                       </div>
 
+                      {/* Course Completion & Testimonial Box */}
+                      {(!nextLesson || progressPercent === 100) && (
+                        <div className="mt-8 p-5 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-blue-500/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shrink-0">
+                              <FontAwesomeIcon icon={['fas', 'trophy']} />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                                {userCourseReview ? 'Terima Kasih Atas Testimoni Anda!' : 'Selamat! Anda Telah Menyelesaikan Kursus Ini'}
+                              </h4>
+                              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                                {userCourseReview
+                                  ? `Rating Anda: ${userCourseReview.rating} dari 5 bintang. Ulasan Anda membantu siswa lain dan tutor SkorPluss.`
+                                  : 'Bagikan testimoni dan rating pengalaman belajar Anda untuk membantu teman-teman lainnya.'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setReviewModalOpen(true)}
+                            className="px-4 py-2 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <FontAwesomeIcon icon={['fas', 'star']} />
+                            <span>{userCourseReview ? 'Edit Testimoni' : 'Beri Testimoni & Rating'}</span>
+                          </button>
+                        </div>
+                      )}
+
                   {/* Bottom Navigation */}
                   <div className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div>
@@ -1455,6 +1681,26 @@ export default function ElearningPage() {
         onClose={() => setPreviewDocModal({ ...previewDocModal, isOpen: false })}
         fileUrl={previewDocModal.fileUrl}
         fileName={previewDocModal.fileName}
+      />
+
+      {/* Review Modal untuk Kursus */}
+      <ReviewModal
+        isOpen={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        targetType="course"
+        targetId={selectedCourse?.id}
+        targetTitle={selectedCourse?.title}
+        initialReview={userCourseReview}
+        onSuccess={(data) => {
+          setUserCourseReview(data.review);
+          if (selectedCourse) {
+            setSelectedCourse({
+              ...selectedCourse,
+              rating: data.rating,
+              total_reviews: data.total_reviews,
+            });
+          }
+        }}
       />
     </div>
   );

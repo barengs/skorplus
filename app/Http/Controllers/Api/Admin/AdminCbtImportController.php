@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Exports\ExamQuestionsExport;
+use App\Exports\ExamQuestionsTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Imports\ExamQuestionsImport;
 use App\Models\Exam;
@@ -14,6 +15,14 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminCbtImportController extends Controller
 {
+    /**
+     * Download CBT questions Excel template.
+     */
+    public function downloadTemplate(): BinaryFileResponse
+    {
+        return Excel::download(new ExamQuestionsTemplateExport, 'template-import-soal-cbt.xlsx');
+    }
+
     /**
      * Export questions to Excel file.
      */

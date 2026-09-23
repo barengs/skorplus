@@ -27,6 +27,7 @@ class LearningPackageController extends Controller
             'thumbnail' => 'nullable|string',
             'features' => 'nullable|array',
             'is_published' => 'boolean',
+            'cbt_quota' => 'nullable|integer|min:0',
             'course_ids' => 'nullable|array',
         ]);
 
@@ -65,6 +66,7 @@ class LearningPackageController extends Controller
             'thumbnail' => 'nullable|string',
             'features' => 'nullable|array',
             'is_published' => 'boolean',
+            'cbt_quota' => 'nullable|integer|min:0',
             'course_ids' => 'nullable|array',
         ]);
 

@@ -28,6 +28,7 @@ class ProgramController extends Controller
             'is_popular' => 'boolean',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
+            'cbt_quota' => 'nullable|integer|min:0',
         ]);
 
         $program = Program::create($validated);
@@ -55,6 +56,7 @@ class ProgramController extends Controller
             'is_popular' => 'boolean',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
+            'cbt_quota' => 'nullable|integer|min:0',
         ]);
 
         $program->update($validated);

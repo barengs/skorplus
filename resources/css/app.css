@@ -6,4 +6,14 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --radius-xs: 2px;
+    --radius-sm: 2px;
+    --radius: 3px;
+    --radius-md: 4px;
+    --radius-lg: 4px;
+    --radius-xl: 5px;
+    --radius-2xl: 6px;
+    --radius-3xl: 6px;
+    --radius-4xl: 8px;
 }

@@ -7,7 +7,6 @@ import Badge from '../../atoms/Badge';
 import Button from '../../atoms/Button';
 import ThemeToggle from '../../atoms/ThemeToggle';
 import { formatRupiah } from '../../../utils/currencyHelper';
-import PackageDetailModal from '../../molecules/PackageDetailModal';
 
 // ── Countdown Component ──────────────────────────────────────────────────────
 function PromoCountdown({ seconds }) {
@@ -32,9 +31,12 @@ function PromoCountdown({ seconds }) {
 }
 
 // ── Navbar ────────────────────────────────────────────────────────────────────
-export function LandingNav({ promo }) {
+let globalPromoCache = null;
+
+export function LandingNav({ promo: propPromo }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [promo, setPromo] = useState(propPromo || globalPromoCache);
   const location = useLocation();
   const isKursusPage = location.pathname.startsWith('/kursus');
 
@@ -46,6 +48,25 @@ export function LandingNav({ promo }) {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
+  useEffect(() => {
+    if (propPromo) {
+      globalPromoCache = propPromo;
+      setPromo(propPromo);
+    } else if (!globalPromoCache) {
+      axios
+        .get('/api/landing/all')
+        .then((res) => {
+          if (res.data?.promo) {
+            globalPromoCache = res.data.promo;
+            setPromo(res.data.promo);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setPromo(globalPromoCache);
+    }
+  }, [propPromo]);
+
   const navLinks = [
     { href: isKursusPage ? '/#program' : '#program', label: 'Program', isAnchor: !isKursusPage },
     { href: isKursusPage ? '/#fitur' : '#fitur', label: 'Fitur', isAnchor: !isKursusPage },
@@ -55,7 +76,13 @@ export function LandingNav({ promo }) {
   ];
 
   return (
-    <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled || isKursusPage ? 'bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur shadow-lg shadow-black/5 dark:shadow-black/20 border-b border-slate-200 dark:border-slate-800' : 'bg-transparent'}`}>
+    <nav
+      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur shadow-sm border-b border-slate-200 dark:border-slate-800'
+          : 'bg-transparent'
+      }`}
+    >
       {/* Promo bar */}
       {promo && promo.is_active && (
         <div className="bg-gradient-to-r from-blue-600 to-violet-600 text-white text-center py-2 text-xs font-semibold flex items-center justify-center gap-3">
@@ -76,10 +103,10 @@ export function LandingNav({ promo }) {
                 <Link
                   key={item.href}
                   to={item.href}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`px-4 py-2 rounded-md text-sm transition-all ${
                     isActive
-                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 font-semibold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'text-blue-600 dark:text-blue-400 font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                   }`}
                 >
                   {item.label}
@@ -172,7 +199,6 @@ export default function LandingPage() {
   const [data, setData] = useState(null);
   const [settings, setSettings] = useState({ app_name: 'SkorPluss', tagline: '' });
   const [loading, setLoading] = useState(true);
-  const [selectedPackage, setSelectedPackage] = useState(null);
   const { token } = useSelector((s) => s.auth);
 
   useEffect(() => {
@@ -339,17 +365,18 @@ export default function LandingPage() {
                       <div className="space-y-2 mt-auto">
                         <Link to={`/program/${p.slug || p.id}`} className="block">
                           <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
-                            <span>Lihat Detail & Learning Path</span>
+                            <span>Lihat Detail Program & Silabus</span>
                             <span>→</span>
                           </button>
                         </Link>
-                        <Button 
-                          variant={p.is_popular ? 'primary' : 'ghost'} 
-                          className="w-full"
-                          onClick={() => setSelectedPackage(p.originalData)}
-                        >
-                          Pilih {p.name}
-                        </Button>
+                        <Link to={token ? `/program/${p.slug || p.id}` : `/daftar?program=${p.slug || p.id}`} className="block">
+                          <Button 
+                            variant={p.is_popular ? 'primary' : 'ghost'} 
+                            className="w-full"
+                          >
+                            Pilih {p.name}
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -397,51 +424,173 @@ export default function LandingPage() {
             <div className="flex overflow-hidden relative w-full group mask-image-fade">
               <div className="flex gap-5 animate-marquee shrink-0 pr-5 hover:[animation-play-state:paused]">
                 {testimonials.map((t) => (
-                  <div key={t.id} className="w-[300px] shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 flex flex-col gap-4 hover:border-slate-700 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.avatar_color} flex items-center justify-center font-bold text-white text-sm`}>
-                        {t.avatar_text}
+                  <div
+                    key={t.id}
+                    className="w-[350px] shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 flex flex-col justify-between gap-3 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all text-left"
+                  >
+                    {/* Header: User Avatar, Name, School & Rating */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {t.avatar ? (
+                          <img
+                            src={t.avatar}
+                            alt={t.name}
+                            className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-500/30 shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.avatar_color || 'from-blue-500 to-indigo-600'} flex items-center justify-center font-black text-white text-xs shrink-0 shadow-xs`}
+                          >
+                            {t.avatar_text || 'SP'}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                            {t.name}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            {t.school}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t.name}</p>
-                        <p className="text-xs text-slate-500">{t.school}</p>
+
+                      {/* Stars */}
+                      <div className="flex items-center gap-0.5 text-amber-400 text-xs shrink-0 pt-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={star <= (t.rating || 5) ? 'text-amber-400' : 'text-slate-200 dark:text-slate-700'}
+                          >
+                            ★
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <Badge color="emerald" className="mb-2 text-xs">✓ Diterima di</Badge>
-                      <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{t.university}</p>
-                    </div>
-                    {t.score && (
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <span className="text-xs text-slate-500">Skor UTBK</span>
-                        <span className="font-black text-blue-400">{t.score}</span>
+
+                    {/* Acceptance & Score Badges (if available) */}
+                    {(t.university || t.score) && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {t.university && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded">
+                            <svg className="w-3 h-3 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="truncate max-w-[180px]">Diterima di <strong>{t.university}</strong></span>
+                          </span>
+                        )}
+                        {t.score && (
+                          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/60 px-2 py-0.5 rounded shrink-0">
+                            UTBK: {t.score}
+                          </span>
+                        )}
                       </div>
                     )}
+
+                    {/* Testimonial Quote / Comment */}
+                    <div className="flex-1">
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic line-clamp-3">
+                        "{t.comment || t.content || 'Pembelajaran di SkorPluss sangat terstruktur dan membantu saya memahami materi dengan cepat.'}"
+                      </p>
+                    </div>
+
+                    {/* Footer: Target Context (Course / Program / PTN) */}
+                    <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-blue-600 dark:text-blue-400 text-[11px] truncate max-w-[210px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                        <span className="truncate">
+                          {t.target_title ? `${t.target_type || 'Ulasan'}: ${t.target_title}` : (t.university || 'Siswa SkorPluss')}
+                        </span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 shrink-0">
+                        {t.date_formatted || 'Terverifikasi'}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
               <div className="flex gap-5 animate-marquee shrink-0 pr-5 hover:[animation-play-state:paused]" aria-hidden="true">
                 {testimonials.map((t) => (
-                  <div key={`${t.id}-dup`} className="w-[300px] shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 flex flex-col gap-4 hover:border-slate-700 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.avatar_color} flex items-center justify-center font-bold text-white text-sm`}>
-                        {t.avatar_text}
+                  <div
+                    key={`${t.id}-dup`}
+                    className="w-[350px] shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 flex flex-col justify-between gap-3 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all text-left"
+                  >
+                    {/* Header: User Avatar, Name, School & Rating */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {t.avatar ? (
+                          <img
+                            src={t.avatar}
+                            alt={t.name}
+                            className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-500/30 shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.avatar_color || 'from-blue-500 to-indigo-600'} flex items-center justify-center font-black text-white text-xs shrink-0 shadow-xs`}
+                          >
+                            {t.avatar_text || 'SP'}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                            {t.name}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            {t.school}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t.name}</p>
-                        <p className="text-xs text-slate-500">{t.school}</p>
+
+                      {/* Stars */}
+                      <div className="flex items-center gap-0.5 text-amber-400 text-xs shrink-0 pt-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={star <= (t.rating || 5) ? 'text-amber-400' : 'text-slate-200 dark:text-slate-700'}
+                          >
+                            ★
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <Badge color="emerald" className="mb-2 text-xs">✓ Diterima di</Badge>
-                      <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{t.university}</p>
-                    </div>
-                    {t.score && (
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <span className="text-xs text-slate-500">Skor UTBK</span>
-                        <span className="font-black text-blue-400">{t.score}</span>
+
+                    {/* Acceptance & Score Badges (if available) */}
+                    {(t.university || t.score) && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {t.university && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded">
+                            <svg className="w-3 h-3 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="truncate max-w-[180px]">Diterima di <strong>{t.university}</strong></span>
+                          </span>
+                        )}
+                        {t.score && (
+                          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/60 px-2 py-0.5 rounded shrink-0">
+                            UTBK: {t.score}
+                          </span>
+                        )}
                       </div>
                     )}
+
+                    {/* Testimonial Quote / Comment */}
+                    <div className="flex-1">
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic line-clamp-3">
+                        "{t.comment || t.content || 'Pembelajaran di SkorPluss sangat terstruktur dan membantu saya memahami materi dengan cepat.'}"
+                      </p>
+                    </div>
+
+                    {/* Footer: Target Context (Course / Program / PTN) */}
+                    <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-blue-600 dark:text-blue-400 text-[11px] truncate max-w-[210px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                        <span className="truncate">
+                          {t.target_title ? `${t.target_type || 'Ulasan'}: ${t.target_title}` : (t.university || 'Siswa SkorPluss')}
+                        </span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 shrink-0">
+                        {t.date_formatted || 'Terverifikasi'}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -502,11 +651,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-
-      {/* Package Detail Modal */}
-      {selectedPackage && (
-        <PackageDetailModal pkg={selectedPackage} onClose={() => setSelectedPackage(null)} />
-      )}
     </div>
   );
 }

@@ -43,9 +43,19 @@ class Course extends Model
         return $this->hasMany(Module::class)->orderBy('sort_order');
     }
 
+    public function lessons()
+    {
+        return $this->hasManyThrough(Lesson::class, Module::class);
+    }
+
     public function enrollments()
     {
         return $this->hasMany(CourseEnrollment::class);
+    }
+
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
     }
 
     public function getDisplayInstructorAttribute(): string

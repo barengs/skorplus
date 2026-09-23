@@ -6,26 +6,77 @@ use App\Http\Controllers\Controller;
 use App\Models\CbtAnswer;
 use App\Models\CbtSession;
 use App\Models\Exam;
+use App\Models\ExamType;
+use App\Models\Program;
 use App\Models\Question;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class CbtController extends Controller
 {
     /**
-     * List all available active exams.
+     * List all active dynamic exam types.
+     */
+    public function examTypes(): JsonResponse
+    {
+        $types = ExamType::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        return response()->json($types);
+    }
+
+    /**
+     * List all available active exams and exam types.
      */
     public function availableExams(): JsonResponse
     {
         $exams = Exam::where('is_active', true)
+            ->has('questions')
+            ->with(['examType', 'questions.examType'])
             ->withCount('questions')
-            ->having('questions_count', '>', 0)
             ->latest()
+            ->get()
+            ->map(function ($exam) {
+                $subtests = $exam->questions
+                    ->map(fn ($q) => $q->examType?->name ?? $q->subtest)
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $exam->subtests_list = $subtests;
+
+                return $exam;
+            });
+
+        $examTypes = ExamType::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
             ->get();
 
-        return response()->json(['exams' => $exams]);
+        $user = auth('api')->user();
+        $quotaInfo = null;
+        if ($user && $user->program) {
+            $program = Program::where('is_active', true)
+                ->where(function ($q) use ($user) {
+                    $q->where('slug', $user->program)
+                        ->orWhereRaw('LOWER(name) = ?', [strtolower($user->program)])
+                        ->orWhereRaw('LOWER(slug) = ?', [strtolower($user->program)]);
+                })
+                ->first();
+
+            if ($program) {
+                $quotaInfo = $program->getCbtUsageForUser($user);
+                $quotaInfo['program_name'] = $program->name;
+            }
+        }
+
+        return response()->json([
+            'exams' => $exams,
+            'exam_types' => $examTypes,
+            'quota_info' => $quotaInfo,
+        ]);
     }
 
     /**
@@ -34,6 +85,7 @@ class CbtController extends Controller
     public function sessions(): JsonResponse
     {
         $sessions = CbtSession::where('user_id', auth('api')->id())
+            ->where('status', '!=', 'cancelled')
             ->latest()
             ->get();
 
@@ -45,6 +97,34 @@ class CbtController extends Controller
      */
     public function startSession(Request $request): JsonResponse
     {
+        $user = auth('api')->user();
+
+        // Enforce CBT quota limit if program has limit
+        if ($user && $user->program) {
+            $program = Program::where('is_active', true)
+                ->where(function ($q) use ($user) {
+                    $q->where('slug', $user->program)
+                        ->orWhereRaw('LOWER(name) = ?', [strtolower($user->program)])
+                        ->orWhereRaw('LOWER(slug) = ?', [strtolower($user->program)]);
+                })
+                ->first();
+
+            if ($program && $program->cbt_quota !== null && $program->cbt_quota > 0) {
+                $used = CbtSession::where('user_id', $user->id)
+                    ->where('status', '!=', 'cancelled')
+                    ->count();
+                if ($used >= $program->cbt_quota) {
+                    return response()->json([
+                        'message' => "Batas kuota pengerjaan CBT untuk Program {$program->name} telah tercapai ({$program->cbt_quota}x).",
+                        'limit_reached' => true,
+                        'quota' => $program->cbt_quota,
+                        'used' => $used,
+                        'program_name' => $program->name,
+                    ], 403);
+                }
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'exam_id' => 'nullable|exists:exams,id',
             'exam_type' => 'required_without:exam_id|string',
@@ -71,17 +151,56 @@ class CbtController extends Controller
         $session = CbtSession::create([
             'user_id' => auth('api')->id(),
             'exam_id' => $exam?->id,
-            'exam_type' => $request->exam_type,
-            'exam_title' => $request->exam_title,
+            'exam_type' => $request->exam_type ?? ($exam ? 'REAL' : 'PPU'),
+            'exam_title' => $request->exam_title ?? ($exam?->title ?? 'Ujian CBT'),
             'duration_seconds' => $request->duration_seconds ?? ($exam?->duration_minutes ?? 90) * 60,
             'started_at' => now(),
             'status' => 'ongoing',
         ]);
 
+        // Strip correct_option before sending questions to frontend
+        $clientQuestions = array_map(function ($q) {
+            unset($q['correct_option']);
+
+            return $q;
+        }, $questions);
+
         return response()->json([
             'session' => $session,
-            'questions' => $questions,
+            'questions' => $clientQuestions,
         ], 201);
+    }
+
+    /**
+     * Cancel an ongoing exam session if no questions have been answered.
+     */
+    public function cancel(CbtSession $session): JsonResponse
+    {
+        if ($session->user_id !== auth('api')->id()) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        if ($session->status !== 'ongoing') {
+            return response()->json(['message' => 'Hanya sesi ujian yang sedang berlangsung yang dapat dibatalkan.'], 422);
+        }
+
+        $answeredCount = CbtAnswer::where('cbt_session_id', $session->id)
+            ->whereNotNull('selected_option')
+            ->count();
+
+        if ($answeredCount > 0) {
+            return response()->json([
+                'message' => 'Ujian tidak dapat dibatalkan karena Anda sudah mulai menjawab soal. Silakan lanjutkan pengerjaan atau submit ujian.',
+            ], 422);
+        }
+
+        // Delete the session and any uncompleted answers
+        $session->answers()->delete();
+        $session->delete();
+
+        return response()->json([
+            'message' => 'Ujian berhasil dibatalkan. Kuota pengerjaan Anda tidak terpotong.',
+        ]);
     }
 
     /**
@@ -98,7 +217,7 @@ class CbtController extends Controller
 
         $validator = Validator::make($request->all(), [
             'question_number' => 'required|integer|min:1',
-            'selected_option' => 'nullable|in:A,B,C,D,E',
+            'selected_option' => 'nullable|string|max:10',
             'is_flagged' => 'boolean',
         ]);
 
@@ -139,16 +258,29 @@ class CbtController extends Controller
         $totalScore = 0;
         $correctCount = 0;
         $totalQuestions = count($questions);
+        $subtestBreakdown = [];
 
         // Calculate score based on correct answers
         foreach ($questions as $index => $questionData) {
             $questionNumber = $index + 1;
             $userAnswer = $answers->get($questionNumber);
+            $subtestName = $questionData['subtest'] ?? ($questionData['subject'] ?? 'Umum');
+
+            if (! isset($subtestBreakdown[$subtestName])) {
+                $subtestBreakdown[$subtestName] = [
+                    'subtest' => $subtestName,
+                    'total' => 0,
+                    'correct' => 0,
+                    'icon' => $questionData['exam_type']['icon'] ?? '📝',
+                ];
+            }
+            $subtestBreakdown[$subtestName]['total']++;
 
             if ($userAnswer && isset($questionData['correct_option'])) {
                 if ($userAnswer->selected_option === $questionData['correct_option']) {
                     $correctCount++;
                     $totalScore += $questionData['points'] ?? 1;
+                    $subtestBreakdown[$subtestName]['correct']++;
                 }
             }
         }
@@ -169,6 +301,7 @@ class CbtController extends Controller
             'score' => $normalizedScore,
             'correct_count' => $correctCount,
             'total_questions' => $totalQuestions,
+            'subtest_breakdown' => array_values($subtestBreakdown),
             'session' => $session->fresh(),
         ]);
     }
@@ -180,21 +313,34 @@ class CbtController extends Controller
     {
         $questions = $exam->questions()
             ->where('is_active', true)
-            ->with('options')
+            ->with(['options', 'examType'])
             ->orderBy('id')
             ->get();
 
-        return $questions->map(function ($question, $index) {
+        $totalQuestions = $questions->count();
+        $proportionalDuration = $exam->duration_minutes
+            ? (int) round(($exam->duration_minutes * 60) / max(1, $totalQuestions))
+            : 90;
+
+        return $questions->map(function ($question, $index) use ($proportionalDuration) {
             $correctOption = $question->options->firstWhere('is_correct', true);
 
             return [
                 'number' => $index + 1,
                 'id' => $question->id,
                 'subject' => $question->subject,
+                'subtest' => $question->examType?->name ?? $question->subtest,
+                'exam_type' => $question->examType ? [
+                    'id' => $question->examType->id,
+                    'code' => $question->examType->code,
+                    'name' => $question->examType->name,
+                    'icon' => $question->examType->icon,
+                ] : null,
                 'text' => $question->question_text,
                 'options' => $question->options->pluck('option_text', 'option_key')->toArray(),
                 'correct_option' => $correctOption?->option_key, // Hidden from frontend, used for scoring
                 'points' => $question->points,
+                'duration_seconds' => $question->duration_seconds ?? $proportionalDuration,
             ];
         })->toArray();
     }
@@ -210,6 +356,7 @@ class CbtController extends Controller
                 'number' => $i,
                 'subject' => $type,
                 'text' => "Pertanyaan No. {$i} — {$type}: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pilih jawaban yang paling tepat.",
+                'duration_seconds' => 90,
                 'options' => [
                     'A' => 'Pilihan A — Jawaban pertama yang memungkinkan',
                     'B' => 'Pilihan B — Jawaban kedua yang memungkinkan',

@@ -36,6 +36,13 @@ class AdminModuleLessonController extends Controller
         return response()->json($lesson, 201);
     }
 
+    public function show($moduleId, $lessonId)
+    {
+        $lesson = Lesson::where('module_id', $moduleId)->findOrFail($lessonId);
+
+        return response()->json($lesson);
+    }
+
     public function update(Request $request, $moduleId, $lessonId)
     {
         $lesson = Lesson::where('module_id', $moduleId)->findOrFail($lessonId);

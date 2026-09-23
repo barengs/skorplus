@@ -79,7 +79,7 @@ export default function AdminSettingsPage() {
 
   return (
     <AppLayout title="Pengaturan Sistem">
-      <div className="max-w-2xl mx-auto pb-16">
+      <div className="w-full pb-16 space-y-6">
         <div className="mb-8">
           <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">Pengaturan Sistem</h2>
           <p className="text-slate-600 dark:text-slate-400 text-sm">Konfigurasi nama, logo, dan preferensi bahasa aplikasi</p>

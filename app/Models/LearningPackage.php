@@ -18,11 +18,13 @@ class LearningPackage extends Model
         'thumbnail',
         'features',
         'is_published',
+        'cbt_quota',
     ];
 
     protected $casts = [
         'features' => 'array',
         'is_published' => 'boolean',
+        'cbt_quota' => 'integer',
     ];
 
     public function courses()

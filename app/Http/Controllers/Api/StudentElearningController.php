@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\AssignmentSubmission;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
+use App\Models\DailyCheckin;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class StudentElearningController extends Controller
@@ -375,6 +379,229 @@ class StudentElearningController extends Controller
             'lesson' => $lesson,
             'submissions' => $submissions,
             'latest_submission' => $submissions->first(),
+        ]);
+    }
+
+    public function myProgress(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $enrollments = CourseEnrollment::where('user_id', $user->id)
+            ->with(['course' => function ($q) {
+                $q->withCount(['modules', 'lessons']);
+            }])
+            ->latest('updated_at')
+            ->get();
+
+        $activeCourses = $enrollments->where('progress_percentage', '<', 100)->values()->map(function ($enr) {
+            return [
+                'id' => $enr->id,
+                'course_id' => $enr->course_id,
+                'title' => $enr->course?->title ?? 'Kursus',
+                'slug' => $enr->course?->slug ?? '',
+                'category' => $enr->course?->category ?? 'Umum',
+                'thumbnail' => $enr->course?->thumbnail,
+                'instructor_name' => $enr->course?->instructor_name ?? 'Tim Pengajar SkorPluss',
+                'completed_lessons' => $enr->completed_lessons,
+                'total_lessons' => $enr->total_lessons ?: ($enr->course?->lessons_count ?? 0),
+                'progress_percentage' => (int) ($enr->progress_percentage ?? 0),
+                'last_activity_at' => $enr->updated_at?->diffForHumans(),
+            ];
+        });
+
+        $completedCourses = $enrollments->where('progress_percentage', '>=', 100)->values()->map(function ($enr) {
+            return [
+                'id' => $enr->id,
+                'course_id' => $enr->course_id,
+                'title' => $enr->course?->title ?? 'Kursus',
+                'slug' => $enr->course?->slug ?? '',
+                'category' => $enr->course?->category ?? 'Umum',
+                'thumbnail' => $enr->course?->thumbnail,
+                'instructor_name' => $enr->course?->instructor_name ?? 'Tim Pengajar SkorPluss',
+                'completed_lessons' => $enr->completed_lessons,
+                'total_lessons' => $enr->total_lessons ?: ($enr->course?->lessons_count ?? 0),
+                'progress_percentage' => 100,
+                'completed_at' => $enr->completed_at ? $enr->completed_at->format('d M Y') : $enr->updated_at->format('d M Y'),
+            ];
+        });
+
+        return response()->json([
+            'active_courses' => $activeCourses,
+            'completed_courses' => $completedCourses,
+            'stats' => [
+                'total_enrolled' => $enrollments->count(),
+                'total_active' => $activeCourses->count(),
+                'total_completed' => $completedCourses->count(),
+            ],
+        ]);
+    }
+
+    public function streakAndCheckin(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $year = (int) ($request->get('year') ?: now()->year);
+        $month = (int) ($request->get('month') ?: now()->month);
+
+        // Fetch check-in dates
+        $checkinDates = DailyCheckin::where('user_id', $user->id)
+            ->pluck('checkin_date')
+            ->map(fn ($d) => Carbon::parse($d)->toDateString())
+            ->toArray();
+
+        // Fetch lesson completion dates
+        $lessonDates = LessonProgress::where('user_id', $user->id)
+            ->where('is_completed', true)
+            ->whereNotNull('updated_at')
+            ->pluck('updated_at')
+            ->map(fn ($d) => Carbon::parse($d)->toDateString())
+            ->toArray();
+
+        // Combine unique active dates sorted descending
+        $allActiveDates = array_values(array_unique(array_merge($checkinDates, $lessonDates)));
+        rsort($allActiveDates);
+
+        // Calculate Current Streak
+        $currentStreak = 0;
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+
+        $activeSet = array_flip($allActiveDates);
+
+        if (isset($activeSet[$today]) || isset($activeSet[$yesterday])) {
+            $checkDate = isset($activeSet[$today]) ? Carbon::parse($today) : Carbon::parse($yesterday);
+            while (isset($activeSet[$checkDate->toDateString()])) {
+                $currentStreak++;
+                $checkDate->subDay();
+            }
+        }
+
+        // Calculate Longest Streak
+        $longestStreak = $currentStreak;
+        if (! empty($allActiveDates)) {
+            $sortedAsc = $allActiveDates;
+            sort($sortedAsc);
+            $tempStreak = 1;
+            $maxStreak = 1;
+            for ($i = 1; $i < count($sortedAsc); $i++) {
+                $prev = Carbon::parse($sortedAsc[$i - 1]);
+                $curr = Carbon::parse($sortedAsc[$i]);
+                if ($prev->diffInDays($curr) === 1) {
+                    $tempStreak++;
+                    if ($tempStreak > $maxStreak) {
+                        $maxStreak = $tempStreak;
+                    }
+                } else {
+                    $tempStreak = 1;
+                }
+            }
+            $longestStreak = max($longestStreak, $maxStreak);
+        }
+
+        // Weekly tracker for the past 7 days ending today
+        $dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+        $weeklyTracker = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $d = now()->subDays($i);
+            $dateStr = $d->toDateString();
+            $dayOfWeek = $d->dayOfWeek;
+            $weeklyTracker[] = [
+                'day_name' => $dayNames[$dayOfWeek],
+                'date' => $dateStr,
+                'is_active' => isset($activeSet[$dateStr]),
+                'is_today' => $dateStr === $today,
+            ];
+        }
+
+        // Monthly check-ins for the calendar
+        $monthlyCheckins = DailyCheckin::where('user_id', $user->id)
+            ->whereYear('checkin_date', $year)
+            ->whereMonth('checkin_date', $month)
+            ->get(['checkin_date', 'notes'])
+            ->keyBy(fn ($item) => Carbon::parse($item->checkin_date)->toDateString())
+            ->toArray();
+
+        // Also add dates from lesson completion in this month into active dates map
+        $monthlyLessons = LessonProgress::where('user_id', $user->id)
+            ->where('is_completed', true)
+            ->whereYear('updated_at', $year)
+            ->whereMonth('updated_at', $month)
+            ->get(['updated_at'])
+            ->map(fn ($item) => Carbon::parse($item->updated_at)->toDateString())
+            ->unique();
+
+        foreach ($monthlyLessons as $lDate) {
+            if (! isset($monthlyCheckins[$lDate])) {
+                $monthlyCheckins[$lDate] = [
+                    'checkin_date' => $lDate,
+                    'notes' => 'Menyelesaikan materi / kuis pembelajaran',
+                ];
+            }
+        }
+
+        // Today's check-in
+        $todayCheckin = DailyCheckin::where('user_id', $user->id)
+            ->whereDate('checkin_date', $today)
+            ->first();
+
+        // Leaderboard top 10 users
+        $leaderboardUsers = User::role('siswa')
+            ->withCount(['dailyCheckins'])
+            ->orderByDesc('daily_checkins_count')
+            ->limit(10)
+            ->get()
+            ->map(function ($u, $idx) {
+                return [
+                    'rank' => $idx + 1,
+                    'name' => $u->name,
+                    'school' => $u->school ?: 'Siswa SkorPluss',
+                    'streak' => (int) $u->daily_checkins_count,
+                ];
+            });
+
+        return response()->json([
+            'current_streak' => $currentStreak,
+            'longest_streak' => $longestStreak,
+            'weekly_tracker' => $weeklyTracker,
+            'has_checked_in_today' => (bool) $todayCheckin,
+            'today_checkin' => $todayCheckin,
+            'monthly_checkins' => $monthlyCheckins,
+            'leaderboard' => $leaderboardUsers,
+            'calendar_month' => [
+                'year' => $year,
+                'month' => $month,
+                'month_name' => Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y'),
+            ],
+        ]);
+    }
+
+    public function storeCheckin(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $validated = $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $today = now()->toDateString();
+
+        $checkin = DailyCheckin::where('user_id', $user->id)
+            ->whereDate('checkin_date', $today)
+            ->first();
+
+        if ($checkin) {
+            $checkin->update([
+                'notes' => $validated['notes'] ?? $checkin->notes,
+            ]);
+        } else {
+            $checkin = DailyCheckin::create([
+                'user_id' => $user->id,
+                'checkin_date' => $today,
+                'notes' => $validated['notes'] ?? 'Check-in belajar harian',
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Check-in hari ini berhasil dicatat! Streak belajar Anda bertambah.',
+            'checkin' => $checkin,
         ]);
     }
 }

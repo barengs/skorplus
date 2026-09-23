@@ -11,7 +11,7 @@ import LoginPage from './components/pages/Login';
 import RegisterPage from './components/pages/Register';
 import DashboardPage from './components/pages/Dashboard';
 import CbtPage from './components/pages/Cbt';
-import ForumPage from './components/pages/Forum';
+import ForumPage, { ForumDetailPage } from './components/pages/Forum';
 import ElearningPage from './components/pages/Elearning';
 import AdminLandingPage from './components/pages/Admin/Landing';
 import AdminUsersPage from './components/pages/Admin/Users';
@@ -23,6 +23,7 @@ import AdminRolesPage from './components/pages/Admin/Roles';
 import AdminSettingsPage from './components/pages/Admin/Settings/AdminSettingsPage';
 import AdminLearningPackagePage from './components/pages/Admin/LearningPackage/AdminLearningPackagePage';
 import AdminLearningPackageDetailPage from './components/pages/Admin/LearningPackage/AdminLearningPackageDetailPage';
+import AdminLearningPackageFormPage from './components/pages/Admin/LearningPackage/AdminLearningPackageFormPage';
 import ProfilePage from './components/pages/Profile';
 
 // Route guard — redirects to /login if no token
@@ -84,6 +85,7 @@ export default function App() {
       <Route path="/elearning" element={<PrivateRoute><ElearningPage /></PrivateRoute>} />
       <Route path="/elearning/:courseSlug" element={<PrivateRoute><ElearningPage /></PrivateRoute>} />
       <Route path="/forum" element={<PrivateRoute><ForumPage /></PrivateRoute>} />
+      <Route path="/forum/:id" element={<PrivateRoute><ForumDetailPage /></PrivateRoute>} />
       <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
       {/* Admin routes */}
@@ -100,6 +102,8 @@ export default function App() {
       <Route path="/admin/roles" element={<PrivateRoute><AdminRolesPage /></PrivateRoute>} />
       <Route path="/admin/settings" element={<PrivateRoute><AdminSettingsPage /></PrivateRoute>} />
       <Route path="/admin/learning-packages" element={<PrivateRoute><AdminLearningPackagePage /></PrivateRoute>} />
+      <Route path="/admin/learning-packages/create" element={<PrivateRoute><AdminLearningPackageFormPage /></PrivateRoute>} />
+      <Route path="/admin/learning-packages/:id/edit" element={<PrivateRoute><AdminLearningPackageFormPage /></PrivateRoute>} />
       <Route path="/admin/learning-packages/:id" element={<PrivateRoute><AdminLearningPackageDetailPage /></PrivateRoute>} />
 
       {/* Fallback */}

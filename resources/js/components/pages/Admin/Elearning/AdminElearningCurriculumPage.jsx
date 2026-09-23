@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
 import Input from '../../../atoms/Input';
@@ -15,6 +15,7 @@ import 'react-quill-new/dist/quill.snow.css';
 
 export default function AdminElearningCurriculumPage() {
   const { courseId } = useParams();
+  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,90 @@ export default function AdminElearningCurriculumPage() {
   useEffect(() => {
     fetchData();
   }, [courseId]);
+
+  // Collapse State (Dicoding Accordion model)
+  const [expandedModules, setExpandedModules] = useState({});
+
+  useEffect(() => {
+    if (modules && modules.length > 0) {
+      setExpandedModules((prev) => {
+        const next = { ...prev };
+        modules.forEach((m) => {
+          if (next[m.id] === undefined) {
+            next[m.id] = true;
+          }
+        });
+        return next;
+      });
+    }
+  }, [modules]);
+
+  const toggleModule = (id) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const toggleAllModules = (expand) => {
+    const next = {};
+    modules.forEach((m) => {
+      next[m.id] = expand;
+    });
+    setExpandedModules(next);
+  };
+
+  const allModulesExpanded = useMemo(() => {
+    if (!modules || modules.length === 0) return false;
+    return modules.every((m) => expandedModules[m.id]);
+  }, [modules, expandedModules]);
+
+  const totalLessons = useMemo(() => {
+    return modules.reduce((sum, m) => sum + (m.lessons?.length || 0), 0);
+  }, [modules]);
+
+  const lessonsByType = useMemo(() => {
+    const counts = { video: 0, reading: 0, quiz: 0, assignment: 0 };
+    modules.forEach((m) => {
+      (m.lessons || []).forEach((l) => {
+        if (counts[l.type] !== undefined) {
+          counts[l.type]++;
+        } else {
+          counts[l.type] = 1;
+        }
+      });
+    });
+    return counts;
+  }, [modules]);
+
+  const totalDurationSeconds = useMemo(() => {
+    return modules.reduce((sum, m) => {
+      const modSum = (m.lessons || []).reduce((lSum, l) => lSum + (Number(l.duration_seconds) || 0), 0);
+      return sum + modSum;
+    }, 0);
+  }, [modules]);
+
+  const formatTotalDuration = (totalSec) => {
+    if (!totalSec || totalSec <= 0) return '0 Menit';
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    if (hours > 0 && minutes > 0) {
+      return `${hours} Jam ${minutes} Menit`;
+    } else if (hours > 0) {
+      return `${hours} Jam`;
+    }
+    return `${minutes} Menit`;
+  };
+
+  const formatModuleDuration = (lessons = []) => {
+    const totalSec = lessons.reduce((sum, l) => sum + (Number(l.duration_seconds) || 0), 0);
+    if (!totalSec || totalSec <= 0) return '15 Menit';
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    if (hours > 0 && minutes > 0) return `${hours}j ${minutes}m`;
+    if (hours > 0) return `${hours} Jam`;
+    return `${minutes} Menit`;
+  };
 
   // MODULE HANDLERS
   const openModuleModal = (mod = null, defaultTitle = '') => {
@@ -340,26 +425,59 @@ export default function AdminElearningCurriculumPage() {
 
   return (
     <AppLayout title="Silabus & Kurikulum">
-      <div className="max-w-4xl mx-auto pb-16">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+      <div className="w-full pb-16 space-y-6">
+        {/* Top Navigation & Actions Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3">
             <Link to="/admin/elearning">
-              <Button variant="ghost" size="sm">← Kembali</Button>
+              <Button variant="ghost" size="sm" className="h-9 px-3">
+                ← Kembali
+              </Button>
             </Link>
             <div>
-              <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                  Manajemen Kurikulum
+                </span>
+                <span className="text-slate-300 dark:text-slate-700">•</span>
+                <span className="text-xs text-slate-500">
+                  {course?.category || 'E-Learning'}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
                 Silabus: {course?.title || 'Memuat...'}
-              </h2>
+              </h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => openModuleModal()}>+ Tambah Kelompok Materi (Section)</Button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {modules.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleAllModules(!allModulesExpanded)}
+                className="text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800"
+              >
+                <FontAwesomeIcon icon={['fas', allModulesExpanded ? 'compress' : 'expand']} className="mr-1.5 text-slate-400" />
+                {allModulesExpanded ? 'Tutup Semua Section' : 'Buka Semua Section'}
+              </Button>
+            )}
+
+            <Button
+              onClick={() => openModuleModal()}
+              size="sm"
+              className="!bg-blue-600 hover:!bg-blue-700 text-white text-xs font-bold shadow-xs"
+            >
+              + Tambah Section Modul
+            </Button>
+
             {!modules.some(m => m.title.toLowerCase().includes('tugas akhir') || m.lessons?.some(l => l.type === 'assignment')) && (
               <Button
                 onClick={() => openModuleModal(null, 'Tugas Akhir')}
-                className="bg-purple-600 hover:bg-purple-700 text-white border-none shadow-sm"
+                size="sm"
+                className="!bg-purple-600 hover:!bg-purple-700 text-white text-xs font-bold border-none shadow-xs"
               >
-                <FontAwesomeIcon icon={['fas', 'file-lines']} className="mr-1.5" />
+                <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="mr-1.5" />
                 + Tambah Section Tugas Akhir
               </Button>
             )}
@@ -367,174 +485,492 @@ export default function AdminElearningCurriculumPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center p-12"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
-        ) : modules.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-12 text-center text-slate-500">
-            Belum ada silabus. Mulai dengan membuat Kelompok Materi (Section).
+          <div className="flex flex-col items-center justify-center p-16 gap-3">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-slate-400">Memuat kurikulum materi...</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {modules.map((mod, idx) => (
-              <div key={mod.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
-                {/* Module Header */}
-                <div className={`p-4 border-b flex justify-between items-center ${
-                  mod.title.toLowerCase().includes('tugas akhir') || mod.lessons?.some(l => l.type === 'assignment')
-                    ? 'bg-purple-50/70 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/60'
-                    : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
-                }`}>
-                  <div className="flex items-center gap-2.5">
-                    <h3 className="font-bold text-lg">Section {idx + 1}: {mod.title}</h3>
-                    {(mod.title.toLowerCase().includes('tugas akhir') || mod.lessons?.some(l => l.type === 'assignment')) && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                        <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="mr-1" />
-                        Section Tugas Akhir
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => openModuleModal(mod)}>Edit</Button>
-                    <Button variant="ghost" size="sm" className="text-red-500" onClick={() => deleteModule(mod.id)}>Hapus</Button>
-                  </div>
-                </div>
-
-                {/* Lessons List */}
-                <div className="p-4">
-                  {mod.lessons?.length === 0 ? (
-                    <p className="text-sm text-slate-500 italic mb-4">Belum ada materi di section ini.</p>
-                  ) : (
-                    <div className="space-y-2 mb-4">
-                      {mod.lessons.map((lesson, lIdx) => (
-                        <div key={lesson.id} className="group flex items-center justify-between p-3 border border-slate-100 dark:border-slate-800 rounded hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer" onClick={() => openLessonModal(mod.id, lesson)}>
-                          <div className="flex items-center gap-3">
-                            <span className="text-slate-400 font-mono text-sm">{idx + 1}.{lIdx + 1}</span>
-                            <span className="text-lg w-6 text-center text-slate-500">
-                              {lesson.type === 'video' ? <FontAwesomeIcon icon={['fas', 'video']} /> : 
-                               lesson.type === 'quiz' ? <FontAwesomeIcon icon={['fas', 'circle-question']} /> : 
-                               lesson.type === 'assignment' ? <FontAwesomeIcon icon={['fas', 'pen-to-square']} /> : 
-                               <FontAwesomeIcon icon={['fas', 'book-open']} />}
-                            </span>
-                            <div>
-                              <p className="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                {lesson.title}
-                                {lesson.is_preview && <Badge color="gold" className="text-[10px]">Preview</Badge>}
-                                {lesson.attachment_doc && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-2 py-0.5 rounded border border-red-200 dark:border-red-900/50">
-                                    <FontAwesomeIcon icon={['fas', 'paperclip']} className="text-[10px]" />
-                                    {lesson.attachment_name || 'Dokumen Panduan'}
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-xs text-slate-500 capitalize">{lesson.type} • {lesson.duration_seconds > 0 ? Math.round(lesson.duration_seconds/60) + ' mnt' : '-'}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                            {lesson.attachment_doc && (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPreviewDocModal({
-                                    isOpen: true,
-                                    fileUrl: lesson.attachment_doc,
-                                    fileName: lesson.attachment_name || 'Panduan Tugas.pdf',
-                                  });
-                                }}
-                                className="px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded flex items-center gap-1.5"
-                                title="Baca Dokumen Panduan"
-                              >
-                                <FontAwesomeIcon icon={['fas', 'file-pdf']} />
-                                Baca Dokumen
-                              </button>
-                            )}
-
-                            {lesson.type === 'assignment' && (
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); openSubmissionsModal(mod.id, lesson); }}
-                                className="px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 rounded flex items-center gap-1.5"
-                                title="Lihat & Nilai Tugas Siswa"
-                              >
-                                <FontAwesomeIcon icon={['fas', 'users-viewfinder']} />
-                                Periksa Tugas Siswa
-                              </button>
-                            )}
-
-                            {lesson.type === 'video' && lesson.video_url && (
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); setPreviewLesson(lesson); }}
-                                className="p-2 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded flex items-center justify-center w-8 h-8"
-                                title="Preview Video"
-                              >
-                                <FontAwesomeIcon icon={['fas', 'play']} />
-                              </button>
-                            )}
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/${lesson.id}/edit`); }}
-                              className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded flex items-center justify-center w-8 h-8"
-                              title="Edit"
-                            >
-                              <FontAwesomeIcon icon={['fas', 'pen-to-square']} />
-                            </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); deleteLesson(mod.id, lesson.id); }}
-                              className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded flex items-center justify-center w-8 h-8"
-                              title="Hapus"
-                            >
-                              <FontAwesomeIcon icon={['fas', 'trash-can']} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {(() => {
-                    const isAssignmentSection = mod.title.toLowerCase().includes('tugas akhir') || mod.lessons?.some(l => l.type === 'assignment');
-
-                    if (isAssignmentSection) {
-                      return (
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-purple-600 dark:text-purple-400 flex-1 border border-dashed border-purple-300 dark:border-purple-900/50 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                            onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create`)}
-                          >
-                            <FontAwesomeIcon icon={['fas', 'file-lines']} className="mr-1" /> + Tambah Tugas Akhir
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-blue-600 flex-1 border border-dashed border-blue-200 dark:border-blue-900"
-                            onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create`)}
-                          >
-                            + Tambah Panduan / Artikel
-                          </Button>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-600 flex-1 border border-dashed border-blue-200 dark:border-blue-900"
-                          onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create`)}
-                        >
-                          + Tambah Materi
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-amber-600 dark:text-amber-400 flex-1 border border-dashed border-amber-300 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                          onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create`)}
-                        >
-                          <FontAwesomeIcon icon={['fas', 'clipboard-question']} className="mr-1" /> + Tambah Kuis Akhir Section
-                        </Button>
-                      </div>
-                    );
-                  })()}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* ── LEFT COLUMN: COLLAPSIBLE SILABUS & MATERI (lg:col-span-8) ── */}
+            <div className="lg:col-span-8 space-y-4">
+              <div className="flex items-center justify-between pb-1">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <span>Daftar Section & Materi Pembelajaran</span>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300">
+                      {modules.length} Section
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Klik judul section untuk membuka atau menutup daftar materi (model collapse).
+                  </p>
                 </div>
               </div>
-            ))}
+
+              {modules.length === 0 ? (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center space-y-3 shadow-xs">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center text-xl">
+                    <FontAwesomeIcon icon={['fas', 'folder-plus']} />
+                  </div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                    Belum ada silabus untuk kursus ini
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Mulai susun kurikulum dengan membuat kelompok materi pertama Anda.
+                  </p>
+                  <Button onClick={() => openModuleModal()} className="!bg-blue-600 text-white font-bold text-xs px-4 py-2">
+                    + Buat Section Pertama
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {modules.map((mod, idx) => {
+                    const isExpanded = !!expandedModules[mod.id];
+                    const isAssignmentSection =
+                      mod.title.toLowerCase().includes('tugas akhir') ||
+                      mod.lessons?.some((l) => l.type === 'assignment');
+                    const modQuizCount = mod.lessons?.filter((l) => l.type === 'quiz').length || 0;
+                    const modDurationText = formatModuleDuration(mod.lessons);
+
+                    return (
+                      <div
+                        key={mod.id}
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs transition-all"
+                      >
+                        {/* Module Collapsible Header */}
+                        <div
+                          onClick={() => toggleModule(mod.id)}
+                          className={`p-4 flex items-center justify-between cursor-pointer select-none transition-colors border-b ${
+                            isExpanded
+                              ? 'border-slate-200 dark:border-slate-800'
+                              : 'border-transparent'
+                          } ${
+                            isAssignmentSection
+                              ? 'bg-purple-50/70 dark:bg-purple-950/30 hover:bg-purple-100/60 dark:hover:bg-purple-950/50'
+                              : 'bg-slate-50/90 dark:bg-slate-800/60 hover:bg-slate-100/90 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Chevron Collapse Indicator */}
+                            <span className="w-6 h-6 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 text-xs shrink-0 transition-transform">
+                              <FontAwesomeIcon icon={['fas', isExpanded ? 'chevron-down' : 'chevron-right']} />
+                            </span>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">
+                                  Section {idx + 1}: {mod.title}
+                                </h3>
+
+                                {isAssignmentSection && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                    <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="mr-1" />
+                                    Tugas Akhir
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Dicoding Meta Badges */}
+                              <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                <span className="px-2 py-0.2 rounded bg-slate-200/70 dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-300">
+                                  {mod.lessons?.length || 0} Materi
+                                </span>
+                                {modQuizCount > 0 && (
+                                  <span className="px-2 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 font-semibold text-amber-800 dark:text-amber-300">
+                                    {modQuizCount} Kuis
+                                  </span>
+                                )}
+                                <span className="px-2 py-0.2 rounded bg-blue-50 dark:bg-blue-950/60 font-semibold text-blue-700 dark:text-blue-300">
+                                  {modDurationText}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Section Action Controls */}
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => openModuleModal(mod)}
+                              className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200/80 dark:border-slate-700"
+                              title="Edit Judul Section"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => deleteModule(mod.id)}
+                              className="px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors border border-red-200/60 dark:border-red-900/50"
+                              title="Hapus Section"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Collapsible Content: Zero-gap seamless lesson list */}
+                        {isExpanded && (
+                          <div className="bg-white dark:bg-slate-900">
+                            {mod.lessons?.length === 0 ? (
+                              <div className="p-6 text-center text-xs text-slate-400 italic">
+                                Belum ada materi di section ini. Silakan tambahkan materi pertama melalui tombol di bawah.
+                              </div>
+                            ) : (
+                              /* Zero gap / seamless table rows */
+                              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {mod.lessons.map((lesson, lIdx) => (
+                                  <div
+                                    key={lesson.id}
+                                    onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/${lesson.id}/edit`)}
+                                    className="group flex items-center justify-between py-3 px-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <span className="text-slate-400 font-mono text-xs w-6 text-center shrink-0">
+                                        {idx + 1}.{lIdx + 1}
+                                      </span>
+
+                                      {/* Type Icon */}
+                                      <div
+                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 ${
+                                          lesson.type === 'video'
+                                            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600'
+                                            : lesson.type === 'quiz'
+                                            ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600'
+                                            : lesson.type === 'assignment'
+                                            ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-600'
+                                            : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600'
+                                        }`}
+                                      >
+                                        {lesson.type === 'video' ? <FontAwesomeIcon icon={['fas', 'video']} /> :
+                                         lesson.type === 'quiz' ? <FontAwesomeIcon icon={['fas', 'circle-question']} /> :
+                                         lesson.type === 'assignment' ? <FontAwesomeIcon icon={['fas', 'pen-to-square']} /> :
+                                         <FontAwesomeIcon icon={['fas', 'book-open']} />}
+                                      </div>
+
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <p className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600 transition-colors truncate">
+                                            {lesson.title}
+                                          </p>
+                                          {lesson.is_preview && (
+                                            <span className="text-[10px] font-bold px-2 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                              Gratis Preview
+                                            </span>
+                                          )}
+                                          {lesson.attachment_doc && (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-2 py-0.2 rounded border border-red-200/60">
+                                              <FontAwesomeIcon icon={['fas', 'paperclip']} className="text-[9px]" />
+                                              {lesson.attachment_name || 'Dokumen Panduan'}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 capitalize mt-0.5">
+                                          {lesson.type} • {lesson.duration_seconds > 0 ? `${Math.round(lesson.duration_seconds / 60)} mnt` : 'Tanpa durasi'}
+                                          {lesson.type === 'quiz' && (
+                                            <span> • Min. Skor {lesson.min_pass_score || 60}%</span>
+                                          )}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex items-center gap-1.5 shrink-0 ml-3" onClick={(e) => e.stopPropagation()}>
+                                      {lesson.attachment_doc && (
+                                        <button
+                                          onClick={() => {
+                                            setPreviewDocModal({
+                                              isOpen: true,
+                                              fileUrl: lesson.attachment_doc,
+                                              fileName: lesson.attachment_name || 'Panduan Tugas.pdf',
+                                            });
+                                          }}
+                                          className="px-2 py-1 text-[11px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 rounded flex items-center gap-1"
+                                          title="Baca Dokumen Panduan"
+                                        >
+                                          <FontAwesomeIcon icon={['fas', 'file-pdf']} />
+                                          <span className="hidden sm:inline">Dokumen</span>
+                                        </button>
+                                      )}
+
+                                      {lesson.type === 'assignment' && (
+                                        <button
+                                          onClick={() => openSubmissionsModal(mod.id, lesson)}
+                                          className="px-2 py-1 text-[11px] font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 rounded flex items-center gap-1"
+                                          title="Lihat & Nilai Tugas Siswa"
+                                        >
+                                          <FontAwesomeIcon icon={['fas', 'users-viewfinder']} />
+                                          <span className="hidden sm:inline">Periksa Tugas</span>
+                                        </button>
+                                      )}
+
+                                      {lesson.type === 'video' && lesson.video_url && (
+                                        <button
+                                          onClick={() => setPreviewLesson(lesson)}
+                                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded"
+                                          title="Preview Video"
+                                        >
+                                          <FontAwesomeIcon icon={['fas', 'play']} className="text-xs" />
+                                        </button>
+                                      )}
+
+                                      <button
+                                        onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/${lesson.id}/edit`)}
+                                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                                        title="Edit Materi"
+                                      >
+                                        <FontAwesomeIcon icon={['fas', 'pen-to-square']} className="text-xs" />
+                                      </button>
+
+                                      <button
+                                        onClick={() => deleteLesson(mod.id, lesson.id)}
+                                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                                        title="Hapus Materi"
+                                      >
+                                        <FontAwesomeIcon icon={['fas', 'trash-can']} className="text-xs" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Section Quick Add Action Bar */}
+                            <div className="p-3 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2">
+                              {isAssignmentSection ? (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-purple-600 dark:text-purple-400 flex-1 border border-dashed border-purple-300 dark:border-purple-900/50 hover:bg-purple-50 text-xs"
+                                    onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create?type=assignment`)}
+                                  >
+                                    <FontAwesomeIcon icon={['fas', 'file-lines']} className="mr-1" /> + Tambah Tugas Akhir
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-blue-600 flex-1 border border-dashed border-blue-200 dark:border-blue-900 text-xs"
+                                    onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create?type=reading`)}
+                                  >
+                                    + Tambah Panduan / Artikel
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-blue-600 flex-1 border border-dashed border-blue-200 dark:border-blue-900 text-xs"
+                                    onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create?type=video`)}
+                                  >
+                                    + Tambah Materi Video
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-emerald-600 flex-1 border border-dashed border-emerald-200 dark:border-emerald-900 text-xs"
+                                    onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create?type=reading`)}
+                                  >
+                                    + Tambah Bacaan
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-amber-600 dark:text-amber-400 flex-1 border border-dashed border-amber-300 dark:border-amber-900/50 hover:bg-amber-50 text-xs"
+                                    onClick={() => navigate(`/admin/elearning/courses/${courseId}/modules/${mod.id}/lessons/create?type=quiz`)}
+                                  >
+                                    <FontAwesomeIcon icon={['fas', 'clipboard-question']} className="mr-1" /> + Tambah Kuis
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── RIGHT COLUMN: RUANG KHUSUS DETIL MATERI & SPESIFIKASI KURSUS (lg:col-span-4) ── */}
+            <div className="lg:col-span-4 lg:sticky lg:top-6 space-y-4">
+              
+              {/* Course Specification Card */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-5">
+                
+                {/* Thumbnail Preview */}
+                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                  {course?.thumbnail ? (
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-3xl text-slate-300 dark:text-slate-600">
+                      <FontAwesomeIcon icon={['fas', 'graduation-cap']} />
+                    </div>
+                  )}
+                  <span className="absolute bottom-2 left-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-950/75 text-white backdrop-blur-xs">
+                    {course?.category || 'E-Learning'}
+                  </span>
+                  <span className={`absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    course?.is_active !== false ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'
+                  }`}>
+                    {course?.is_active !== false ? 'Aktif' : 'Draft'}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 line-clamp-2">
+                    {course?.title || 'Judul Kursus'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                    {course?.description ? course.description.replace(/<[^>]*>?/gm, '') : 'Kelola struktur materi pembelajaran di bawah ini.'}
+                  </p>
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800" />
+
+                {/* 5 Key Metric Rows */}
+                <div className="space-y-3 text-xs">
+                  
+                  {/* 1. Program */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center text-xs shrink-0">
+                      <FontAwesomeIcon icon={['fas', 'tag']} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Program Belajar
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
+                        {course?.display_program || course?.program_name || 'Program Reguler SkorPluss'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 2. Level */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center text-xs shrink-0">
+                      <FontAwesomeIcon icon={['fas', 'layer-group']} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Tingkat Level
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                        {course?.level || 'Level Pemula (Dasar)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 3. Total Durasi */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 flex items-center justify-center text-xs shrink-0">
+                      <FontAwesomeIcon icon={['fas', 'clock']} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Total Estimasi Durasi
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                        {formatTotalDuration(totalDurationSeconds)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 4. Jumlah Peserta */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center text-xs shrink-0">
+                      <FontAwesomeIcon icon={['fas', 'users']} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Jumlah Peserta Terdaftar
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                        {(course?.participants || 0).toLocaleString('id-ID')} Siswa
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 5. Detil Materi Breakdown */}
+                  <div className="flex items-start gap-3 pt-1">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center text-xs shrink-0">
+                      <FontAwesomeIcon icon={['fas', 'book-open']} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Detil Materi & Kuis
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                        {modules.length} Section • {totalLessons} Materi Total
+                      </span>
+
+                      {/* Pill Breakdown */}
+                      <div className="grid grid-cols-2 gap-1.5 mt-2">
+                        <span className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <span>🎥</span> {lessonsByType.video} Video
+                        </span>
+                        <span className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <span>📖</span> {lessonsByType.reading} Bacaan
+                        </span>
+                        <span className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <span>❓</span> {lessonsByType.quiz} Kuis
+                        </span>
+                        <span className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <span>📝</span> {lessonsByType.assignment} Tugas
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 6. Tutor / Instruktur */}
+                  <div className="flex items-start gap-3 pt-1">
+                    <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 flex items-center justify-center text-xs shrink-0">
+                      <FontAwesomeIcon icon={['fas', 'chalkboard-user']} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Tutor Pengajar
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
+                        {course?.display_instructor || course?.instructor_name || 'Tim Tutor SkorPluss'}
+                      </span>
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800" />
+
+                {/* Quick Action Buttons */}
+                <div className="space-y-2 pt-1">
+                  {course?.slug && (
+                    <Link
+                      to={`/kursus/${course.slug}`}
+                      target="_blank"
+                      className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 font-bold text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 bg-white dark:bg-slate-900 transition-all text-center flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <FontAwesomeIcon icon={['fas', 'arrow-up-right-from-square']} className="text-[10px]" />
+                      <span>Lihat Halaman Siswa</span>
+                    </Link>
+                  )}
+
+                  <Link
+                    to={`/admin/elearning/courses/${courseId}/edit`}
+                    className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs text-slate-800 dark:text-slate-200 transition-all text-center flex items-center justify-center gap-1.5"
+                  >
+                    <FontAwesomeIcon icon={['fas', 'gear']} className="text-[10px]" />
+                    <span>Edit Informasi Kursus</span>
+                  </Link>
+                </div>
+
+              </div>
+
+            </div>
+
           </div>
         )}
 

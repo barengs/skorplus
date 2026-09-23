@@ -130,7 +130,7 @@ export default function AdminCourseFormPage() {
 
   return (
     <AppLayout title={isEditing ? 'Edit Kursus' : 'Tambah Kursus Baru'}>
-      <div className="max-w-4xl mx-auto pb-16 space-y-6">
+      <div className="w-full pb-16 space-y-6">
         {/* Header Breadcrumb */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

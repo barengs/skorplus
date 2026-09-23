@@ -174,4 +174,48 @@ class ElearningQuizTest extends TestCase
 
         $successResponse->assertOk();
     }
+
+    public function test_admin_can_view_and_update_quiz_lesson(): void
+    {
+        $admin = User::factory()->create();
+        $token = JWTAuth::fromUser($admin);
+
+        $course = Course::create(['title' => 'TPS', 'slug' => 'tps']);
+        $module = Module::create(['course_id' => $course->id, 'title' => 'Bab 1', 'sort_order' => 1]);
+
+        $lesson = Lesson::create([
+            'module_id' => $module->id,
+            'title' => 'Kuis Lama',
+            'type' => 'quiz',
+            'min_pass_score' => 60,
+            'quiz_questions' => [
+                ['question' => 'Soal 1', 'options' => ['A', 'B'], 'correct_index' => 0],
+            ],
+        ]);
+
+        // Test GET (show)
+        $showResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/admin/elearning/modules/{$module->id}/lessons/{$lesson->id}");
+
+        $showResponse->assertOk()
+            ->assertJsonPath('title', 'Kuis Lama')
+            ->assertJsonPath('type', 'quiz');
+
+        // Test PUT (update)
+        $updateResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/admin/elearning/modules/{$module->id}/lessons/{$lesson->id}", [
+                'title' => 'Kuis Baru Diperbarui',
+                'min_pass_score' => 75,
+                'quiz_questions' => [
+                    ['question' => 'Soal Diperbarui', 'options' => ['A', 'B', 'C'], 'correct_index' => 1],
+                ],
+            ]);
+
+        $updateResponse->assertOk()
+            ->assertJsonPath('title', 'Kuis Baru Diperbarui')
+            ->assertJsonPath('min_pass_score', 75);
+
+        $this->assertEquals('Kuis Baru Diperbarui', $lesson->fresh()->title);
+        $this->assertEquals(75, $lesson->fresh()->min_pass_score);
+    }
 }

@@ -194,96 +194,158 @@ export default function ProfilePage() {
     }
   };
 
-  const programBadge = {
-    mandiri: 'slate',
-    intensif: 'blue',
-    garansi: 'gold',
+  const PROGRAM_INFO = {
+    intensif: {
+      name: 'Intensif',
+      fullName: 'Program Intensif (Bimbel UTBK & Kedinasan)',
+      badgeClass: 'bg-amber-400 text-slate-950 font-black',
+      icon: '🚀',
+      description:
+        'Bimbingan intensif persiapan UTBK-SNBT & Kedinasan dengan akses penuh seluruh modul e-learning, tanya tutor 24/7 tanpa batas, simulasi CBT tak terbatas, dan live streaming 3×/minggu.',
+      purpose:
+        'Mempersiapkan siswa meraih nilai maksimal UTBK dan kelulusan PTN/Kedinasan impian dengan pendampingan kurikulum terpadu.',
+    },
+    mandiri: {
+      name: 'Mandiri',
+      fullName: 'Program Mandiri',
+      badgeClass: 'bg-blue-300 text-slate-950 font-black',
+      icon: '📚',
+      description:
+        'Paket belajar mandiri fleksibel dengan akses bank soal dasar, 5× simulasi CBT per bulan, dan pelacakan progres belajar mandiri.',
+      purpose:
+        'Memfasilitasi siswa belajar secara independen dan terstruktur sesuai ritme belajar masing-masing.',
+    },
+    garansi: {
+      name: 'Garansi',
+      fullName: 'Program Garansi PTN',
+      badgeClass: 'bg-emerald-400 text-slate-950 font-black',
+      icon: '🏆',
+      description:
+        'Bimbingan eksklusif bergaransi lolos PTN impian dengan sesi privat 1-on-1 bersama tutor ahli, konsultasi strategi pemilihan jurusan, dan materi olimpiade eksklusif.',
+      purpose:
+        'Memberikan pendampingan menyeluruh dan jaminan bimbingan sampai resmi diterima di perguruan tinggi impian.',
+    },
   };
+
+  const userProgramKey = (user?.program || 'intensif').toLowerCase();
+  const currentProgram = PROGRAM_INFO[userProgramKey] || PROGRAM_INFO.intensif;
+  const userRole = user?.roles?.[0] || 'siswa';
 
   return (
     <AppLayout title="Profil Saya">
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         {/* Profile Header Banner */}
         <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-          {/* Cover gradient background */}
-          <div className="h-36 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 relative">
-            <div className="absolute inset-0 bg-pattern opacity-10" />
-            <div className="absolute top-4 right-4 flex items-center gap-2">
-              <span className="text-xs font-semibold px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white border border-white/30">
+          {/* Cover gradient background & identity area */}
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white p-6 sm:p-8 relative">
+            <div className="absolute inset-0 bg-pattern opacity-10 pointer-events-none" />
+
+            {/* Top Bar inside Banner: ID badge */}
+            <div className="flex items-center justify-between gap-2 mb-6">
+              <span className="text-xs font-bold px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white border border-white/30 shadow-xs">
                 SkorPluss ID: #{user?.id || '—'}
               </span>
+              <span className="text-xs text-blue-100/80 hidden sm:inline">
+                Portal Siswa SkorPluss Learning Center
+              </span>
             </div>
-          </div>
 
-          <div className="px-6 pb-6 pt-0 relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-16">
-            <div className="flex items-end gap-5">
-              {/* Avatar with upload trigger */}
-              <div className="relative group">
-                <div className="ring-4 ring-white dark:ring-slate-900 rounded-full overflow-hidden shadow-lg bg-slate-100 dark:bg-slate-800">
-                  <Avatar name={formData.name || 'User'} src={formData.avatar} size="2xl" />
+            {/* Main Header Content: Avatar + Elevated Student Info + Completion Meter */}
+            <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              {/* Left Column: Avatar & Prominent Student Details */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                {/* Avatar with upload trigger */}
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 ring-4 ring-white/30 rounded-full overflow-hidden shadow-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <Avatar name={formData.name || 'User'} src={formData.avatar} size="2xl" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95 disabled:opacity-50 border-2 border-white"
+                    title="Ubah Foto Profil"
+                  >
+                    <FontAwesomeIcon icon={faCamera} className="text-xs" />
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleAvatarChange}
+                    accept="image/png, image/jpeg, image/webp"
+                    className="hidden"
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition-all hover:scale-110 active:scale-95 disabled:opacity-50"
-                  title="Ubah Foto Profil"
-                >
-                  <FontAwesomeIcon icon={faCamera} className="text-xs" />
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleAvatarChange}
-                  accept="image/png, image/jpeg, image/webp"
-                  className="hidden"
-                />
+
+                {/* Elevated Student Info */}
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Student Name: Ke atas, bold & crisp */}
+                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+                      {formData.name || 'Nama Pengguna'}
+                    </h1>
+
+                    {/* Status Badge: Sangat jelas & kontras tinggi */}
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-sm border border-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                      <span>Status: {userRole === 'admin' ? 'Administrator' : 'Siswa Aktif'}</span>
+                    </span>
+
+                    {/* Program Badge: Sangat jelas */}
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-sm ${currentProgram.badgeClass}`}>
+                      <span>{currentProgram.icon}</span>
+                      <span>Program: {currentProgram.name.toUpperCase()}</span>
+                    </span>
+                  </div>
+
+                  {/* Email & Phone */}
+                  <p className="text-xs sm:text-sm text-blue-100 flex items-center gap-2">
+                    <span>{formData.email}</span>
+                    {formData.phone && (
+                      <>
+                        <span>•</span>
+                        <span>{formData.phone}</span>
+                      </>
+                    )}
+                    {formData.school && (
+                      <>
+                        <span>•</span>
+                        <span className="truncate max-w-xs">{formData.school}</span>
+                      </>
+                    )}
+                  </p>
+
+                  {/* Maksud dan Tujuan Program Intensif / Aktif */}
+                  <div className="mt-3 p-3.5 rounded-xl bg-white/15 dark:bg-black/25 backdrop-blur-md border border-white/20 text-xs text-blue-50 max-w-xl space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                      <span>🎯</span>
+                      <span>Maksud & Tujuan {currentProgram.fullName}:</span>
+                    </div>
+                    <p className="text-blue-100 text-[11px] sm:text-xs leading-relaxed">
+                      {currentProgram.description}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Basic Info */}
-              <div className="pb-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
-                    {formData.name || 'Nama Pengguna'}
-                  </h1>
-                  <Badge variant={user?.roles?.[0] === 'admin' ? 'red' : 'blue'} size="sm">
-                    {user?.roles?.[0]?.toUpperCase() || 'SISWA'}
-                  </Badge>
-                  {user?.program && (
-                    <Badge variant={programBadge[user.program] || 'purple'} size="sm">
-                      {user.program.toUpperCase()}
-                    </Badge>
-                  )}
+              {/* Right Column: Profile Completion Meter */}
+              <div className="w-full sm:w-64 bg-white/15 dark:bg-black/30 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white shrink-0">
+                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                  <span className="text-blue-100">Kelengkapan Profil</span>
+                  <span className="font-black text-white text-sm">{completionPercentage}%</span>
                 </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
-                  <span>{formData.email}</span>
-                  {formData.phone && (
-                    <>
-                      <span>•</span>
-                      <span>{formData.phone}</span>
-                    </>
-                  )}
+                <div className="w-full h-2.5 bg-black/25 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full transition-all duration-500 shadow-sm"
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-blue-100 mt-2">
+                  {completionPercentage === 100
+                    ? '✨ Profil kamu sudah 100% lengkap!'
+                    : 'Lengkapi profilmu untuk pengalaman belajar optimal.'}
                 </p>
               </div>
-            </div>
-
-            {/* Profile Completion Meter */}
-            <div className="w-full sm:w-64 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between text-xs font-medium mb-1.5">
-                <span className="text-slate-600 dark:text-slate-400">Kelengkapan Profil</span>
-                <span className="text-blue-600 dark:text-blue-400 font-bold">{completionPercentage}%</span>
-              </div>
-              <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 rounded-full"
-                  style={{ width: `${completionPercentage}%` }}
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                {completionPercentage === 100
-                  ? '✨ Profil kamu sudah lengkap!'
-                  : 'Lengkapi profilmu untuk pengalaman belajar optimal.'}
-              </p>
             </div>
           </div>
 

@@ -5,8 +5,8 @@ const base = 'inline-flex items-center justify-center font-semibold transition-a
 
 const variants = {
   primary: 'bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-400 hover:to-violet-500 text-white shadow-lg shadow-blue-500/25 focus-visible:ring-blue-500',
-  secondary: 'bg-slate-700 hover:bg-slate-600 text-slate-900 dark:text-slate-100 focus-visible:ring-slate-500',
-  ghost: 'border border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 focus-visible:ring-slate-500',
+  secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-700 focus-visible:ring-slate-400',
+  ghost: 'border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white focus-visible:ring-slate-400',
   danger: 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/25 focus-visible:ring-red-500',
   success: 'bg-emerald-600 hover:bg-emerald-500 text-white focus-visible:ring-emerald-500',
   link: 'text-blue-400 hover:text-blue-300 underline-offset-4 hover:underline',

@@ -82,13 +82,13 @@ export default function CoursesPage() {
 
   // Format rating comma (e.g. 4,9)
   const formatRating = (val) => {
-    if (!val) return '4,8';
+    if (!val || Number(val) === 0) return '0,0';
     return String(Number(val).toFixed(1)).replace('.', ',');
   };
 
   // Format review count (e.g. 435.765 peringkat)
   const formatReviews = (val) => {
-    const num = Number(val) || 25;
+    const num = Number(val) || 0;
     return new Intl.NumberFormat('id-ID').format(num);
   };
 
@@ -110,7 +110,7 @@ export default function CoursesPage() {
       <LandingNav />
 
       {/* ── Hero & Search Header ── */}
-      <header className="pt-28 pb-10 px-6 border-b border-slate-200 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/40 backdrop-blur-sm">
+      <header className="pt-32 pb-10 px-6 border-b border-slate-200 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>

@@ -13,7 +13,44 @@ class Program extends Model
         'is_popular' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'cbt_quota' => 'integer',
+        'rating' => 'float',
+        'total_reviews' => 'integer',
     ];
+
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
+    public function getCbtUsageForUser(?User $user): array
+    {
+        if (! $user) {
+            return [
+                'quota' => $this->cbt_quota,
+                'used' => 0,
+                'remaining' => $this->cbt_quota,
+                'is_limit_reached' => false,
+                'is_unlimited' => $this->cbt_quota === null || $this->cbt_quota <= 0,
+            ];
+        }
+
+        $used = CbtSession::where('user_id', $user->id)
+            ->where('status', '!=', 'cancelled')
+            ->count();
+        $isUnlimited = $this->cbt_quota === null || $this->cbt_quota <= 0;
+        $quota = $isUnlimited ? null : (int) $this->cbt_quota;
+        $remaining = $isUnlimited ? null : max(0, $quota - $used);
+        $isLimitReached = ! $isUnlimited && $used >= $quota;
+
+        return [
+            'quota' => $quota,
+            'used' => $used,
+            'remaining' => $remaining,
+            'is_limit_reached' => $isLimitReached,
+            'is_unlimited' => $isUnlimited,
+        ];
+    }
 
     protected $appends = ['learning_path', 'strategic_roadmap'];
 

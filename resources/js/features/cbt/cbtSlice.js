@@ -10,12 +10,21 @@ export const fetchAvailableExams = createAsyncThunk('cbt/fetchAvailableExams', a
   }
 });
 
+export const fetchExamTypes = createAsyncThunk('cbt/fetchExamTypes', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get('/cbt/exam-types');
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message);
+  }
+});
+
 export const startSession = createAsyncThunk('cbt/start', async (payload, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/cbt/sessions', payload);
     return data;
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message ?? 'Gagal memulai sesi.');
+    return rejectWithValue(err.response?.data || { message: 'Gagal memulai sesi.' });
   }
 });
 
@@ -37,6 +46,15 @@ export const submitSession = createAsyncThunk('cbt/submit', async (sessionId, { 
   }
 });
 
+export const cancelSession = createAsyncThunk('cbt/cancel', async (sessionId, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post(`/cbt/sessions/${sessionId}/cancel`);
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message ?? 'Gagal membatalkan sesi ujian.');
+  }
+});
+
 export const fetchSessions = createAsyncThunk('cbt/fetchSessions', async (_, { rejectWithValue }) => {
   try {
     const { data } = await api.get('/cbt/sessions');
@@ -50,6 +68,7 @@ const cbtSlice = createSlice({
   name: 'cbt',
   initialState: {
     availableExams: [],
+    examTypes: [],
     sessions: [],
     currentSession: null,
     questions: [],
@@ -59,6 +78,7 @@ const cbtSlice = createSlice({
     submitting: false,
     result: null,
     error: null,
+    quotaInfo: null,
   },
   reducers: {
     setCurrentQuestion(state, action) { state.currentQuestion = action.payload; },
@@ -77,7 +97,16 @@ const cbtSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchAvailableExams.fulfilled, (state, action) => { state.availableExams = action.payload.exams; })
+      .addCase(fetchAvailableExams.fulfilled, (state, action) => {
+        state.availableExams = action.payload.exams || [];
+        if (action.payload.exam_types) {
+          state.examTypes = action.payload.exam_types;
+        }
+        state.quotaInfo = action.payload.quota_info || null;
+      })
+      .addCase(fetchExamTypes.fulfilled, (state, action) => {
+        state.examTypes = action.payload || [];
+      })
       .addCase(startSession.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(startSession.fulfilled, (state, action) => {
         state.loading = false;
@@ -86,10 +115,29 @@ const cbtSlice = createSlice({
         state.answers = {};
         state.currentQuestion = 1;
       })
-      .addCase(startSession.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+      .addCase(startSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || (typeof action.payload === 'string' ? action.payload : 'Gagal memulai sesi.');
+        if (action.payload?.quota_info) {
+          state.quotaInfo = action.payload.quota_info;
+        }
+      })
       .addCase(submitSession.pending, (state) => { state.submitting = true; })
       .addCase(submitSession.fulfilled, (state, action) => { state.submitting = false; state.result = action.payload; })
       .addCase(submitSession.rejected, (state, action) => { state.submitting = false; state.error = action.payload; })
+      .addCase(cancelSession.pending, (state) => { state.loading = true; })
+      .addCase(cancelSession.fulfilled, (state) => {
+        state.loading = false;
+        state.currentSession = null;
+        state.questions = [];
+        state.answers = {};
+        state.currentQuestion = 1;
+        state.result = null;
+      })
+      .addCase(cancelSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(fetchSessions.fulfilled, (state, action) => { state.sessions = action.payload.sessions; });
   },
 });

@@ -186,11 +186,11 @@ export default function AdminUsersPage() {
 
   return (
     <AppLayout title="Kelola Pengguna & Siswa">
-      <div className="max-w-7xl mx-auto pb-16">
+      <div className="w-full pb-16 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">Manajemen Pengguna (Redux + TanStack)</h2>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">Manajemen Pengguna</h2>
             <p className="text-slate-600 dark:text-slate-400 text-sm">Total Pengguna Terdaftar: {users.length}</p>
           </div>
           <Button onClick={() => openModal()}>+ Tambah Pengguna</Button>

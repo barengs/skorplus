@@ -1,6 +1,24 @@
 @import "tailwindcss";
 
+@theme {
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius: 3px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 5px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --radius-4xl: 8px;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Global Modern Minimalist Radius for buttons */
+button:not(.rounded-full):not([class*="rounded-full"]),
+[role="button"]:not(.rounded-full):not([class*="rounded-full"]) {
+  border-radius: var(--radius-md, 4px);
+}
 
 /* Plus Jakarta Sans is loaded via Google Fonts in blade */
 body {

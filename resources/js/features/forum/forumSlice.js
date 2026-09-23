@@ -19,6 +19,15 @@ export const createPost = createAsyncThunk('forum/createPost', async (payload, {
   }
 });
 
+export const fetchForumCourses = createAsyncThunk('forum/fetchCourses', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get('/forum/courses');
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message ?? 'Gagal memuat daftar kursus.');
+  }
+});
+
 export const replyPost = createAsyncThunk('forum/reply', async ({ postId, content }, { rejectWithValue }) => {
   try {
     const { data } = await api.post(`/forum/posts/${postId}/reply`, { content });
@@ -32,6 +41,8 @@ const forumSlice = createSlice({
   name: 'forum',
   initialState: {
     posts: [],
+    courses: [],
+    loadingCourses: false,
     pagination: null,
     loading: false,
     submitting: false,
@@ -49,6 +60,12 @@ const forumSlice = createSlice({
         state.pagination = { ...action.payload, data: undefined };
       })
       .addCase(fetchPosts.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+      .addCase(fetchForumCourses.pending, (state) => { state.loadingCourses = true; })
+      .addCase(fetchForumCourses.fulfilled, (state, action) => {
+        state.loadingCourses = false;
+        state.courses = action.payload;
+      })
+      .addCase(fetchForumCourses.rejected, (state) => { state.loadingCourses = false; })
       .addCase(createPost.pending, (state) => { state.submitting = true; })
       .addCase(createPost.fulfilled, (state, action) => {
         state.submitting = false;

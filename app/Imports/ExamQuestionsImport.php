@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Exam;
+use App\Models\ExamType;
 use App\Models\Question;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -64,9 +65,28 @@ class ExamQuestionsImport implements ToCollection, WithHeadingRow
             $isActive = strtoupper(trim($row['status'] ?? 'AKTIF'));
             $isActive = $isActive === 'AKTIF' || $isActive === 'Y' || $isActive === '1';
 
+            // Auto-detect exam_type_id from subtest/subject or fallback to exam's default type
+            $examTypeId = null;
+            if (! empty($subtest) || ! empty($subject)) {
+                $matchedType = ExamType::where(function ($q) use ($subtest, $subject) {
+                    if (! empty($subtest)) {
+                        $q->where('name', 'like', "%{$subtest}%")
+                            ->orWhere('code', $subtest);
+                    }
+                    if (! empty($subject)) {
+                        $q->orWhere('name', 'like', "%{$subject}%")
+                            ->orWhere('code', $subject);
+                    }
+                })->first();
+                $examTypeId = $matchedType?->id ?? $this->exam->exam_type_id;
+            } else {
+                $examTypeId = $this->exam->exam_type_id;
+            }
+
             DB::beginTransaction();
             try {
                 $question = Question::create([
+                    'exam_type_id' => $examTypeId,
                     'subject' => $subject,
                     'subtest' => $subtest,
                     'question_text' => $questionText,

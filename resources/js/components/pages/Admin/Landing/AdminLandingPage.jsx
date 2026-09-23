@@ -150,7 +150,7 @@ export default function AdminLandingPage() {
 
   return (
     <AppLayout title="Kelola Landing Page">
-      <div className="max-w-6xl mx-auto pb-16">
+      <div className="w-full pb-16 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -169,6 +169,7 @@ export default function AdminLandingPage() {
           {[
             { id: 'hero', label: '🎯 Hero Section' },
             { id: 'promo', label: '📢 Promo Banner' },
+            { id: 'programs', label: '🎓 Program Belajar' },
             { id: 'features', label: '⚡ Fitur' },
             { id: 'testimonials', label: '💬 Testimoni' },
             { id: 'stats', label: '📊 Statistik' },
@@ -330,6 +331,7 @@ export default function AdminLandingPage() {
                     is_popular: false,
                     is_active: true,
                     sort_order: programs.length + 1,
+                    cbt_quota: null,
                   });
                   setModalType('program');
                 }}
@@ -350,6 +352,15 @@ export default function AdminLandingPage() {
                     <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
                       {p.price} <span className="text-xs text-slate-500 font-normal">{p.price_period}</span>
                     </p>
+                    <div className="mt-2">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        p.cbt_quota 
+                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300' 
+                          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                      }`}>
+                        <span>🎯</span> CBT: {p.cbt_quota ? `${p.cbt_quota}x Pengerjaan` : 'Tak Terbatas'}
+                      </span>
+                    </div>
                     <ul className="mt-4 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
                       {(p.features || []).map((f, idx) => (
                         <li key={idx}>✓ {f}</li>
@@ -605,6 +616,46 @@ export default function AdminLandingPage() {
                         onChange={(e) => setEditingItem({ ...editingItem, features: e.target.value })}
                       />
                     </FormField>
+
+                    <div className="space-y-1.5 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                        Kuota Pengerjaan CBT (Tryout)
+                      </label>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {[
+                          { label: '2x Pengerjaan', value: 2 },
+                          { label: '10x Pengerjaan', value: 10 },
+                          { label: 'Tak Terbatas', value: null },
+                        ].map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => setEditingItem({ ...editingItem, cbt_quota: preset.value })}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                              editingItem.cbt_quota === preset.value
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Atau isi angka khusus (kosongkan jika tak terbatas)"
+                        value={editingItem.cbt_quota === null || editingItem.cbt_quota === undefined ? '' : editingItem.cbt_quota}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                          setEditingItem({ ...editingItem, cbt_quota: isNaN(val) ? null : val });
+                        }}
+                      />
+                      <p className="text-[11px] text-slate-500">
+                        Batas jumlah pengerjaan ujian CBT untuk siswa di program ini. Peringatan dan modal blokir akan muncul jika batas tercapai.
+                      </p>
+                    </div>
+
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"

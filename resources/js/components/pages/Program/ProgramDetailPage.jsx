@@ -7,6 +7,8 @@ import { LandingNav } from '../Landing/LandingPage';
 import Logo from '../../atoms/Logo';
 import Button from '../../atoms/Button';
 import Badge from '../../atoms/Badge';
+import CbtLimitModal from '../../molecules/CbtLimitModal';
+import ReviewModal from '../../molecules/ReviewModal';
 
 export default function ProgramDetailPage() {
   const { slug } = useParams();
@@ -20,6 +22,11 @@ export default function ProgramDetailPage() {
   const [activeTab, setActiveTab] = useState('courses_path'); // 'courses_path' | 'strategic_roadmap'
   const [expandedModules, setExpandedModules] = useState({});
   const [activeFaq, setActiveFaq] = useState(null);
+  const [userCbtUsage, setUserCbtUsage] = useState(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [userReview, setUserReview] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const toggleModuleAccordion = (key) => {
     setExpandedModules((prev) => ({
@@ -57,16 +64,40 @@ export default function ProgramDetailPage() {
   const fetchProgramDetail = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`/api/programs/${slug}`);
+      const res = await axios.get(`/api/programs/${slug}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const data = res.data;
       setProgram(data.program);
       setCourses(data.courses || []);
       setAllPrograms(data.all_programs || []);
+      setUserCbtUsage(data.user_cbt_usage || null);
+
+      fetchProgramReviews(slug);
     } catch (err) {
       console.error('Failed to load program detail:', err);
       toast.error('Gagal memuat detail program');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProgramReviews = async (progSlug) => {
+    try {
+      const res = await axios.get(`/api/programs/${progSlug}/reviews`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setReviews(res.data.reviews || []);
+      setUserReview(res.data.user_review || null);
+      if (res.data.rating !== undefined) {
+        setProgram((prev) => prev ? {
+          ...prev,
+          rating: res.data.rating,
+          total_reviews: res.data.total_reviews,
+        } : null);
+      }
+    } catch (err) {
+      console.error('Failed to load program reviews:', err);
     }
   };
 
@@ -173,6 +204,18 @@ export default function ProgramDetailPage() {
                 Alur belajar komprehensif yang dirancang secara saintifik untuk membantu Anda menguasai seluruh materi seleksi PTN dan talenta digital dengan efisien, terukur, dan didampingi mentor ahli.
               </p>
 
+              {/* Dynamic Program Rating Badge */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/80 text-xs sm:text-sm">
+                  <span className="text-amber-400 font-bold">★ {program.rating ? Number(program.rating).toFixed(1).replace('.', ',') : '0,0'}</span>
+                  <span className="text-slate-400">
+                    ({new Intl.NumberFormat('id-ID').format(Number(program.total_reviews) || 0)} ulasan siswa)
+                  </span>
+                </div>
+                <span className="text-slate-500">•</span>
+                <span className="text-xs text-slate-300">Program Terverifikasi</span>
+              </div>
+
               <div className="flex flex-wrap items-baseline gap-2 pt-2">
                 <span className="text-3xl sm:text-4xl font-black text-white">{program.price}</span>
                 <span className="text-slate-400 text-sm">{program.price_period || '/bulan'}</span>
@@ -216,6 +259,10 @@ export default function ProgramDetailPage() {
                 Ringkasan Fasilitas Program
               </h3>
               <ul className="space-y-3 text-xs sm:text-sm text-slate-200">
+                <li className="flex items-start gap-3">
+                  <span className="text-purple-400 font-bold shrink-0">⚡</span>
+                  <span>Simulasi CBT: <strong>{program.cbt_quota ? `${program.cbt_quota}x Pengerjaan` : 'Akses Tanpa Batas'}</strong></span>
+                </li>
                 {(program.features || []).map((feat, idx) => (
                   <li key={idx} className="flex items-start gap-3">
                     <span className="text-emerald-400 font-bold shrink-0">✓</span>
@@ -561,9 +608,11 @@ export default function ProgramDetailPage() {
                     </p>
 
                     <div className="flex items-center gap-2 mt-2.5 text-xs text-slate-500">
-                      <span className="text-amber-500 font-bold">★ {course.rating || '4,8'}</span>
+                      <span className="text-amber-500 font-bold">
+                        ★ {course.rating ? Number(course.rating).toFixed(1).replace('.', ',') : '0,0'}
+                      </span>
                       <span>•</span>
-                      <span>{course.total_reviews || 25} ulasan</span>
+                      <span>{course.total_reviews || 0} ulasan</span>
                     </div>
                   </div>
 
@@ -591,7 +640,293 @@ export default function ProgramDetailPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════════════
-            SECTION 3: PERBANDINGAN PROGRAM LAINNYA
+            SECTION 3: FITUR CBT & KUOTA PENGGUNAAN SISWA
+            ══════════════════════════════════════════════════════════════════ */}
+        <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-slate-700/80 rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden">
+          {/* Subtle background circles */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-2">
+                  <span>⚡</span> Simulasi CBT & Evaluasi IRT
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                  Fitur CBT & Batas Penggunaan Ujian
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+                  Simulasi tryout dengan Item Response Theory (IRT) berstandar nasional dan pelacakan frekuensi pengerjaan ujian untuk Program {program.name}.
+                </p>
+              </div>
+
+              <div className="shrink-0">
+                <span className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 text-white border border-white/20 backdrop-blur-sm">
+                  Kuota Program: {program.cbt_quota ? `${program.cbt_quota}x Ujian` : 'Tak Terbatas'}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              
+              {/* Kolom Kiri: Status Penggunaan Siswa */}
+              <div className="lg:col-span-7 space-y-5">
+                <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Status Pengerjaan Siswa
+                    </span>
+                    {userCbtUsage?.is_limit_reached ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse">
+                        ⚠️ Batas Kuota Tercapai
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        {userCbtUsage ? 'Siswa Terdaftar' : 'Tersedia di Program'}
+                      </span>
+                    )}
+                  </div>
+
+                  {userCbtUsage ? (
+                    <div className="space-y-4">
+                      <div className="flex items-baseline justify-between">
+                        <div>
+                          <span className="text-2xl sm:text-3xl font-black text-white">
+                            {userCbtUsage.used} Sesi
+                          </span>
+                          <span className="text-xs text-slate-400 ml-2">
+                            dari {userCbtUsage.is_unlimited ? '∞ (Tak Terbatas)' : `${userCbtUsage.quota}x Kuota`}
+                          </span>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-300">
+                          {userCbtUsage.is_unlimited
+                            ? 'Akses Bebas'
+                            : `Sisa ${userCbtUsage.remaining}x kesempatan`}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      {!userCbtUsage.is_unlimited && (
+                        <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className={`h-2.5 rounded-full transition-all duration-500 ${
+                              userCbtUsage.is_limit_reached ? 'bg-red-500' : 'bg-blue-500'
+                            }`}
+                            style={{
+                              width: `${Math.min(100, Math.round((userCbtUsage.used / userCbtUsage.quota) * 100))}%`
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Limit Reached Warning Message */}
+                      {userCbtUsage.is_limit_reached ? (
+                        <div className="p-4 rounded-xl bg-red-950/50 border border-red-800/60 text-xs text-red-200 space-y-2">
+                          <div className="flex items-center gap-2 font-bold text-red-400">
+                            <span>⚠️</span>
+                            <span>Batas Maksimal Pengerjaan Telah Dicapai</span>
+                          </div>
+                          <p className="leading-relaxed">
+                            Anda telah mengerjakan CBT sebanyak {userCbtUsage.used} kali dari batas {userCbtUsage.quota}x untuk program ini. Anda tidak dapat memulai sesi ujian baru pada paket ini.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-300">
+                          Anda masih memiliki {userCbtUsage.is_unlimited ? 'kesempatan tanpa batas' : `${userCbtUsage.remaining} kesempatan`} untuk mengerjakan simulasi CBT pada program ini.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        Siswa yang terdaftar pada <strong>Program {program.name}</strong> memperoleh alokasi pengerjaan ujian CBT sebanyak <strong>{program.cbt_quota ? `${program.cbt_quota} kali` : 'tanpa batas (unlimited)'}</strong>.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-blue-400 font-semibold">
+                        <span>✓</span>
+                        <span>Sistem otomatis melacak jumlah pengerjaan setiap siswa</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Button */}
+                  <div className="pt-2">
+                    {userCbtUsage?.is_limit_reached ? (
+                      <button
+                        onClick={() => setShowLimitModal(true)}
+                        className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>⚠️ Kuota CBT Telah Habis — Lihat Detail Batas</span>
+                      </button>
+                    ) : token ? (
+                      <Link
+                        to="/cbt"
+                        className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 text-center block"
+                      >
+                        <span>🚀 Kerjakan Ujian CBT Sekarang</span>
+                        <span>→</span>
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/daftar"
+                        className="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 text-center block"
+                      >
+                        <span>Daftar & Dapatkan Akses CBT Program Ini</span>
+                        <span>→</span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Kolom Kanan: 4 Fasilitas Unggulan CBT */}
+              <div className="lg:col-span-5 space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Keunggulan Ujian CBT Program Ini
+                </h3>
+
+                <div className="space-y-2.5">
+                  {[
+                    { title: 'Sistem Skoring IRT Resmi', desc: 'Bobot soal dinamis berbasis tingkat kesulitan akurat seperti SNPMB.' },
+                    { title: 'Batas Pengerjaan Terarah', desc: program.cbt_quota ? `Dibatasi ${program.cbt_quota}x agar siswa fokus pada persiapan matang sebelum tryout.` : 'Akses fleksibel tanpa batasan kuota kapan pun Anda siap.' },
+                    { title: 'Analisis Kekuatan & Kelemahan', desc: 'Pemetaan skor otomatis per subtes TPS, Penalaran, dan Literasi.' },
+                    { title: 'Pembahasan Lengkap & Kunci Jawaban', desc: 'Penjelasan sistematis dari tim tutor ahli SkorPluss setelah ujian selesai.' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/60 flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
+                        ✓
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-xs sm:text-sm text-white">{item.title}</h4>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SECTION 4: TESTIMONI & PENGALAMAN SISWA PROGRAM
+            ══════════════════════════════════════════════════════════════════ */}
+        <section className="space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                Testimoni & Pengalaman Siswa
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
+                Ulasan Siswa Program {program.name}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Kesan dan pesan langsung dari siswa yang telah mengikuti program bimbingan ini.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 px-3.5 py-2 rounded-xl">
+                <span className="text-amber-500 font-bold text-base">★</span>
+                <span className="font-black text-amber-700 dark:text-amber-300 text-sm">
+                  {program.rating ? Number(program.rating).toFixed(1).replace('.', ',') : '0,0'}
+                </span>
+                <span className="text-xs text-slate-400">
+                  ({new Intl.NumberFormat('id-ID').format(Number(program.total_reviews) || 0)} ulasan)
+                </span>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (!token) {
+                    toast.info('Silakan login terlebih dahulu untuk memberikan testimoni');
+                    navigate('/login');
+                    return;
+                  }
+                  setShowReviewModal(true);
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>✍️</span>
+                <span>{userReview ? 'Ubah Testimoni' : 'Beri Rating & Testimoni'}</span>
+              </button>
+            </div>
+          </div>
+
+          {reviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {reviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3 flex flex-col justify-between"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center">
+                          {rev.user?.name ? rev.user.name.charAt(0).toUpperCase() : 'S'}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-xs text-slate-900 dark:text-white">
+                            {rev.user?.name || 'Siswa SkorPluss'}
+                          </h4>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(rev.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+                      {rev.user?.id === user?.id && (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 font-bold">
+                          Ulasan Anda
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex text-amber-400 text-xs">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className={star <= rev.rating ? 'text-amber-400' : 'text-slate-200 dark:text-slate-700'}>
+                          ★
+                        </span>
+                      ))}
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">
+                      "{rev.comment}"
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-10 text-center space-y-3">
+              <div className="text-3xl">🌟</div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                Belum Ada Testimoni untuk Program Ini
+              </h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Bagikan pengalaman belajar Anda mengikuti Program {program.name} untuk membantu calon siswa lainnya.
+              </p>
+              <button
+                onClick={() => {
+                  if (!token) {
+                    toast.info('Silakan login terlebih dahulu untuk memberikan testimoni');
+                    navigate('/login');
+                    return;
+                  }
+                  setShowReviewModal(true);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all cursor-pointer"
+              >
+                <span>✍️</span>
+                <span>Tulis Testimoni Pertama Anda</span>
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SECTION 4: PERBANDINGAN PROGRAM LAINNYA
             ══════════════════════════════════════════════════════════════════ */}
         <section>
           <div className="text-center max-w-2xl mx-auto mb-10">
@@ -746,6 +1081,33 @@ export default function ProgramDetailPage() {
           </div>
         </div>
       </footer>
+
+      {/* ── Modal Peringatan Batas Kuota CBT ── */}
+      <CbtLimitModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        quotaInfo={userCbtUsage}
+        programName={program ? `Program ${program.name}` : ''}
+      />
+
+      {/* ── Modal Ulasan / Testimoni Program ── */}
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        targetType="program"
+        targetId={program?.id}
+        targetTitle={`Program ${program?.name}`}
+        initialReview={userReview}
+        onSuccess={(data) => {
+          setUserReview(data.review);
+          setProgram((prev) => prev ? ({
+            ...prev,
+            rating: data.rating,
+            total_reviews: data.total_reviews,
+          }) : null);
+          fetchProgramReviews(slug);
+        }}
+      />
     </div>
   );
 }

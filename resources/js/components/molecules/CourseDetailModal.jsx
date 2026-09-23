@@ -4,8 +4,24 @@ import Badge from '../atoms/Badge';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { toEmbedUrl } from '../../utils/videoHelper';
 
-export default function CourseDetailModal({ course, modules = [], enrollment = null, progress = {}, onEnroll, onStartLearning, onClose }) {
+export default function CourseDetailModal({ course, modules = [], enrollment = null, progress = {}, onEnroll, onStartLearning, onClose, onOpenCertificate }) {
   const [previewLesson, setPreviewLesson] = useState(null);
+  const [expandedModules, setExpandedModules] = useState({});
+
+  React.useEffect(() => {
+    if (modules && modules.length > 0) {
+      const initial = {};
+      modules.forEach(m => initial[m.id] = true);
+      setExpandedModules(initial);
+    }
+  }, [modules]);
+
+  const toggleModule = (id) => {
+    setExpandedModules(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   const renderStars = (rating) => {
     const stars = [];
@@ -35,141 +51,284 @@ export default function CourseDetailModal({ course, modules = [], enrollment = n
   };
 
   const totalLessons = modules.reduce((sum, m) => sum + (m.lessons?.length || 0), 0);
+  const completedLessonsCount = modules.reduce((sum, m) => {
+    return sum + (m.lessons || []).filter(l => progress[l.id]).length;
+  }, 0);
+  const totalDurationSec = modules.reduce((sum, m) => {
+    return sum + (m.lessons || []).reduce((lSum, l) => lSum + (Number(l.duration_seconds) || 0), 0);
+  }, 0);
+
+  const isCompleted = Boolean(
+    enrollment?.completed_at ||
+    (enrollment?.progress_percentage !== undefined && Number(enrollment?.progress_percentage) >= 100) ||
+    course?.completed_at ||
+    (course?.progress_percentage !== undefined && Number(course?.progress_percentage) >= 100) ||
+    (totalLessons > 0 && completedLessonsCount >= totalLessons)
+  );
+
+  const formatTotalDuration = (sec) => {
+    if (!sec) return '1 Jam';
+    const hours = Math.floor(sec / 3600);
+    const minutes = Math.floor((sec % 3600) / 60);
+    if (hours > 0 && minutes > 0) return `${hours}j ${minutes}m`;
+    if (hours > 0) return `${hours} Jam`;
+    return `${minutes} Menit`;
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-lg w-full max-w-2xl my-8 border border-slate-200 dark:border-slate-800 shadow-2xl">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl my-8 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
         
-        {/* Header */}
+        {/* Header Banner */}
         <div className="relative">
-          <div className="h-40 bg-gradient-to-r from-blue-500 to-blue-600 relative overflow-hidden">
+          <div className="h-44 bg-gradient-to-r from-blue-600 to-indigo-700 relative overflow-hidden flex items-center justify-center">
             {course.thumbnail && (
-              <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover opacity-50" />
+              <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover opacity-35" />
             )}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-slate-900 font-bold"
+              className="absolute top-4 right-4 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-slate-900 font-bold shadow-md transition-colors"
             >
               ✕
             </button>
+            <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-md">
+                {course.category || 'Materi Belajar'}
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-xs flex items-center gap-1.5">
+                <FontAwesomeIcon icon={['fas', 'award']} /> Sertifikat Resmi
+              </span>
+            </div>
           </div>
 
           {/* Course Info */}
-          <div className="px-6 pt-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <Badge color="blue" className="mb-2">{course.category}</Badge>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">{course.title}</h2>
-              </div>
+          <div className="px-6 pt-5">
+            <div className="mb-3">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">{course.title}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Tutor: <strong className="text-slate-700 dark:text-slate-200">{course.display_instructor || course.instructor_name || 'Tim Pengajar SkorPluss'}</strong>
+              </p>
             </div>
 
-            {/* Rating & Stats */}
-            <div className="flex flex-wrap items-center gap-6 mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="flex gap-0.5">{renderStars(course.rating)}</div>
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  {(Number(course.rating) || 0).toFixed(1)} ({course.participants || 0} peserta)
+            {/* Dedicated Specifications Box (Dicoding Style) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 text-xs">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Program</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
+                  {course.display_program || course.program_name || 'Reguler'}
                 </span>
               </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-3">
-                <span><FontAwesomeIcon icon={['fas', 'book']} className="text-blue-500 mr-1.5" /> {modules.length} modul</span>
-                <span><FontAwesomeIcon icon={['fas', 'list-check']} className="text-emerald-500 mr-1.5" /> {totalLessons} materi</span>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Level</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                  {course.level || 'Pemula'}
+                </span>
               </div>
-              {course.has_certificate && (
-                <div className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
-                  <FontAwesomeIcon icon={['fas', 'award']} /> Sertifikat Gratis
-                </div>
-              )}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Durasi</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                  {formatTotalDuration(totalDurationSec)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Peserta</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                  {(course.participants || 0).toLocaleString('id-ID')} Siswa
+                </span>
+              </div>
             </div>
 
             {/* Description */}
-            <div className="mb-6">
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: course.description }} />
+            <div className="mb-4">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3" dangerouslySetInnerHTML={{ __html: course.description }} />
             </div>
 
-            {/* Progress Bar */}
-            {enrollment && (
-              <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">Progres Belajarmu</span>
-                  <span className="text-slate-600 dark:text-slate-400">{enrollment.progress_percentage || 0}%</span>
+            {/* Progress Bar / Completion Status */}
+            {isCompleted ? (
+              <div className="mb-4 p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-amber-950/30 border border-emerald-200/80 dark:border-emerald-800/50 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon icon={['fas', 'circle-check']} className="text-emerald-500 text-sm" />
+                    <span className="font-bold text-xs text-emerald-800 dark:text-emerald-300">
+                      Selamat! Kelas Telah Selesai (100%)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                    Kamu telah menyelesaikan seluruh materi. Sertifikat kelulusan resmi siap diunduh.
+                  </p>
                 </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3">
+                {onOpenCertificate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenCertificate(course);
+                      onClose();
+                    }}
+                    className="shrink-0 px-3.5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-xs flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                  >
+                    <FontAwesomeIcon icon={['fas', 'award']} className="text-amber-200" />
+                    <span>Ambil Sertifikat</span>
+                  </button>
+                )}
+              </div>
+            ) : enrollment ? (
+              <div className="mb-4 p-3.5 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-xl">
+                <div className="flex justify-between text-xs font-bold mb-1.5">
+                  <span className="text-blue-900 dark:text-blue-200">Progres Belajarmu</span>
+                  <span className="text-blue-700 dark:text-blue-400">{enrollment.progress_percentage || 0}%</span>
+                </div>
+                <div className="w-full bg-blue-200 dark:bg-blue-900/60 rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${enrollment.progress_percentage || 0}%` }}
                   />
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  {enrollment.completed_lessons || 0} dari {enrollment.total_lessons || 0} materi selesai
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  {enrollment.completed_lessons || 0} dari {enrollment.total_lessons || totalLessons} materi selesai
                 </p>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
-        {/* Curriculum Section */}
+        {/* Curriculum Section (Collapse Model with Zero Gaps) */}
         <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-            <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="text-blue-600" /> Kurikulum Lengkap
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="text-blue-600" />
+              <span>Silabus ({modules.length} Section • {totalLessons} Materi)</span>
+            </h3>
+            <span className="text-[11px] text-slate-400">Model Collapse</span>
+          </div>
           
-          <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
             {modules.length === 0 ? (
-              <p className="text-sm text-slate-500">Belum ada materi dalam kursus ini.</p>
+              <p className="text-xs text-slate-500 text-center py-6">Belum ada materi dalam kursus ini.</p>
             ) : (
-              modules.map((module, moduleIdx) => (
-                <div key={module.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
-                  <div className="font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-                    <FontAwesomeIcon icon={['fas', 'folder-open']} className="text-slate-400" />
-                    <span>Modul {moduleIdx + 1}: {module.title}</span>
-                    <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-normal">
-                      {module.lessons?.length || 0} materi
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2 ml-6">
-                    {module.lessons?.map((lesson, lessonIdx) => (
-                      <div key={lesson.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors">
-                        <span className="text-base">{getLessonTypeIcon(lesson.type)}</span>
-                        <span className="flex-1 text-slate-700 dark:text-slate-300">
-                          {lessonIdx + 1}. {lesson.title}
+              modules.map((module, moduleIdx) => {
+                const isExpanded = !!expandedModules[module.id];
+                const quizCount = module.lessons?.filter(l => l.type === 'quiz').length || 0;
+
+                return (
+                  <div key={module.id} className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                    {/* Collapsible Header */}
+                    <div
+                      onClick={() => toggleModule(module.id)}
+                      className="p-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between cursor-pointer select-none transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-slate-400 text-xs w-4">
+                          <FontAwesomeIcon icon={['fas', isExpanded ? 'chevron-down' : 'chevron-right']} />
                         </span>
-                        <Badge color="gray" size="sm">{getLessonTypeLabel(lesson.type)}</Badge>
-                        {lesson.type === 'video' && lesson.video_url && lesson.is_preview && (
-                          <button
-                            onClick={() => setPreviewLesson(lesson)}
-                            className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
-                          >
-                            <FontAwesomeIcon icon={['fas', 'play']} /> Preview
-                          </button>
-                        )}
-                        {progress[lesson.id] && (
-                          <FontAwesomeIcon icon={['fas', 'circle-check']} className="text-emerald-500" />
-                        )}
+                        <div className="min-w-0">
+                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 block truncate">
+                            Section {moduleIdx + 1}: {module.title}
+                          </span>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                            <span className="font-semibold text-slate-600 dark:text-slate-300">
+                              {module.lessons?.length || 0} Materi
+                            </span>
+                            {quizCount > 0 && (
+                              <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                                • {quizCount} Kuis
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    ))}
+
+                      <span className="text-[10px] font-bold text-slate-400 shrink-0">
+                        {isExpanded ? 'Tutup' : 'Buka'}
+                      </span>
+                    </div>
+
+                    {/* Zero-Gap Lesson List */}
+                    {isExpanded && (
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                        {module.lessons?.map((lesson, lessonIdx) => (
+                          <div key={lesson.id} className="flex items-center justify-between gap-3 text-xs py-2.5 px-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-slate-400 font-mono text-[11px] w-5 shrink-0">
+                                {moduleIdx + 1}.{lessonIdx + 1}
+                              </span>
+                              <span className="text-sm shrink-0">{getLessonTypeIcon(lesson.type)}</span>
+                              <span className="text-slate-700 dark:text-slate-300 truncate font-medium">
+                                {lesson.title}
+                              </span>
+                              {progress[lesson.id] && (
+                                <FontAwesomeIcon icon={['fas', 'circle-check']} className="text-emerald-500 shrink-0" />
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge color="gray" size="sm" className="text-[10px]">{getLessonTypeLabel(lesson.type)}</Badge>
+                              {lesson.type === 'video' && lesson.video_url && lesson.is_preview && (
+                                <button
+                                  onClick={() => setPreviewLesson(lesson)}
+                                  className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 rounded font-bold hover:bg-blue-100 transition-colors flex items-center gap-1"
+                                >
+                                  <FontAwesomeIcon icon={['fas', 'play']} /> Preview
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 rounded-b-lg flex gap-3 justify-end">
-          <Button variant="ghost" onClick={onClose}>
-            Tutup
-          </Button>
-          {!enrollment ? (
-            <Button onClick={() => { onEnroll(); onClose(); }} color="blue" size="lg" className="flex items-center gap-2">
-              <FontAwesomeIcon icon={['fas', 'rocket']} /> Mulai Belajar Gratis
+        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 rounded-b-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            {isCompleted && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <FontAwesomeIcon icon={['fas', 'award']} className="text-amber-500" />
+                Sertifikat Siap Diambil
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2.5 items-center w-full sm:w-auto justify-end">
+            <Button variant="ghost" onClick={onClose} className="text-xs">
+              Tutup
             </Button>
-          ) : (
-            <Button onClick={onStartLearning} color="blue" size="lg" className="flex items-center gap-2">
-              <FontAwesomeIcon icon={['fas', 'play']} /> Lanjutkan Belajar
-            </Button>
-          )}
+            {!enrollment ? (
+              <Button onClick={() => { onEnroll(); onClose(); }} color="blue" size="md" className="flex items-center gap-2 text-xs font-bold">
+                <FontAwesomeIcon icon={['fas', 'rocket']} /> Mulai Belajar Gratis
+              </Button>
+            ) : isCompleted ? (
+              <>
+                <Button
+                  onClick={onStartLearning}
+                  variant="outline"
+                  size="md"
+                  className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <FontAwesomeIcon icon={['fas', 'rotate-right']} /> Pelajari Ulang
+                </Button>
+                {onOpenCertificate && (
+                  <Button
+                    onClick={() => {
+                      onOpenCertificate(course);
+                      onClose();
+                    }}
+                    className="!bg-gradient-to-r !from-amber-500 !to-amber-600 hover:!from-amber-600 hover:!to-amber-700 text-white font-bold text-xs shadow-md flex items-center gap-2 px-4 py-2.5 rounded-lg border-0"
+                  >
+                    <FontAwesomeIcon icon={['fas', 'award']} className="text-amber-200 text-sm" />
+                    <span>Ambil Sertifikat</span>
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button onClick={onStartLearning} color="blue" size="md" className="flex items-center gap-2 text-xs font-bold">
+                <FontAwesomeIcon icon={['fas', 'play']} /> Lanjutkan Belajar
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

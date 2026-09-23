@@ -12,4 +12,14 @@ class Exam extends Model
     {
         return $this->belongsToMany(Question::class, 'exam_questions');
     }
+
+    public function examType()
+    {
+        return $this->belongsTo(ExamType::class);
+    }
+
+    public function sessions()
+    {
+        return $this->hasMany(CbtSession::class);
+    }
 }

@@ -15,24 +15,8 @@ export default function AdminLearningPackageDetailPage() {
   const navigate = useNavigate();
 
   const [packageData, setPackageData] = useState(null);
-  const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedCourseIds, setExpandedCourseIds] = useState({});
-
-  // Edit Modal State
-  const [modalOpen, setModalOpen] = useState(false);
-  const [thumbnailUploading, setThumbnailUploading] = useState(false);
-  const [newFeature, setNewFeature] = useState('');
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    discount_price: null,
-    thumbnail: '',
-    features: [],
-    is_published: false,
-    course_ids: []
-  });
 
   const fetchPackageDetail = async () => {
     try {
@@ -50,18 +34,8 @@ export default function AdminLearningPackageDetailPage() {
     }
   };
 
-  const fetchAllCourses = async () => {
-    try {
-      const res = await api.get('/admin/learning-packages/courses');
-      setAllCourses(res.data);
-    } catch (err) {
-      console.error('Gagal memuat daftar kursus', err);
-    }
-  };
-
   useEffect(() => {
     fetchPackageDetail();
-    fetchAllCourses();
   }, [id]);
 
   const toggleCourseExpand = (courseId) => {
@@ -69,75 +43,6 @@ export default function AdminLearningPackageDetailPage() {
       ...prev,
       [courseId]: !prev[courseId]
     }));
-  };
-
-  const openEditModal = () => {
-    if (!packageData) return;
-    setForm({
-      name: packageData.name || '',
-      description: packageData.description || '',
-      price: packageData.price || 0,
-      discount_price: packageData.discount_price || null,
-      thumbnail: packageData.thumbnail || '',
-      features: packageData.features || [],
-      is_published: packageData.is_published || false,
-      course_ids: packageData.courses?.map(c => c.id) || []
-    });
-    setNewFeature('');
-    setModalOpen(true);
-  };
-
-  const handleThumbnailUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      setThumbnailUploading(true);
-      const res = await api.post('/admin/upload/thumbnail', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setForm({ ...form, thumbnail: res.data.url });
-      toast.success('Thumbnail berhasil diunggah');
-    } catch (err) {
-      toast.error('Gagal mengunggah thumbnail');
-    } finally {
-      setThumbnailUploading(false);
-    }
-  };
-
-  const addFeature = () => {
-    if (newFeature.trim()) {
-      setForm({ ...form, features: [...form.features, newFeature.trim()] });
-      setNewFeature('');
-    }
-  };
-
-  const removeFeature = (idx) => {
-    setForm({ ...form, features: form.features.filter((_, i) => i !== idx) });
-  };
-
-  const toggleCourseSelection = (courseId) => {
-    const ids = form.course_ids;
-    if (ids.includes(courseId)) {
-      setForm({ ...form, course_ids: ids.filter(cid => cid !== courseId) });
-    } else {
-      setForm({ ...form, course_ids: [...ids, courseId] });
-    }
-  };
-
-  const savePackage = async (e) => {
-    e.preventDefault();
-    try {
-      await api.put(`/admin/learning-packages/${id}`, form);
-      toast.success('Paket berhasil diperbarui');
-      setModalOpen(false);
-      fetchPackageDetail();
-    } catch (err) {
-      toast.error('Gagal memperbarui paket');
-    }
   };
 
   const deletePackage = async () => {
@@ -188,7 +93,7 @@ export default function AdminLearningPackageDetailPage() {
 
   return (
     <AppLayout title={packageData?.name ? `Detil: ${packageData.name}` : 'Detil Paket Belajar'}>
-      <div className="max-w-6xl mx-auto pb-16 space-y-6">
+      <div className="w-full pb-16 space-y-6">
         {/* Top Bar / Navigation */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -217,11 +122,11 @@ export default function AdminLearningPackageDetailPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={openEditModal}
+              onClick={() => navigate(`/admin/learning-packages/${id}/edit`)}
               disabled={loading || !packageData}
               className="border-slate-300 dark:border-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
             >
-              <FontAwesomeIcon icon={['fas', 'pen-to-square']} className="mr-1.5" /> Edit Paket
+              <FontAwesomeIcon icon={['fas', 'pen-to-square']} className="mr-1.5" /> Edit Paket Belajar
             </Button>
             <Button
               variant="ghost"
@@ -290,9 +195,16 @@ export default function AdminLearningPackageDetailPage() {
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 mb-2">
                       {packageData.name}
                     </h1>
-                    <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
-                      {packageData.description || 'Tidak ada deskripsi untuk paket ini.'}
-                    </p>
+                    {packageData.description ? (
+                      <div
+                        className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: packageData.description }}
+                      />
+                    ) : (
+                      <p className="text-slate-400 text-sm italic">
+                        Tidak ada deskripsi untuk paket ini.
+                      </p>
+                    )}
                   </div>
 
                   {/* Pricing Box */}
@@ -335,44 +247,56 @@ export default function AdminLearningPackageDetailPage() {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl shrink-0">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-xs">
+                <div className="w-11 h-11 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg shrink-0">
                   <FontAwesomeIcon icon={['fas', 'book-bookmark']} />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{totalCourses}</div>
-                  <div className="text-xs text-slate-500 font-medium">Program / Kursus</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-slate-100">{totalCourses}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Program / Kursus</div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                <div className="w-12 h-12 rounded-lg bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center text-xl shrink-0">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-xs">
+                <div className="w-11 h-11 rounded-lg bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center text-lg shrink-0">
                   <FontAwesomeIcon icon={['fas', 'layer-group']} />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{totalModules}</div>
-                  <div className="text-xs text-slate-500 font-medium">Total Modul / Bab</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-slate-100">{totalModules}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Total Modul / Bab</div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                <div className="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-xs">
+                <div className="w-11 h-11 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shrink-0">
                   <FontAwesomeIcon icon={['fas', 'list-check']} />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{totalLessons}</div>
-                  <div className="text-xs text-slate-500 font-medium">Total Pelajaran / Kuis</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-slate-100">{totalLessons}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Pelajaran & Kuis</div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-xs">
+                <div className="w-11 h-11 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg shrink-0">
+                  <FontAwesomeIcon icon={['fas', 'file-signature']} />
+                </div>
+                <div>
+                  <div className="text-xl font-black text-slate-900 dark:text-slate-100">
+                    {packageData.cbt_quota ? `${packageData.cbt_quota}x Ujian` : 'Tak Terbatas'}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-medium">Batas Sesi CBT</div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-xs">
+                <div className="w-11 h-11 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shrink-0">
                   <FontAwesomeIcon icon={['fas', 'clock']} />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{formatDuration(totalDurationSeconds)}</div>
-                  <div className="text-xs text-slate-500 font-medium">Estimasi Waktu Belajar</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-slate-100">{formatDuration(totalDurationSeconds)}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Estimasi Waktu</div>
                 </div>
               </div>
             </div>
@@ -389,8 +313,8 @@ export default function AdminLearningPackageDetailPage() {
                   </p>
                 </div>
                 {totalCourses > 0 && (
-                  <Button variant="ghost" size="sm" onClick={openEditModal}>
-                    <FontAwesomeIcon icon={['fas', 'plus']} className="mr-1" /> Kelola Kursus
+                  <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/learning-packages/${id}/edit`)}>
+                    <FontAwesomeIcon icon={['fas', 'pen-to-square']} className="mr-1" /> Kelola Kursus
                   </Button>
                 )}
               </div>
@@ -406,7 +330,7 @@ export default function AdminLearningPackageDetailPage() {
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
                     Paket ini belum menyertakan program atau kursus belajar. Klik tombol di bawah untuk memilih kursus dari e-learning.
                   </p>
-                  <Button onClick={openEditModal} size="sm">
+                  <Button onClick={() => navigate(`/admin/learning-packages/${id}/edit`)} size="sm">
                     <FontAwesomeIcon icon={['fas', 'plus']} className="mr-1.5" /> Pilih Kursus Sekarang
                   </Button>
                 </div>
@@ -575,172 +499,6 @@ export default function AdminLearningPackageDetailPage() {
               )}
             </div>
           </>
-        )}
-
-        {/* In-Page Edit Modal */}
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl my-8 p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                  Edit Paket Belajar
-                </h3>
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                >
-                  <FontAwesomeIcon icon={['fas', 'xmark']} className="text-lg" />
-                </button>
-              </div>
-
-              <form onSubmit={savePackage} className="space-y-4 max-h-[72vh] overflow-y-auto pr-1">
-                <FormField label="Nama Paket" required>
-                  <Input
-                    value={form.name}
-                    onChange={e => setForm({ ...form, name: e.target.value })}
-                    required
-                  />
-                </FormField>
-
-                <FormField label="Deskripsi">
-                  <textarea
-                    rows={3}
-                    className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    value={form.description}
-                    onChange={e => setForm({ ...form, description: e.target.value })}
-                  />
-                </FormField>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField label="Harga Paket (Rp)" required>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={form.price}
-                      onChange={e => setForm({ ...form, price: parseInt(e.target.value) || 0 })}
-                      required
-                    />
-                  </FormField>
-                  <FormField label="Harga Diskon / Coret (Rp)">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={form.discount_price || ''}
-                      onChange={e => setForm({ ...form, discount_price: e.target.value ? parseInt(e.target.value) : null })}
-                      placeholder="Contoh: 500000"
-                    />
-                  </FormField>
-                </div>
-
-                <FormField label="Thumbnail Paket">
-                  <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleThumbnailUpload}
-                      disabled={thumbnailUploading}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-xs"
-                    />
-                    {thumbnailUploading && <p className="text-xs text-blue-500">Mengunggah thumbnail...</p>}
-                    {form.thumbnail && (
-                      <div className="mt-2 relative group w-48 h-28 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-                        <img src={form.thumbnail} alt="Thumbnail Preview" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setForm({ ...form, thumbnail: '' })}
-                          className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full text-xs shadow hover:bg-red-700 cursor-pointer"
-                          title="Hapus Thumbnail"
-                        >
-                          <FontAwesomeIcon icon={['fas', 'xmark']} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </FormField>
-
-                <FormField label="Fitur & Fasilitas Paket">
-                  <div className="flex gap-2 mb-2">
-                    <Input
-                      value={newFeature}
-                      onChange={e => setNewFeature(e.target.value)}
-                      placeholder="Contoh: Tryout UTBK 10x..."
-                    />
-                    <Button type="button" onClick={addFeature} variant="ghost" size="sm">
-                      + Tambah
-                    </Button>
-                  </div>
-                  {form.features.length > 0 && (
-                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                      {form.features.map((f, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs"
-                        >
-                          <span className="flex items-center gap-2">
-                            <FontAwesomeIcon icon={['fas', 'check']} className="text-emerald-500" />
-                            {f}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeFeature(idx)}
-                            className="text-red-500 hover:text-red-700 ml-2 cursor-pointer"
-                          >
-                            <FontAwesomeIcon icon={['fas', 'xmark']} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </FormField>
-
-                <FormField label="Kursus Terhubung di Dalam Paket">
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto p-2.5 border border-slate-200 dark:border-slate-700 rounded-lg">
-                    {allCourses.length === 0 ? (
-                      <p className="text-xs text-slate-400">Tidak ada kursus tersedia</p>
-                    ) : (
-                      allCourses.map(course => (
-                        <label
-                          key={course.id}
-                          className="flex items-center gap-2.5 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={form.course_ids.includes(course.id)}
-                            onChange={() => toggleCourseSelection(course.id)}
-                            className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
-                          />
-                          <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200">
-                            {course.title}
-                          </span>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                </FormField>
-
-                <label className="flex items-center gap-2.5 pt-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.is_published}
-                    onChange={e => setForm({ ...form, is_published: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200">
-                    Publikasikan ke Landing Page
-                  </span>
-                </label>
-
-                <div className="flex gap-2.5 justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
-                    Batal
-                  </Button>
-                  <Button type="submit">
-                    Simpan Perubahan
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>
         )}
       </div>
     </AppLayout>

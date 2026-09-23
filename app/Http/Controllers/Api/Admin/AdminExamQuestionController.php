@@ -12,8 +12,12 @@ class AdminExamQuestionController extends Controller
 {
     public function index($examId)
     {
-        $exam = Exam::findOrFail($examId);
-        $questions = $exam->questions()->with('options')->get();
+        $exam = Exam::with('examType')->findOrFail($examId);
+        $questions = $exam->questions()
+            ->with(['options', 'examType'])
+            ->orderBy('exam_questions.sort_order')
+            ->orderBy('id')
+            ->get();
 
         return response()->json([
             'exam' => $exam,
@@ -26,11 +30,13 @@ class AdminExamQuestionController extends Controller
         $exam = Exam::findOrFail($examId);
 
         $validated = $request->validate([
+            'exam_type_id' => 'nullable|exists:exam_types,id',
             'subject' => 'nullable|string|max:255',
             'subtest' => 'nullable|string|max:255',
             'question_text' => 'required|string',
             'explanation_text' => 'nullable|string',
             'points' => 'required|integer|min:1',
+            'duration_seconds' => 'nullable|integer|min:10|max:3600',
             'is_active' => 'boolean',
             'options' => 'required|array|min:2',
             'options.*.option_key' => 'required|string|max:10',
@@ -41,11 +47,13 @@ class AdminExamQuestionController extends Controller
         DB::beginTransaction();
         try {
             $question = Question::create([
+                'exam_type_id' => $validated['exam_type_id'] ?? null,
                 'subject' => $validated['subject'] ?? null,
                 'subtest' => $validated['subtest'] ?? null,
                 'question_text' => $validated['question_text'],
                 'explanation_text' => $validated['explanation_text'] ?? null,
                 'points' => $validated['points'],
+                'duration_seconds' => $validated['duration_seconds'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
             ]);
 
@@ -66,7 +74,7 @@ class AdminExamQuestionController extends Controller
 
             DB::commit();
 
-            return response()->json($question->load('options'), 201);
+            return response()->json($question->load(['options', 'examType']), 201);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -80,11 +88,13 @@ class AdminExamQuestionController extends Controller
         $question = $exam->questions()->findOrFail($questionId);
 
         $validated = $request->validate([
+            'exam_type_id' => 'nullable|exists:exam_types,id',
             'subject' => 'nullable|string|max:255',
             'subtest' => 'nullable|string|max:255',
             'question_text' => 'required|string',
             'explanation_text' => 'nullable|string',
             'points' => 'required|integer|min:1',
+            'duration_seconds' => 'nullable|integer|min:10|max:3600',
             'is_active' => 'boolean',
             'options' => 'required|array|min:2',
             'options.*.id' => 'nullable|exists:question_options,id',
@@ -96,11 +106,13 @@ class AdminExamQuestionController extends Controller
         DB::beginTransaction();
         try {
             $question->update([
+                'exam_type_id' => $validated['exam_type_id'] ?? null,
                 'subject' => $validated['subject'] ?? null,
                 'subtest' => $validated['subtest'] ?? null,
                 'question_text' => $validated['question_text'],
                 'explanation_text' => $validated['explanation_text'] ?? null,
                 'points' => $validated['points'],
+                'duration_seconds' => $validated['duration_seconds'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
             ]);
 
@@ -132,7 +144,7 @@ class AdminExamQuestionController extends Controller
 
             DB::commit();
 
-            return response()->json($question->load('options'));
+            return response()->json($question->load(['options', 'examType']));
         } catch (\Exception $e) {
             DB::rollBack();
 

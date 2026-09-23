@@ -7,28 +7,150 @@ import Badge from '../../atoms/Badge';
 import CbtAnswerOption from '../../molecules/CbtAnswerOption';
 import CbtNavigator from '../../organisms/CbtNavigator';
 import CountdownTimer from '../../atoms/CountdownTimer';
-import { fetchAvailableExams, fetchSessions, startSession, submitSession, setCurrentQuestion, setLocalAnswer, toggleFlag, clearSession } from '../../../features/cbt/cbtSlice';
+import CbtLimitModal from '../../molecules/CbtLimitModal';
+import { fetchAvailableExams, fetchExamTypes, fetchSessions, startSession, submitSession, cancelSession, setCurrentQuestion, setLocalAnswer, toggleFlag, clearSession } from '../../../features/cbt/cbtSlice';
 import { saveAnswer } from '../../../features/cbt/cbtSlice';
-
-const EXAM_TYPES = [
-  { id: 'tps', label: 'TPS — Tes Potensi Skolastik', icon: '🧠', duration: 5400 },
-  { id: 'pu', label: 'PU — Penalaran Umum', icon: '💡', duration: 2700 },
-  { id: 'ppu', label: 'PPU — Pemahaman Bacaan', icon: '📖', duration: 2700 },
-  { id: 'pm', label: 'PM — Pengetahuan Matematika', icon: '📐', duration: 1800 },
-  { id: 'pk', label: 'PK — Pengetahuan dan Pemahaman Umum', icon: '🌐', duration: 1800 },
-];
 
 export default function CbtPage() {
   const dispatch = useDispatch();
-  const { availableExams, sessions, currentSession, questions, answers, currentQuestion, loading, submitting, result } = useSelector((s) => s.cbt);
+  const { availableExams, examTypes = [], sessions, currentSession, questions, answers, currentQuestion, loading, submitting, result, quotaInfo } = useSelector((s) => s.cbt);
 
   const [selectedType, setSelectedType] = useState(null);
   const [activeTab, setActiveTab] = useState('available');
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(90);
 
   useEffect(() => {
     dispatch(fetchAvailableExams());
+    dispatch(fetchExamTypes());
     dispatch(fetchSessions());
   }, [dispatch]);
+
+  const handleStartExam = async () => {
+    if (!selectedType) return;
+
+    if (quotaInfo && !quotaInfo.is_unlimited && quotaInfo.is_limit_reached) {
+      setShowLimitModal(true);
+      return;
+    }
+
+    const res = await dispatch(startSession({
+      exam_id: selectedType.is_real ? selectedType.id : undefined,
+      exam_type: selectedType.is_real ? 'REAL' : selectedType.id,
+      exam_title: selectedType.label,
+      duration_seconds: selectedType.duration,
+    }));
+
+    if (startSession.rejected.match(res)) {
+      if (res.payload?.limit_reached) {
+        setShowLimitModal(true);
+      } else {
+        toast.error(res.payload?.message || (typeof res.payload === 'string' ? res.payload : 'Gagal memulai ujian.'));
+      }
+    }
+  };
+
+  const handleRetryExam = async () => {
+    if (quotaInfo && !quotaInfo.is_unlimited && quotaInfo.is_limit_reached) {
+      setShowLimitModal(true);
+      return;
+    }
+    const sessionData = {
+      exam_type: currentSession?.exam_type,
+      exam_title: currentSession?.exam_title,
+      duration_seconds: currentSession?.duration_seconds
+    };
+    dispatch(clearSession());
+    const res = await dispatch(startSession(sessionData));
+    if (startSession.rejected.match(res)) {
+      if (res.payload?.limit_reached) {
+        setShowLimitModal(true);
+      } else {
+        toast.error(res.payload?.message || (typeof res.payload === 'string' ? res.payload : 'Gagal memulai ujian.'));
+      }
+    }
+  };
+
+  // Exam screen helpers
+  const question = questions.find((q) => q.number === currentQuestion);
+  const currentAnswers = answers[currentQuestion];
+  const answeredCount = Object.values(answers).filter((a) => a.selected_option).length;
+
+  const parseTimestamp = (val) => {
+    if (!val) return Date.now();
+    if (typeof val === 'number') return val;
+    const cleaned = typeof val === 'string' && val.includes(' ') && !val.includes('T') ? val.replace(' ', 'T') : val;
+    const parsed = new Date(cleaned).getTime();
+    return isNaN(parsed) ? Date.now() : parsed;
+  };
+
+  const totalRemainingSeconds = currentSession
+    ? Math.max(0, (Number(currentSession.duration_seconds) || 5400) - Math.floor((Date.now() - parseTimestamp(currentSession.started_at)) / 1000))
+    : 0;
+
+  // Per-Question Timer effect
+  useEffect(() => {
+    if (!currentSession || !question) return;
+    const dur = question.duration_seconds || 90;
+    setQuestionTimeLeft(dur);
+  }, [currentQuestion, question?.id, currentSession?.id]);
+
+  useEffect(() => {
+    if (!currentSession || !question || questionTimeLeft <= 0) return;
+    const timer = setTimeout(() => {
+      setQuestionTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (currentQuestion < questions.length) {
+            toast.warning(`Waktu untuk Soal No. ${currentQuestion} telah habis! Berpindah ke nomor berikutnya.`, { autoClose: 2500 });
+            dispatch(setCurrentQuestion(currentQuestion + 1));
+          } else {
+            toast.warning(`Waktu untuk Soal No. ${currentQuestion} telah habis!`, { autoClose: 2500 });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [questionTimeLeft, currentSession, question?.id, currentQuestion, questions.length]);
+
+  const handleSelect = (letter) => {
+    dispatch(setLocalAnswer({ question_number: currentQuestion, selected_option: letter }));
+    dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: letter }));
+  };
+
+  const handleConfirmCancel = async () => {
+    try {
+      setCancelling(true);
+      const res = await dispatch(cancelSession(currentSession.id));
+      if (cancelSession.fulfilled.match(res)) {
+        toast.info(res.payload?.message || 'Ujian berhasil dibatalkan. Kuota pengerjaan Anda tidak terpotong.');
+        setShowCancelModal(false);
+        dispatch(fetchAvailableExams());
+        dispatch(fetchSessions());
+      } else {
+        toast.error(res.payload || 'Gagal membatalkan ujian.');
+      }
+    } catch (e) {
+      toast.error('Gagal membatalkan ujian.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    const unanswered = questions.length - answeredCount;
+    if (unanswered > 0) {
+      const confirmed = window.confirm(`Masih ada ${unanswered} soal yang belum dijawab. Lanjutkan submit?`);
+      if (!confirmed) return;
+    }
+    const result = await dispatch(submitSession(currentSession.id));
+    if (submitSession.fulfilled.match(result)) {
+      toast.success(`Ujian selesai! Skor Anda: ${result.payload.score} 🎉`);
+    }
+  };
 
   // Select screen
   if (!currentSession) {
@@ -52,6 +174,65 @@ export default function CbtPage() {
 
           {activeTab === 'available' ? (
             <>
+              {quotaInfo && (
+                <div className={`p-4 rounded-xl border transition-all ${
+                  quotaInfo.is_limit_reached 
+                    ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' 
+                    : 'bg-blue-50/60 dark:bg-blue-950/20 border-blue-200/80 dark:border-blue-900/40'
+                }`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🎯</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Kuota Pengerjaan CBT — {quotaInfo.program_name || 'Program Belajar'}
+                      </span>
+                    </div>
+                    {quotaInfo.is_unlimited ? (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        ♾️ Tak Terbatas
+                      </span>
+                    ) : (
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                        quotaInfo.is_limit_reached
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300 animate-pulse'
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300'
+                      }`}>
+                        {quotaInfo.used} / {quotaInfo.quota} Sesi ({quotaInfo.remaining} tersisa)
+                      </span>
+                    )}
+                  </div>
+
+                  {!quotaInfo.is_unlimited && (
+                    <div>
+                      <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+                        <div 
+                          className={`h-full transition-all duration-500 ${
+                            quotaInfo.is_limit_reached ? 'bg-red-500' : 'bg-blue-600'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.round((quotaInfo.used / (quotaInfo.quota || 1)) * 100))}%` }}
+                        />
+                      </div>
+                      {quotaInfo.is_limit_reached ? (
+                        <div className="mt-3 flex items-center justify-between text-xs text-red-600 dark:text-red-400 font-semibold">
+                          <span>⚠️ Batas kuota CBT Anda telah tercapai. Tidak dapat memulai sesi baru.</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowLimitModal(true)}
+                            className="underline hover:text-red-700 dark:hover:text-red-300 ml-2 font-bold whitespace-nowrap cursor-pointer"
+                          >
+                            Lihat Solusi
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                          Sisa {quotaInfo.remaining} kali kesempatan pengerjaan pada program ini.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">Pilih Jenis Ujian</h2>
                 <p className="text-slate-600 dark:text-slate-400 text-sm">Pilih subtes yang ingin Anda kerjakan hari ini.</p>
@@ -66,56 +247,122 @@ export default function CbtPage() {
                     id: exam.id,
                     is_real: true,
                     label: exam.title,
+                    description: exam.description,
                     duration: exam.duration_minutes * 60,
                     total_questions: exam.questions_count,
                   })}
-                  className={`flex items-center gap-4 p-4 rounded-lg border-2 text-left transition-all
-                    ${selectedType?.id === exam.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-600'}`}
+                  className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all cursor-pointer
+                    ${selectedType?.id === exam.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'}`}
                 >
-                  <span className="text-2xl">📝</span>
-                  <div className="flex-1">
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">{exam.title}</p>
-                    <p className="text-xs text-slate-500">{exam.duration_minutes} menit · {exam.questions_count} soal</p>
+                  <span className="text-2xl mt-0.5">{exam.exam_type?.icon || '📝'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">{exam.title}</p>
+                      {exam.exam_type && (
+                        <Badge color="blue" className="text-[10px] font-bold">
+                          {exam.exam_type.icon} {exam.exam_type.name}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{exam.duration_minutes} menit · {exam.questions_count} soal</p>
+                    
+                    {/* Daftar Subtes Terkandung */}
+                    {exam.subtests_list && exam.subtests_list.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Subtes:</span>
+                        {exam.subtests_list.map((st, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900">
+                            {st}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {exam.description && (
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                        {exam.description}
+                      </p>
+                    )}
                   </div>
-                  {selectedType?.id === exam.id && <span className="text-blue-400 text-lg">✓</span>}
+                  {selectedType?.id === exam.id && <span className="text-blue-500 font-bold text-lg">✓</span>}
                 </button>
               ))}
             </div>
           ) : (
             <>
               <div className="p-4 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-sm rounded-lg border border-orange-200 dark:border-orange-800">
-                Belum ada paket ujian aktif dari admin. Menampilkan soal latihan (dummy).
+                Belum ada paket ujian aktif dari admin. Menampilkan soal latihan berdasarkan tipe ujian.
               </div>
-              <div className="flex flex-col gap-3">
-                {EXAM_TYPES.map((et) => (
-                  <button
-                    key={et.id}
-                    onClick={() => setSelectedType(et)}
-                    className={`flex items-center gap-4 p-4 rounded-lg border-2 text-left transition-all
-                      ${selectedType?.id === et.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-600'}`}
-                  >
-                    <span className="text-2xl">{et.icon}</span>
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-900 dark:text-slate-100">{et.label}</p>
-                      <p className="text-xs text-slate-500">{Math.floor(et.duration / 60)} menit · 20 soal</p>
-                    </div>
-                    {selectedType?.id === et.id && <span className="text-blue-400 text-lg">✓</span>}
-                  </button>
-                ))}
-              </div>
+              {examTypes && examTypes.length > 0 ? (
+                <div className="flex flex-col gap-3">
+                  {examTypes.map((et) => {
+                    const typeId = et.code || et.id;
+                    const typeLabel = et.name || et.label;
+                    const typeDuration = et.duration_seconds || et.duration || 3600;
+                    const typeQuestions = et.total_questions || 20;
+                    const isSelected = selectedType?.id === typeId;
+
+                    return (
+                      <button
+                        key={typeId}
+                        onClick={() => setSelectedType({
+                          id: typeId,
+                          code: typeId,
+                          label: typeLabel,
+                          description: et.description,
+                          name: typeLabel,
+                          icon: et.icon || '📝',
+                          duration: typeDuration,
+                          total_questions: typeQuestions,
+                          is_real: false,
+                        })}
+                        className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-blue-500 bg-blue-500/10'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        <span className="text-2xl">{et.icon || '📝'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{typeLabel}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {Math.floor(typeDuration / 60)} menit · {typeQuestions} soal
+                          </p>
+                          {et.description && (
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 line-clamp-1">
+                              {et.description}
+                            </p>
+                          )}
+                        </div>
+                        {isSelected && <span className="text-blue-500 font-bold text-lg">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-6 text-center text-slate-500 dark:text-slate-400 text-sm bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                  Belum ada tipe ujian yang tersedia saat ini.
+                </div>
+              )}
             </>
           )}
+
+              {selectedType?.description && (
+                <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-200 text-sm space-y-1.5 animate-fadeIn">
+                  <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
+                    <span>📋 Panduan & Petunjuk Ujian:</span>
+                  </div>
+                  <p className="whitespace-pre-line text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed pl-5">
+                    {selectedType.description}
+                  </p>
+                </div>
+              )}
 
               <Button
                 size="lg"
                 disabled={!selectedType}
                 loading={loading}
-                onClick={() => dispatch(startSession({
-                  exam_id: selectedType.is_real ? selectedType.id : undefined,
-                  exam_type: selectedType.is_real ? 'REAL' : selectedType.id,
-                  exam_title: selectedType.label,
-                  duration_seconds: selectedType.duration,
-                }))}
+                onClick={handleStartExam}
               >
                 Mulai Ujian Sekarang
               </Button>
@@ -153,6 +400,11 @@ export default function CbtPage() {
             </div>
           )}
         </div>
+        <CbtLimitModal
+          isOpen={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          quotaInfo={quotaInfo}
+        />
       </AppLayout>
     );
   }
@@ -172,56 +424,98 @@ export default function CbtPage() {
           <Badge color={color} className="text-sm px-4 py-1.5">
             {score >= 80 ? 'Sangat Baik!' : score >= 60 ? 'Cukup Baik' : 'Perlu Latihan Lagi'}
           </Badge>
+
+          {/* Subtest Analysis Breakdown */}
+          {result.subtest_breakdown && result.subtest_breakdown.length > 0 && (
+            <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 text-left space-y-3">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <span>📊 Analisis Per Subtes:</span>
+              </h4>
+              <div className="space-y-2">
+                {result.subtest_breakdown.map((sb, i) => {
+                  const pct = sb.total > 0 ? Math.round((sb.correct / sb.total) * 100) : 0;
+                  return (
+                    <div key={i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span>{sb.icon || '🧩'}</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{sb.subtest}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-slate-500 font-medium">{sb.correct}/{sb.total} Benar</span>
+                        <span className={`font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                          {pct}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <Button onClick={() => dispatch(clearSession())} variant="ghost">Pilih Ujian Lain</Button>
-            <Button onClick={() => { dispatch(clearSession()); dispatch(startSession({ exam_type: currentSession.exam_type, exam_title: currentSession.exam_title, duration_seconds: currentSession.duration_seconds })); }}>
+            <Button onClick={handleRetryExam}>
               Ulangi Ujian
             </Button>
           </div>
         </div>
+        <CbtLimitModal
+          isOpen={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          quotaInfo={quotaInfo}
+        />
       </AppLayout>
     );
   }
-
-  // Exam screen
-  const question = questions.find((q) => q.number === currentQuestion);
-  const currentAnswers = answers[currentQuestion];
-
-  const handleSelect = (letter) => {
-    dispatch(setLocalAnswer({ question_number: currentQuestion, selected_option: letter }));
-    dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: letter }));
-  };
-
-  const handleSubmit = async () => {
-    const unanswered = questions.length - Object.values(answers).filter((a) => a.selected_option).length;
-    if (unanswered > 0) {
-      const confirmed = window.confirm(`Masih ada ${unanswered} soal yang belum dijawab. Lanjutkan submit?`);
-      if (!confirmed) return;
-    }
-    const result = await dispatch(submitSession(currentSession.id));
-    if (submitSession.fulfilled.match(result)) {
-      toast.success(`Ujian selesai! Skor Anda: ${result.payload.score} 🎉`);
-    }
-  };
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
       {/* Exam main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Exam topbar */}
-        <div className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-xs">
+          <div className="flex items-center gap-3 min-w-0">
             <Badge color="blue">{currentSession.exam_type?.toUpperCase()}</Badge>
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 hidden sm:block">{currentSession.exam_title}</span>
+            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 hidden sm:block truncate max-w-xs">
+              {currentSession.exam_title}
+            </span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-              <span>⏱</span>
-              <CountdownTimer
-                durationSeconds={currentSession.duration_seconds}
-                onExpire={() => { toast.error('Waktu habis! Ujian disubmit otomatis.'); dispatch(submitSession(currentSession.id)); }}
-              />
+
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            {/* Total Waktu Ujian - Visible High-Contrast Badge */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-2xs">
+              <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">⏱</span>
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Total Waktu:</span>
+                <CountdownTimer
+                  durationSeconds={totalRemainingSeconds}
+                  className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100"
+                  onExpire={() => {
+                    toast.error('Waktu habis! Ujian disubmit otomatis.');
+                    dispatch(submitSession(currentSession.id));
+                  }}
+                />
+              </div>
             </div>
+
+            {/* Answered indicator or Cancel button */}
+            {answeredCount === 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                title="Batalkan sesi ujian (hanya dapat dibatalkan jika belum menjawab soal)"
+              >
+                <span>✕ Batalkan Ujian</span>
+              </button>
+            ) : (
+              <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{answeredCount}/{questions.length} Terjawab</span>
+              </div>
+            )}
+
             <Button variant="danger" size="sm" onClick={handleSubmit} loading={submitting}>
               Submit Ujian
             </Button>
@@ -229,34 +523,94 @@ export default function CbtPage() {
         </div>
 
         {/* Question area */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {question ? (
             <div className="max-w-2xl mx-auto flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-500 uppercase">Soal</span>
-                  <span className="text-lg font-black text-slate-900 dark:text-slate-100">{question.number}</span>
-                  <span className="text-slate-600">/</span>
-                  <span className="text-slate-600 dark:text-slate-400">{questions.length}</span>
+              {/* Question Header & Per-Question Timer */}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Soal</span>
+                    <span className="text-xl font-black text-slate-900 dark:text-slate-100">{question.number}</span>
+                    <span className="text-slate-400">/</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-sm font-bold">{questions.length}</span>
+                    {question.exam_type ? (
+                      <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 ml-1 border border-blue-200 dark:border-blue-800/60">
+                        <span>{question.exam_type.icon || '🧩'}</span>
+                        <span>{question.exam_type.name}</span>
+                      </span>
+                    ) : question.subtest ? (
+                      <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 ml-1 border border-blue-200 dark:border-blue-800/60">
+                        <span>🧩</span>
+                        <span>{question.subtest}</span>
+                      </span>
+                    ) : question.subject ? (
+                      <span className="hidden sm:inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 ml-1 border border-blue-200 dark:border-blue-800/60">
+                        {question.subject}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Per-Question Countdown Timer Badge */}
+                    <div
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs ${
+                        questionTimeLeft <= 10
+                          ? 'bg-rose-50 text-rose-600 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800 animate-pulse'
+                          : questionTimeLeft <= 30
+                          ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                      }`}
+                      title="Batas waktu pengerjaan khusus untuk soal ini"
+                    >
+                      <span className="text-xs">⏱ Sisa Waktu Soal:</span>
+                      <span className="font-mono text-sm font-black">
+                        {String(Math.floor(questionTimeLeft / 60)).padStart(2, '0')}:
+                        {String(questionTimeLeft % 60).padStart(2, '0')}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => dispatch(toggleFlag(currentQuestion))}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        currentAnswers?.is_flagged
+                          ? 'bg-amber-500/20 text-amber-500 ring-1 ring-amber-500/40'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500'
+                      }`}
+                    >
+                      🚩 {currentAnswers?.is_flagged ? 'Ragu-Ragu' : 'Tandai Ragu'}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => dispatch(toggleFlag(currentQuestion))}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                    ${currentAnswers?.is_flagged ? 'bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-orange-400'}`}
-                >
-                  🚩 {currentAnswers?.is_flagged ? 'Ragu-Ragu' : 'Tandai Ragu'}
-                </button>
+
+                {/* Linear progress bar for per-question timer */}
+                <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ${
+                      questionTimeLeft <= 10
+                        ? 'bg-rose-500'
+                        : questionTimeLeft <= 30
+                        ? 'bg-amber-500'
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.max(0, Math.min(100, (questionTimeLeft / (question.duration_seconds || 90)) * 100))}%`
+                    }}
+                  />
+                </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+              {/* Question Text Box */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
                 <div 
-                  className="prose dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 leading-relaxed"
+                  className="prose dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 leading-relaxed text-sm sm:text-base"
                   dangerouslySetInnerHTML={{ __html: question.text }}
                 />
               </div>
 
+              {/* Dynamic Answer Options */}
               <div className="flex flex-col gap-2.5">
-                {Object.entries(question.options).map(([letter, text]) => (
+                {Object.entries(question.options || {}).map(([letter, text]) => (
                   <CbtAnswerOption
                     key={letter}
                     letter={letter}
@@ -267,7 +621,7 @@ export default function CbtPage() {
                 ))}
               </div>
 
-              {/* Navigation */}
+              {/* Navigation Buttons */}
               <div className="flex items-center justify-between pt-2">
                 <Button
                   variant="ghost"
@@ -297,6 +651,41 @@ export default function CbtPage() {
       <div className="w-60 shrink-0 border-l border-slate-200 dark:border-slate-800 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950 hidden lg:block">
         <CbtNavigator sessionId={currentSession.id} />
       </div>
+
+      {/* Cancel Exam Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl mx-auto">
+              ⚠️
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">Batalkan Pengerjaan Ujian?</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Anda belum menjawab soal apa pun. Sesi ini akan dibatalkan tanpa mengurangi kuota pengerjaan CBT Anda atau memengaruhi riwayat nilai.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                variant="ghost"
+                className="flex-1 text-xs"
+                onClick={() => setShowCancelModal(false)}
+                disabled={cancelling}
+              >
+                Kembali Mengerjakan
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1 text-xs"
+                loading={cancelling}
+                onClick={handleConfirmCancel}
+              >
+                Ya, Batalkan Ujian
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

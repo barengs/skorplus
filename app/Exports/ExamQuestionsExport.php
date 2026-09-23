@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Exam;
+use App\Models\Question;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -45,7 +46,7 @@ class ExamQuestionsExport implements FromCollection, WithHeadings, WithMapping
     }
 
     /**
-     * @param  \App\Models\Question  $question
+     * @param  Question  $question
      */
     public function map($question): array
     {

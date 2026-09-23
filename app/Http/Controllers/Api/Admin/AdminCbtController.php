@@ -10,26 +10,45 @@ class AdminCbtController extends Controller
 {
     public function index()
     {
-        return response()->json(Exam::withCount('questions')->orderBy('created_at', 'desc')->get());
+        $exams = Exam::with(['examType', 'questions.examType'])
+            ->withCount('questions')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($exam) {
+                $subtests = $exam->questions
+                    ->map(fn ($q) => $q->examType?->name ?? $q->subtest)
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $exam->subtests_list = $subtests;
+
+                return $exam;
+            });
+
+        return response()->json($exams);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'exam_type_id' => 'nullable|exists:exam_types,id',
+            'description' => 'nullable|string',
             'duration_minutes' => 'required|integer|min:1',
             'is_active' => 'boolean',
         ]);
 
         $exam = Exam::create($validated);
+        $exam->load('examType');
         $exam->total_questions = 0; // default total_questions
+        $exam->subtests_list = [];
 
         return response()->json($exam, 201);
     }
 
     public function show($id)
     {
-        return response()->json(Exam::findOrFail($id));
+        return response()->json(Exam::with(['examType', 'questions.examType'])->findOrFail($id));
     }
 
     public function update(Request $request, $id)
@@ -38,13 +57,15 @@ class AdminCbtController extends Controller
 
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
+            'exam_type_id' => 'nullable|exists:exam_types,id',
+            'description' => 'nullable|string',
             'duration_minutes' => 'sometimes|required|integer|min:1',
             'is_active' => 'boolean',
         ]);
 
         $exam->update($validated);
 
-        $exam = Exam::withCount('questions')->find($id);
+        $exam = Exam::with(['examType'])->withCount('questions')->find($id);
 
         return response()->json($exam);
     }

@@ -42,7 +42,11 @@ export default function ForumList({ filter, search, onPostClick }) {
   return (
     <div className="flex flex-col gap-3">
       {posts.map((post) => (
-        <ForumPostCard key={post.id} post={post} onClick={() => onPostClick?.(post)} />
+        <ForumPostCard
+          key={post.id}
+          post={post}
+          onClick={onPostClick ? () => onPostClick(post) : undefined}
+        />
       ))}
     </div>
   );

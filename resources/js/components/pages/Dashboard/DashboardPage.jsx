@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../../services/api';
 import { fetchDashboard } from '../../../features/dashboard/dashboardSlice';
@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { data, loading } = useSelector((s) => s.dashboard);
   const user = useSelector((s) => s.auth.user);
 
@@ -23,9 +24,12 @@ export default function DashboardPage() {
   const stats = data?.stats;
   const elearningStats = data?.elearning_stats;
   const adminStats = data?.admin_stats;
+  const courseStats = data?.course_stats;
+  const cbtStats = data?.cbt_stats;
   const tutorStats = data?.tutor_stats;
   const recentSessions = data?.recent_sessions || [];
   const recentCourses = data?.recent_courses || [];
+
 
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [enrolling, setEnrolling] = useState(false);
@@ -55,7 +59,8 @@ export default function DashboardPage() {
     return (
       <AppLayout title={isTutor ? "Tutor Dashboard" : "Dashboard Pengelola"}>
         <div className="flex flex-col gap-8 max-w-6xl">
-          <div className={`bg-gradient-to-r ${isTutor ? 'from-emerald-600/20 to-teal-600/20 border-emerald-500/20' : 'from-violet-600/20 to-purple-600/20 border-violet-500/20'} border rounded-lg p-6`}>
+          {/* Header Banner */}
+          <div className={`bg-gradient-to-r ${isTutor ? 'from-emerald-600/20 to-teal-600/20 border-emerald-500/20' : 'from-violet-600/20 to-purple-600/20 border-violet-500/20'} border rounded-2xl p-6 shadow-xs`}>
             <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">
               Halo, {isTutor ? 'Tutor' : 'Admin'} {user?.name} 👋
             </h2>
@@ -64,32 +69,570 @@ export default function DashboardPage() {
             </p>
           </div>
 
+          {/* Quick Primary KPI Cards */}
           {isTutor ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <StatCard label="Kursus Diampu" value={loading ? '—' : tutorStats?.my_courses ?? 0} icon={<FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-blue-500" />} color="blue" />
+              <StatCard label="Kursus Diampu" value={loading ? '—' : tutorStats?.my_courses ?? 0} icon={<FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-blue-500" />} color="blue" to="/admin/elearning" />
               <StatCard label="Total Seluruh Siswa" value={loading ? '—' : tutorStats?.total_students ?? 0} icon={<FontAwesomeIcon icon={['fas', 'users']} className="text-emerald-500" />} color="emerald" />
-              <StatCard label="Bank Soal / Ujian" value={loading ? '—' : tutorStats?.active_exams ?? 0} icon={<FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-500" />} color="purple" />
-              <StatCard label="Diskusi Belum Dijawab" value={loading ? '—' : tutorStats?.forum_unanswered ?? 0} icon={<FontAwesomeIcon icon={['fas', 'comments']} className="text-amber-500" />} color="gold" />
+              <StatCard label="Bank Soal / Ujian" value={loading ? '—' : tutorStats?.active_exams ?? 0} icon={<FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-500" />} color="purple" to="/admin/cbt" />
+              <StatCard label="Diskusi Belum Dijawab" value={loading ? '—' : tutorStats?.forum_unanswered ?? 0} icon={<FontAwesomeIcon icon={['fas', 'comments']} className="text-amber-500" />} color="gold" to="/forum" />
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <StatCard label="Total Siswa" value={loading ? '—' : adminStats?.total_siswa ?? 0} icon={<FontAwesomeIcon icon={['fas', 'users']} className="text-blue-500" />} color="blue" />
-              <StatCard label="Total Kursus" value={loading ? '—' : adminStats?.total_courses ?? 0} icon={<FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-emerald-500" />} color="emerald" />
-              <StatCard label="Total Ujian CBT" value={loading ? '—' : adminStats?.total_exams ?? 0} icon={<FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-500" />} color="purple" />
-              <StatCard label="Sesi Ujian Selesai" value={loading ? '—' : adminStats?.total_cbt_sessions ?? 0} icon={<FontAwesomeIcon icon={['fas', 'check-double']} className="text-amber-500" />} color="gold" />
+              <StatCard label="Total Siswa" value={loading ? '—' : adminStats?.total_siswa ?? 0} icon={<FontAwesomeIcon icon={['fas', 'users']} className="text-blue-500" />} color="blue" to="/admin/users" />
+              <StatCard label="Total Kursus" value={loading ? '—' : adminStats?.total_courses ?? 0} icon={<FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-emerald-500" />} color="emerald" to="/admin/elearning" />
+              <StatCard label="Total Ujian CBT" value={loading ? '—' : adminStats?.total_exams ?? 0} icon={<FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-500" />} color="purple" to="/admin/cbt" />
+              <StatCard label="Sesi Ujian Selesai" value={loading ? '—' : adminStats?.total_cbt_sessions ?? 0} icon={<FontAwesomeIcon icon={['fas', 'check-double']} className="text-amber-500" />} color="gold" to="/admin/cbt" />
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
-            {!isTutor && <Link to="/admin/users"><Button size="md" className="flex items-center gap-2"><FontAwesomeIcon icon={['fas', 'users']} /> Kelola Siswa</Button></Link>}
-            <Link to="/admin/elearning"><Button color="emerald" size="md" className="flex items-center gap-2"><FontAwesomeIcon icon={['fas', 'book']} /> Kelola Kursus</Button></Link>
-            {!isTutor && <Link to="/admin/cbt"><Button color="purple" size="md" className="flex items-center gap-2"><FontAwesomeIcon icon={['fas', 'file-signature']} /> Kelola CBT</Button></Link>}
-            {isTutor && <Link to="/forum"><Button size="md" className="flex items-center gap-2"><FontAwesomeIcon icon={['fas', 'comments']} /> Jawab Forum Diskusi</Button></Link>}
+          {/* Quick Action Navigation Buttons */}
+          <div className="flex flex-wrap items-center gap-3">
+            {!isTutor && (
+              <Link to="/admin/users">
+                <Button size="md" className="flex items-center gap-2">
+                  <FontAwesomeIcon icon={['fas', 'users']} /> Kelola Siswa
+                </Button>
+              </Link>
+            )}
+            <Link to="/admin/elearning">
+              <Button color="emerald" size="md" className="flex items-center gap-2">
+                <FontAwesomeIcon icon={['fas', 'book']} /> Kelola Kursus
+              </Button>
+            </Link>
+            {!isTutor && (
+              <Link to="/admin/cbt">
+                <Button color="purple" size="md" className="flex items-center gap-2">
+                  <FontAwesomeIcon icon={['fas', 'file-signature']} /> Kelola CBT
+                </Button>
+              </Link>
+            )}
+            {isTutor && (
+              <Link to="/forum">
+                <Button size="md" className="flex items-center gap-2">
+                  <FontAwesomeIcon icon={['fas', 'comments']} /> Jawab Forum Diskusi
+                </Button>
+              </Link>
+            )}
           </div>
+
+          {/* ========================================================================= */}
+          {/* ADMIN ONLY: STATISTIK KURSUS & STATISTIK UJIAN CBT                      */}
+          {/* ========================================================================= */}
+          {!isTutor && (
+            <>
+              {/* SECTION: STATISTIK KURSUS (E-LEARNING) */}
+              <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm">
+                        <FontAwesomeIcon icon={['fas', 'book-open-reader']} />
+                      </span>
+                      Statistik Kursus & E-Learning
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Metrik pendaftaran kelas, kemajuan belajar siswa, dan kursus terpopuler
+                    </p>
+                  </div>
+                  <Link to="/admin/elearning">
+                    <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5">
+                      <span>Kelola E-Learning</span>
+                      <FontAwesomeIcon icon={['fas', 'arrow-right']} className="text-xs" />
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Kursus Mini KPI Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+                    <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
+                      <span>Total Pendaftaran</span>
+                      <span className="text-blue-500 bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-md">
+                        <FontAwesomeIcon icon={['fas', 'user-graduate']} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
+                      {loading ? '—' : courseStats?.total_enrollments ?? 0}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">Siswa terdaftar di kelas</div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+                    <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
+                      <span>Kursus Selesai (100%)</span>
+                      <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 p-1.5 rounded-md">
+                        <FontAwesomeIcon icon={['fas', 'circle-check']} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                      {loading ? '—' : courseStats?.completed_enrollments ?? 0}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">Sertifikat kelulusan tercapai</div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+                    <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
+                      <span>Rata-rata Progres</span>
+                      <span className="text-purple-500 bg-purple-50 dark:bg-purple-900/30 p-1.5 rounded-md">
+                        <FontAwesomeIcon icon={['fas', 'chart-simple']} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-purple-600 dark:text-purple-400">
+                      {loading ? '—' : `${courseStats?.avg_progress ?? 0}%`}
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                      <div
+                        className="bg-purple-500 h-full rounded-full transition-all"
+                        style={{ width: `${Math.min(courseStats?.avg_progress ?? 0, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+                    <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
+                      <span>Total Pelajaran</span>
+                      <span className="text-amber-500 bg-amber-50 dark:bg-amber-900/30 p-1.5 rounded-md">
+                        <FontAwesomeIcon icon={['fas', 'list-check']} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
+                      {loading ? '—' : courseStats?.total_lessons ?? 0}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">Dalam {courseStats?.total_modules ?? 0} modul materi</div>
+                  </div>
+                </div>
+
+                {/* Kursus Details Grid: Top Courses & Recent Learning Activity */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Top Courses */}
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2">
+                          <FontAwesomeIcon icon={['fas', 'fire']} className="text-rose-500" />
+                          Kursus Paling Banyak Diikuti
+                        </h4>
+                        <span className="text-xs text-slate-400 font-medium">Berdasarkan pendaftar</span>
+                      </div>
+
+                      {courseStats?.top_courses?.length > 0 ? (
+                        <div className="space-y-3">
+                          {courseStats.top_courses.map((course, idx) => (
+                            <div
+                              key={course.id}
+                              className="flex items-center justify-between p-3 rounded-lg bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-all border border-slate-100 dark:border-slate-800"
+                            >
+                              <div className="flex items-center gap-3 min-w-0 pr-2">
+                                <div className="w-7 h-7 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
+                                  #{idx + 1}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+                                    {course.title}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                                    <span className="truncate">{course.category || course.program_name || 'Umum'}</span>
+                                    {course.rating > 0 && (
+                                      <span>· ⭐ {parseFloat(course.rating).toFixed(1)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50">
+                                  <FontAwesomeIcon icon={['fas', 'users']} className="text-[10px]" />
+                                  {course.enrollments_count ?? 0} Siswa
+                                </span>
+                                <div className="text-[10px] text-slate-400 mt-1">
+                                  Avg: {Math.round(course.avg_progress || 0)}% progres
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-400 text-xs">Belum ada data pendaftaran kursus</div>
+                      )}
+                    </div>
+
+                    {/* Kategori chips */}
+                    {courseStats?.categories?.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] font-semibold text-slate-500 mr-1">Kategori Populer:</span>
+                        {courseStats.categories.map((cat, i) => (
+                          <span
+                            key={i}
+                            className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                          >
+                            {cat.category} ({cat.count})
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recent Learning Activity */}
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2">
+                          <FontAwesomeIcon icon={['fas', 'clock-rotate-left']} className="text-blue-500" />
+                          Aktivitas Belajar Siswa Terkini
+                        </h4>
+                        <span className="text-xs text-slate-400 font-medium">Update progres</span>
+                      </div>
+
+                      {courseStats?.recent_enrollments?.length > 0 ? (
+                        <div className="space-y-3">
+                          {courseStats.recent_enrollments.map((enr) => (
+                            <div
+                              key={enr.id}
+                              className="p-3 rounded-lg bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800"
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-1.5">
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                    {enr.user?.name || 'Siswa'}
+                                  </p>
+                                  <p className="text-[11px] text-slate-500 truncate">
+                                    {enr.course?.title || 'Kursus'}
+                                  </p>
+                                </div>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                  enr.progress_percentage >= 100
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                    : enr.progress_percentage > 0
+                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                }`}>
+                                  {enr.progress_percentage >= 100 ? '✓ Selesai 100%' : `${enr.progress_percentage}% Selesai`}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                                <span>{enr.completed_lessons ?? 0} dari {enr.total_lessons ?? 0} materi selesai</span>
+                                <span>{new Date(enr.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                              </div>
+                              <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    enr.progress_percentage >= 100 ? 'bg-emerald-500' : 'bg-blue-500'
+                                  }`}
+                                  style={{ width: `${Math.min(enr.progress_percentage, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-400 text-xs">Belum ada aktivitas pendaftaran kursus</div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-center">
+                      <Link to="/admin/elearning" className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                        Kelola seluruh modul dan silabus kelas →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: STATISTIK UJIAN CBT */}
+              <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-sm">
+                        <FontAwesomeIcon icon={['fas', 'file-signature']} />
+                      </span>
+                      Statistik & Kinerja Ujian CBT
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Performa skor siswa, sesi tryout yang berjalan, dan evaluasi hasil ujian
+                    </p>
+                  </div>
+                  <Link to="/admin/cbt">
+                    <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5">
+                      <span>Kelola CBT</span>
+                      <FontAwesomeIcon icon={['fas', 'arrow-right']} className="text-xs" />
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* CBT Mini KPI Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+                    <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
+                      <span>Rata-rata Nilai</span>
+                      <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 p-1.5 rounded-md">
+                        <FontAwesomeIcon icon={['fas', 'gauge-high']} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                      {loading ? '—' : (cbtStats?.avg_score ?? 0)}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">Dari seluruh sesi tryout selesai</div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+                    <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
+                      <span>Skor Tertinggi</span>
+                      <span className="text-purple-500 bg-purple-50 dark:bg-purple-900/30 p-1.5 rounded-md">
+                        <FontAwesomeIcon icon={['fas', 'trophy']} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-purple-600 dark:text-purple-400">
+                      {loading ? '—' : (cbtStats?.highest_score ?? 0)}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">Nilai terendah: {cbtStats?.lowest_score ?? 0}</div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+                    <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
+                      <span>Tingkat Kelulusan (≥70)</span>
+                      <span className="text-blue-500 bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-md">
+                        <FontAwesomeIcon icon={['fas', 'percent']} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
+                      {loading ? '—' : `${cbtStats?.pass_rate ?? 0}%`}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">{cbtStats?.completed_sessions ?? 0} sesi selesai dievaluasi</div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+                    <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
+                      <span>Bank Soal CBT</span>
+                      <span className="text-amber-500 bg-amber-50 dark:bg-amber-900/30 p-1.5 rounded-md">
+                        <FontAwesomeIcon icon={['fas', 'circle-question']} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
+                      {loading ? '—' : (cbtStats?.total_questions ?? 0)} Soal
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">Tersebar di {cbtStats?.total_exams ?? 0} paket ujian aktif</div>
+                  </div>
+                </div>
+
+                {/* CBT Chart & Live Feed Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* CBT Score Distribution Bar Chart */}
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2">
+                          <FontAwesomeIcon icon={['fas', 'chart-column']} className="text-purple-500" />
+                          Distribusi Skor Sesi Ujian Selesai
+                        </h4>
+                        <span className="text-xs text-slate-400 font-medium">Tryout CBT</span>
+                      </div>
+
+                      {/* Visual Chart with Reference Gridlines */}
+                      <div className="relative h-48 mt-2 pt-4 flex flex-col justify-end">
+                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7">
+                          <div className="border-b border-dashed border-slate-200 dark:border-slate-800 flex justify-end">
+                            <span className="text-[10px] text-slate-400 -mt-2.5 px-1 bg-white dark:bg-slate-900">100</span>
+                          </div>
+                          <div className="border-b border-dashed border-slate-200 dark:border-slate-800 flex justify-end">
+                            <span className="text-[10px] text-slate-400 -mt-2.5 px-1 bg-white dark:bg-slate-900">50</span>
+                          </div>
+                          <div className="border-b border-slate-200 dark:border-slate-700" />
+                        </div>
+
+                        {cbtStats?.recent_sessions?.filter(s => s.status === 'submitted').length === 0 ? (
+                          <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs z-10">
+                            <span>Belum ada sesi ujian yang selesai</span>
+                          </div>
+                        ) : (
+                          <div className="relative z-10 flex items-end gap-3 h-full pb-7">
+                            {cbtStats.recent_sessions
+                              .filter(s => s.status === 'submitted')
+                              .slice(0, 6)
+                              .reverse()
+                              .map((session) => (
+                                <div
+                                  key={session.id}
+                                  className="flex-1 h-full flex flex-col justify-end items-center group/bar relative"
+                                  title={`${session.user?.name || 'Siswa'} - ${session.exam_title}: Skor ${session.score}`}
+                                >
+                                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1 group-hover/bar:scale-110 transition-transform">
+                                    {session.score || 0}
+                                  </span>
+                                  <div
+                                    className={`w-full max-w-10 rounded-t-sm transition-all duration-500 hover:brightness-110 shadow-xs ${
+                                      session.score >= 80 ? 'bg-emerald-500' : session.score >= 60 ? 'bg-amber-500' : 'bg-rose-500'
+                                    }`}
+                                    style={{ height: `${Math.max(session.score || 0, 8)}%` }}
+                                  />
+                                  <div className="absolute -bottom-6 w-full text-center text-[10px] text-slate-500 truncate px-0.5">
+                                    {session.user?.name?.split(' ')[0] || `Sesi #${session.id}`}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Sesi Status Breakdown */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                          <span>Selesai: <strong>{cbtStats?.completed_sessions ?? 0}</strong></span>
+                        </span>
+                        <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                          <span>Sedang Berjalan: <strong>{cbtStats?.ongoing_sessions ?? 0}</strong></span>
+                        </span>
+                      </div>
+                      <Link to="/admin/cbt" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+                        Detail CBT →
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Live Feed Sesi Ujian Terkini */}
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2">
+                          <FontAwesomeIcon icon={['fas', 'bolt']} className="text-amber-500" />
+                          Aktivitas Sesi Ujian Terkini
+                        </h4>
+                        <span className="text-xs text-slate-400 font-medium">Live Feed</span>
+                      </div>
+
+                      {cbtStats?.recent_sessions?.length > 0 ? (
+                        <div className="space-y-2.5">
+                          {cbtStats.recent_sessions.map((session) => (
+                            <div
+                              key={session.id}
+                              className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800"
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                    {session.user?.name || 'Siswa'}
+                                  </p>
+                                  <span className="text-[10px] text-slate-400 truncate hidden sm:inline">
+                                    ({session.user?.email})
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                  {session.exam_title || session.exam?.title || 'Ujian CBT'}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                {session.status === 'submitted' ? (
+                                  <span className={`inline-block font-extrabold text-xs px-2 py-0.5 rounded-md ${
+                                    session.score >= 80
+                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                      : session.score >= 60
+                                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                      : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                                  }`}>
+                                    Skor {session.score}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 font-bold text-[10px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                                    Mengerjakan
+                                  </span>
+                                )}
+                                <div className="text-[10px] text-slate-400 mt-0.5">
+                                  {new Date(session.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-400 text-xs">Belum ada riwayat sesi ujian CBT</div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-center">
+                      <Link to="/admin/cbt" className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline">
+                        Lihat seluruh sesi dan evaluasi CBT →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ringkasan Performa Paket Ujian */}
+                {cbtStats?.exams_performance?.length > 0 && (
+                  <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2">
+                        <FontAwesomeIcon icon={['fas', 'list-ol']} className="text-blue-500" />
+                        Ringkasan Paket Ujian CBT
+                      </h4>
+                      <span className="text-xs text-slate-400 font-medium">Performa per Paket</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
+                            <th className="py-2 px-3 font-semibold">Nama Paket Ujian</th>
+                            <th className="py-2 px-3 font-semibold">Durasi</th>
+                            <th className="py-2 px-3 font-semibold text-center">Jumlah Soal</th>
+                            <th className="py-2 px-3 font-semibold text-center">Total Peserta</th>
+                            <th className="py-2 px-3 font-semibold text-center">Rata-rata Skor</th>
+                            <th className="py-2 px-3 font-semibold text-center">Skor Tertinggi</th>
+                            <th className="py-2 px-3 font-semibold text-right">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {cbtStats.exams_performance.map((exam) => (
+                            <tr key={exam.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                              <td className="py-2.5 px-3 font-bold text-slate-800 dark:text-slate-200">
+                                {exam.title}
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-500">
+                                {exam.duration_minutes} Menit
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                                  {exam.questions_count ?? 0} Soal
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-semibold text-slate-700 dark:text-slate-300">
+                                {exam.total_sessions_count ?? 0} Sesi
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                                  {exam.avg_score ? parseFloat(exam.avg_score).toFixed(1) : '—'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-bold text-purple-600 dark:text-purple-400">
+                                {exam.max_score ?? '—'}
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <Link
+                                  to={`/admin/cbt/exams/${exam.id}/questions`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100 transition-colors"
+                                >
+                                  <span>Soal</span>
+                                  <FontAwesomeIcon icon={['fas', 'arrow-right']} className="text-[9px]" />
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </AppLayout>
     );
   }
+
 
   return (
     <AppLayout title="Dashboard">
@@ -122,33 +665,49 @@ export default function DashboardPage() {
 
         {/* E-Learning Progress */}
         <div className="space-y-4">
-          <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
-            <FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-blue-500" /> Capaian Belajar
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg flex items-center gap-2">
+              <FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-blue-500" /> Capaian Belajar
+            </h3>
+            <Link
+              to="/elearning?tab=progress"
+              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
+            >
+              Lihat Rincian Belajar →
+            </Link>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <StatCard
               label="Kursus Diikuti"
               value={loading ? '—' : elearningStats?.enrolled_courses ?? 0}
               icon={<FontAwesomeIcon icon={['fas', 'play-circle']} className="text-blue-500" />}
               color="blue"
-            />
-            <StatCard
-              label="Materi Selesai"
-              value={loading ? '—' : elearningStats?.completed_lessons ?? 0}
-              icon={<FontAwesomeIcon icon={['fas', 'list-check']} className="text-emerald-500" />}
-              color="emerald"
+              trendLabel="Kelas dalam program"
+              to="/elearning?tab=progress&status=in_progress"
             />
             <StatCard
               label="Kursus Selesai"
               value={loading ? '—' : elearningStats?.completed_courses ?? 0}
               icon={<FontAwesomeIcon icon={['fas', 'graduation-cap']} className="text-purple-500" />}
               color="purple"
+              trendLabel="Kelas tamat 100%"
+              to="/elearning?tab=progress&status=completed"
+            />
+            <StatCard
+              label="Materi Selesai"
+              value={loading ? '—' : elearningStats?.completed_lessons ?? 0}
+              icon={<FontAwesomeIcon icon={['fas', 'list-check']} className="text-emerald-500" />}
+              color="emerald"
+              trendLabel="Pelajaran / modul selesai"
+              to="/elearning?tab=progress&status=in_progress"
             />
             <StatCard
               label="Sertifikat"
               value={loading ? '—' : elearningStats?.certificates ?? 0}
               icon={<FontAwesomeIcon icon={['fas', 'award']} className="text-amber-500" />}
               color="gold"
+              trendLabel="Sertifikat kelulusan"
+              to="/elearning?tab=progress&status=completed&action=certificate"
             />
           </div>
         </div>
@@ -156,51 +715,137 @@ export default function DashboardPage() {
         {/* Charts Section */}
         <div className="grid md:grid-cols-2 gap-6 mt-4 border-t border-slate-200 dark:border-slate-800 pt-6">
           {/* CBT Chart */}
-          <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-               <FontAwesomeIcon icon={['fas', 'chart-line']} className="text-blue-500" /> Tren Skor CBT
-            </h3>
-            <div className="h-48 flex items-end gap-2 mt-4 relative pt-6">
-              {recentSessions.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Belum ada data ujian</div>
-              ) : (
-                recentSessions.slice().reverse().map((session, i) => (
-                  <div key={session.id} className="relative flex-1 group flex justify-center">
-                     <div 
-                        className={`w-full max-w-12 rounded-t-sm transition-all duration-500 ${session.score >= 80 ? 'bg-emerald-400' : session.score >= 60 ? 'bg-amber-400' : 'bg-rose-400'}`} 
-                        style={{ height: `${session.score || 0}%` }}
-                     ></div>
-                     <span className="absolute -top-6 text-xs font-bold text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">{session.score || 0}</span>
-                     <div className="absolute -bottom-6 w-max text-[10px] text-slate-500 truncate px-1">{new Date(session.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</div>
+          <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-blue-400/60 dark:hover:border-blue-500/60 rounded-lg p-5 transition-all shadow-xs hover:shadow-md flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <Link to="/cbt" className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  <FontAwesomeIcon icon={['fas', 'chart-line']} className="text-blue-500" /> Tren Skor CBT
+                </Link>
+                <Link to="/cbt" className="text-xs font-semibold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                  Lihat Riwayat CBT →
+                </Link>
+              </div>
+              {/* Chart Body with Reference Gridlines */}
+              <div className="relative h-44 mt-2 pt-4 flex flex-col justify-end">
+                {/* Background Gridlines */}
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7">
+                  <div className="border-b border-dashed border-slate-200 dark:border-slate-800 flex justify-end">
+                    <span className="text-[10px] text-slate-400 -mt-2.5 px-1 bg-white dark:bg-slate-900">100</span>
                   </div>
-                ))
-              )}
+                  <div className="border-b border-dashed border-slate-200 dark:border-slate-800 flex justify-end">
+                    <span className="text-[10px] text-slate-400 -mt-2.5 px-1 bg-white dark:bg-slate-900">50</span>
+                  </div>
+                  <div className="border-b border-slate-200 dark:border-slate-700" />
+                </div>
+
+                {/* Bars Container */}
+                {recentSessions.length === 0 ? (
+                  <Link to="/cbt" className="h-full flex flex-col items-center justify-center text-slate-400 text-sm hover:text-blue-500 transition-colors z-10">
+                    <span>Belum ada data ujian</span>
+                    <span className="text-xs text-blue-500 mt-1">Mulai Ujian Sekarang →</span>
+                  </Link>
+                ) : (
+                  <div className="relative z-10 flex items-end gap-3 h-full pb-7">
+                    {recentSessions.slice().reverse().map((session) => (
+                      <Link
+                        key={session.id}
+                        to="/cbt"
+                        className="flex-1 h-full flex flex-col justify-end items-center group/bar cursor-pointer relative"
+                        title={`${session.exam_title || 'Ujian CBT'}: Skor ${session.score || 0}`}
+                      >
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 group-hover/bar:scale-110 transition-transform">
+                          {session.score || 0}
+                        </span>
+                        <div
+                          className={`w-full max-w-10 rounded-t-sm transition-all duration-500 hover:brightness-110 shadow-xs ${
+                            session.score >= 80 ? 'bg-emerald-500' : session.score >= 60 ? 'bg-amber-500' : 'bg-rose-500'
+                          }`}
+                          style={{ height: `${Math.max(session.score || 0, 8)}%` }}
+                        />
+                        <div className="absolute -bottom-6 w-max text-[10px] text-slate-500 truncate px-1">
+                          {new Date(session.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="mt-8 text-xs text-center text-slate-500">Berdasarkan 5 ujian terakhir</div>
+            <Link to="/cbt" className="mt-8 text-xs text-center text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 block transition-colors">
+              {recentSessions.length > 1
+                ? `Berdasarkan ${recentSessions.length} ujian terakhir · Klik untuk buka riwayat CBT`
+                : recentSessions.length === 1
+                ? 'Berdasarkan 1 ujian · Klik untuk buka ujian CBT'
+                : 'Belum ada data ujian · Klik untuk mulai ujian CBT'}
+            </Link>
           </div>
 
           {/* Elearning/Tugas Akhir Chart */}
-          <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-               <FontAwesomeIcon icon={['fas', 'chart-column']} className="text-purple-500" /> Progres Kursus / Tugas Akhir
-            </h3>
-            <div className="h-48 flex items-end gap-2 mt-4 relative pt-6">
-              {recentCourses.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Belum ada kursus aktif</div>
-              ) : (
-                recentCourses.map((enr, i) => (
-                  <div key={enr.id} className="relative flex-1 group flex justify-center">
-                     <div 
-                        className="w-full max-w-12 bg-purple-500/80 rounded-t-sm transition-all duration-500" 
-                        style={{ height: `${enr.progress_percentage || 0}%` }}
-                     ></div>
-                     <span className="absolute -top-6 text-xs font-bold text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">{enr.progress_percentage || 0}%</span>
-                     <div className="absolute -bottom-6 w-full text-center text-[10px] text-slate-500 truncate px-1" title={enr.course?.title}>{enr.course?.title?.substring(0, 10)}...</div>
+          <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-purple-400/60 dark:hover:border-purple-500/60 rounded-lg p-5 transition-all shadow-xs hover:shadow-md flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <Link to="/elearning?tab=progress" className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                   <FontAwesomeIcon icon={['fas', 'chart-column']} className="text-purple-500" /> Progres Belajar Kursus
+                </Link>
+                <Link to="/elearning?tab=progress" className="text-xs font-semibold text-purple-600 dark:text-purple-400 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                  Lihat Progres Kelas →
+                </Link>
+              </div>
+              {/* Chart Body with Reference Gridlines */}
+              <div className="relative h-44 mt-2 pt-4 flex flex-col justify-end">
+                {/* Background Gridlines */}
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7">
+                  <div className="border-b border-dashed border-slate-200 dark:border-slate-800 flex justify-end">
+                    <span className="text-[10px] text-slate-400 -mt-2.5 px-1 bg-white dark:bg-slate-900">100%</span>
                   </div>
-                ))
-              )}
+                  <div className="border-b border-dashed border-slate-200 dark:border-slate-800 flex justify-end">
+                    <span className="text-[10px] text-slate-400 -mt-2.5 px-1 bg-white dark:bg-slate-900">50%</span>
+                  </div>
+                  <div className="border-b border-slate-200 dark:border-slate-700" />
+                </div>
+
+                {/* Bars Container */}
+                {recentCourses.length === 0 ? (
+                  <Link to="/elearning?tab=catalog" className="h-full flex flex-col items-center justify-center text-slate-400 text-sm hover:text-blue-500 transition-colors z-10">
+                    <span>Belum ada kursus aktif</span>
+                    <span className="text-xs text-blue-500 mt-1">Mulai pilih kursus di katalog →</span>
+                  </Link>
+                ) : (
+                  <div className="relative z-10 flex items-end gap-3 h-full pb-7">
+                    {recentCourses.map((enr) => (
+                      <Link
+                        key={enr.id}
+                        to={enr.course?.slug ? `/elearning/${enr.course.slug}` : '/elearning?tab=progress'}
+                        className="flex-1 h-full flex flex-col justify-end items-center group/bar cursor-pointer relative"
+                        title={`${enr.course?.title || 'Kursus'}: ${enr.progress_percentage || 0}%`}
+                      >
+                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 mb-1 group-hover/bar:scale-110 transition-transform">
+                          {enr.progress_percentage || 0}%
+                        </span>
+                        <div
+                          className={`w-full max-w-10 rounded-t-sm transition-all duration-500 hover:brightness-110 shadow-xs ${
+                            enr.progress_percentage === 100
+                              ? 'bg-emerald-500'
+                              : enr.progress_percentage > 0
+                              ? 'bg-purple-600'
+                              : 'bg-slate-300 dark:bg-slate-700'
+                          }`}
+                          style={{ height: `${Math.max(enr.progress_percentage || 0, 6)}%` }}
+                        />
+                        <div className="absolute -bottom-6 w-full text-center text-[10px] text-slate-500 truncate px-1" title={enr.course?.title}>
+                          {enr.course?.title ? (enr.course.title.length > 12 ? enr.course.title.substring(0, 10) + '...' : enr.course.title) : 'Kursus'}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="mt-8 text-xs text-center text-slate-500">Persentase capaian belajar terkini</div>
+            <Link to="/elearning?tab=progress" className="mt-8 text-xs text-center text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 block transition-colors">
+              {recentCourses.length > 0
+                ? `Berdasarkan ${recentCourses.length} kursus aktif dipelajari · Klik kursus untuk buka materi`
+                : 'Belum ada kursus aktif · Mulai belajar di katalog'}
+            </Link>
           </div>
         </div>
 
@@ -255,11 +900,16 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={prog.id}
-                    className={`relative rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between ${
+                    className={`relative rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between cursor-pointer group ${
                       isCurrent
-                        ? 'bg-gradient-to-b from-blue-50/90 to-white dark:from-blue-950/30 dark:to-slate-900 border-2 border-blue-500 shadow-xl shadow-blue-500/10 dark:shadow-blue-500/5'
-                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg'
+                        ? 'bg-gradient-to-b from-blue-50/90 to-white dark:from-blue-950/30 dark:to-slate-900 border-2 border-blue-500 shadow-xl shadow-blue-500/10 dark:shadow-blue-500/5 hover:border-blue-600'
+                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg hover:scale-[1.01]'
                     }`}
+                    onClick={(e) => {
+                      if (!e.target.closest('button') && !e.target.closest('a')) {
+                        navigate(`/program/${prog.slug || prog.id}`);
+                      }
+                    }}
                   >
                     {/* Top Badge */}
                     {isCurrent ? (
