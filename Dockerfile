@@ -1,6 +1,7 @@
-FROM php:8.3-fpm
+# 1. Gunakan PHP versi 8.4
+FROM php:8.4-fpm
 
-# Install system dependencies & PostgreSQL driver
+# 2. Tambahkan libzip-dev ke daftar apt-get, dan zip ke daftar ekstensi PHP
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -10,10 +11,14 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
+    libzip-dev \
+    && docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd zip
 
-# Get latest Composer
+# 3. Mencegah error "dubious ownership" dari Git saat Composer berjalan
+RUN git config --global --add safe.directory '*'
+
+# 4. Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
+# 5. Set working directory
 WORKDIR /var/www/html
