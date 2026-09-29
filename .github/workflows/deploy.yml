@@ -1,0 +1,59 @@
+name: Deploy skorpluss.com
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy ke VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # 1. Pastikan folder utama ada dan masuk ke direktori
+            mkdir -p /var/www/skorpluss
+            cd /var/www/skorpluss
+            
+            # 2. Clone atau Pull Repository
+            if [ -d ".git" ]; then
+              git pull origin main
+            else
+              git clone https://github.com/barengs/skorplus.git .
+            fi
+            
+            # 3. Copy .env jika belum ada
+            if [ ! -f ".env" ]; then
+              cp .env.example .env
+            fi
+            
+            # 4. Bangun dan nyalakan Docker Container
+            docker compose up -d --build
+            
+            # 5. Instalasi dependensi backend Laravel
+            docker compose exec -T app composer install --optimize-autoloader --no-dev
+            docker compose exec -T app php artisan key:generate --force
+            
+            # 6. Migrasi Database PostgreSQL
+            docker compose exec -T app php artisan migrate --force
+            
+            # 7. Setup Storage Symlink (Hapus yang lama, buat baru)
+            docker compose exec -T app rm -rf /var/www/html/public/storage || true
+            docker compose exec -T app php artisan storage:link
+            
+            # 8. Build Frontend (React / Vite)
+            docker compose up node
+            
+            # 9. Optimasi Cache Laravel
+            docker compose exec -T app php artisan config:cache
+            docker compose exec -T app php artisan route:cache
+            docker compose exec -T app php artisan view:cache
+            
+            # 10. Perbaiki Hak Akses Folder (SANGAT PENTING)
+            docker compose exec -T app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/build /var/www/html/public/storage
