@@ -23,8 +23,10 @@ jobs:
             mkdir -p /var/www/skorpluss
             cd /var/www/skorpluss
             
-            # 2. Force Sync Repository dengan branch main (hindari detached HEAD / conflict)
+            # 2. Force Sync Repository dengan branch main (bersihkan file lokal yang konflik)
             if [ -d ".git" ]; then
+              git reset --hard HEAD
+              git clean -fd
               git fetch origin main
               git checkout -B main origin/main
               git reset --hard origin/main
