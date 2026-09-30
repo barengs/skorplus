@@ -12,6 +12,8 @@ import { toast } from 'react-toastify';
 
 
 
+import api from '../../../services/api';
+
 export default function Sidebar({ collapsed = false }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -22,22 +24,18 @@ export default function Sidebar({ collapsed = false }) {
 
   React.useEffect(() => {
     if (user && token) {
-      // Fetch dynamic menus for this user's role
-      fetch('/api/my-menus', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        const main = data.filter(m => m.section === 'main');
-        const system = data.filter(m => m.section === 'system');
-        setMenus({ main, system });
-      })
-      .catch(err => console.error("Gagal memuat menu", err));
+      api.get('/my-menus')
+        .then(res => {
+          const data = res.data;
+          if (Array.isArray(data)) {
+            const main = data.filter(m => m.section === 'main');
+            const system = data.filter(m => m.section === 'system');
+            setMenus({ main, system });
+          }
+        })
+        .catch(err => console.error("Gagal memuat menu", err));
     }
-  }, [user]);
+  }, [user, token]);
 
   const handleLogout = async () => {
     try {
