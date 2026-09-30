@@ -38,10 +38,8 @@ class MenuSeeder extends Seeder
             ['label' => 'Pengaturan', 'path' => '/admin/settings', 'icon' => 'fa-gear', 'section' => 'system', 'sort_order' => 10, 'roles' => array_values(array_filter([$admin?->id]))],
         ];
 
-        Schema::disableForeignKeyConstraints();
-        DB::table('menu_role')->truncate();
-        Menu::truncate();
-        Schema::enableForeignKeyConstraints();
+        // PostgreSQL-compatible truncate (Schema::disableForeignKeyConstraints doesn't work for TRUNCATE on PostgreSQL)
+        DB::statement('TRUNCATE TABLE menu_role, menus RESTART IDENTITY CASCADE;');
 
         foreach ($menus as $m) {
             $menu = Menu::create([

@@ -52,8 +52,8 @@ jobs:
             docker compose exec -T app rm -rf /var/www/html/public/storage || true
             docker compose exec -T app php artisan storage:link
             
-            # 8. Build Frontend (React / Vite)
-            docker compose up node
+            # 8. Build Frontend (React / Vite) - use run --rm to force fresh build every time
+            docker compose run --rm node
             
             # 9. Optimasi Cache Laravel
             docker compose exec -T app php artisan config:cache
