@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\LearningPackage;
 use App\Models\School;
+use App\Models\SchoolContractRenewal;
+use App\Models\SchoolLearningPackage;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -68,5 +71,39 @@ class SchoolSeeder extends Seeder
             ]
         );
         $student2->assignRole($siswaRole);
+
+        // Assign a sample learning package to SMAN 1 Bintang Harapan
+        $firstPackage = LearningPackage::first();
+        if ($firstPackage) {
+            $schoolPackage = SchoolLearningPackage::updateOrCreate(
+                [
+                    'school_id' => $school->id,
+                    'learning_package_id' => $firstPackage->id,
+                ],
+                [
+                    'current_contract_number' => 'KTR/2026/01/SMAN1-001',
+                    'start_date' => now()->subMonths(2)->toDateString(),
+                    'end_date' => now()->addMonths(10)->toDateString(),
+                    'max_students' => 100,
+                    'status' => 'active',
+                ]
+            );
+
+            SchoolContractRenewal::firstOrCreate(
+                [
+                    'school_learning_package_id' => $schoolPackage->id,
+                    'contract_number' => 'KTR/2026/01/SMAN1-001',
+                ],
+                [
+                    'renewal_type' => 'initial',
+                    'previous_end_date' => null,
+                    'new_end_date' => now()->addMonths(10)->toDateString(),
+                    'quota_students' => 100,
+                    'renewed_by' => 1,
+                    'renewal_date' => now()->subMonths(2)->toDateString(),
+                    'notes' => 'Kontrak kerja sama awal bimbel persiapan UTBK-SNBT 2026.',
+                ]
+            );
+        }
     }
 }

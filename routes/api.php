@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\LandingHeroController;
 use App\Http\Controllers\Api\Admin\LandingPromoController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\RoleMenuController;
+use App\Http\Controllers\Api\Admin\SchoolPackageController;
 use App\Http\Controllers\Api\Admin\StatController;
 use App\Http\Controllers\Api\Admin\TestimonialController;
 use App\Http\Controllers\Api\Admin\UserController;
@@ -157,6 +158,13 @@ Route::middleware('auth:api')->group(function () {
         Route::get('schools/students/template', [AdminSchoolController::class, 'downloadStudentTemplate']);
         Route::post('schools/{school}/students/import', [AdminSchoolController::class, 'importStudents']);
 
+        // School Packages & Contracts
+        Route::get('schools/{school}/packages', [SchoolPackageController::class, 'index']);
+        Route::post('schools/{school}/packages', [SchoolPackageController::class, 'store']);
+        Route::post('schools/{school}/packages/{package}/renew', [SchoolPackageController::class, 'renew']);
+        Route::get('schools/{school}/packages/{package}/history', [SchoolPackageController::class, 'history']);
+        Route::delete('schools/{school}/packages/{package}', [SchoolPackageController::class, 'destroy']);
+
         // Audit Logs & Intelligence Reports (Decision Support)
         Route::get('audit-logs', [AdminAuditLogController::class, 'index']);
         Route::get('audit-logs/stats', [AdminAuditLogController::class, 'stats']);
@@ -179,5 +187,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('students/{student}', [StudentController::class, 'show']);
         Route::put('students/{student}', [StudentController::class, 'update']);
         Route::delete('students/{student}', [StudentController::class, 'destroy']);
+
+        // School Packages & Contracts (for school admin to view)
+        Route::get('packages', [SchoolPackageController::class, 'mySchoolPackages']);
     });
 });

@@ -6,8 +6,10 @@ import Badge from '../../../atoms/Badge';
 import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import SchoolAdminPackagesTab from './SchoolAdminPackagesTab';
 
 export default function SchoolAdminProfilePage() {
+  const [activeTab, setActiveTab] = useState('profile');
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -111,8 +113,38 @@ export default function SchoolAdminProfilePage() {
   }
 
   return (
-    <AppLayout title="Profil Sekolah">
-      <div className="max-w-3xl pb-16 space-y-6">
+    <AppLayout title="Profil & Kemitraan Sekolah">
+      <div className="w-full max-w-4xl pb-16 space-y-6">
+        {/* Tab Navigation */}
+        <div className="flex gap-1 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-xl w-fit">
+          <button
+            type="button"
+            onClick={() => setActiveTab('profile')}
+            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'profile'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <FontAwesomeIcon icon={['fas', 'school']} className="mr-1.5" /> Profil Sekolah
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('packages')}
+            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'packages'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <FontAwesomeIcon icon={['fas', 'cubes']} className="mr-1.5" /> Paket & Kontrak Berlangganan
+          </button>
+        </div>
+
+        {activeTab === 'packages' ? (
+          <SchoolAdminPackagesTab school={school} />
+        ) : (
+          <>
         {/* Header Banner with Photo Cover */}
         <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs">
           {/* Cover Photo */}
@@ -302,6 +334,8 @@ export default function SchoolAdminProfilePage() {
             </div>
           </form>
         </div>
+        </>
+        )}
       </div>
     </AppLayout>
   );

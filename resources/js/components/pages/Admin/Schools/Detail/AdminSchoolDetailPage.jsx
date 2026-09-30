@@ -9,6 +9,7 @@ import DataTable from '../../../../organisms/DataTable/DataTable';
 import api from '../../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import SchoolPackagesSection from './SchoolPackagesSection';
 
 export default function AdminSchoolDetailPage() {
   const { id } = useParams();
@@ -540,6 +541,13 @@ export default function AdminSchoolDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Packages & Contracts Section */}
+        <SchoolPackagesSection
+          schoolId={id}
+          schoolName={school.name}
+          totalStudents={school.students_count || 0}
+        />
 
         {/* Students Section */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
