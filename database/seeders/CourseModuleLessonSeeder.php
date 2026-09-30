@@ -8,19 +8,20 @@ use App\Models\Lesson;
 use App\Models\Module;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class CourseModuleLessonSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::disableForeignKeyConstraints();
         Course::truncate();
         Module::truncate();
         Lesson::truncate();
         LearningPackage::truncate();
         DB::table('learning_package_course')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Schema::enableForeignKeyConstraints();
 
         // 1. Create Course 1: Penalaran Umum (TPS)
         $course1 = Course::create([
