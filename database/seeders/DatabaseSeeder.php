@@ -16,7 +16,6 @@ class DatabaseSeeder extends Seeder
             CourseModuleLessonSeeder::class,
             CourseCatalogSeeder::class,
             ExamSeeder::class,
-            SchoolSeeder::class,
             AuditLogSeeder::class,
         ]);
     }
