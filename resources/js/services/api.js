@@ -29,12 +29,21 @@ api.interceptors.response.use(
     const original = err.config;
 
     // Prevent interceptor deadlock if the refresh request itself fails
-    if (original.url?.includes('/auth/refresh')) {
-      processQueue(err, null);
-      localStorage.removeItem('skorpluss_token');
-      localStorage.removeItem('lastActivity');
-      store.dispatch(logout());
-      window.location.href = '/login';
+    // DO NOT attempt to refresh token on auth routes (login, register)
+    if (
+      original.url?.includes('/auth/refresh') ||
+      original.url?.includes('/auth/login') ||
+      original.url?.includes('/auth/register')
+    ) {
+      if (original.url?.includes('/auth/refresh')) {
+        processQueue(err, null);
+        localStorage.removeItem('skorpluss_token');
+        localStorage.removeItem('lastActivity');
+        store.dispatch(logout());
+        if (window.location.pathname !== '/login') {
+          window.location.assign('/login');
+        }
+      }
       return Promise.reject(err);
     }
 
@@ -64,7 +73,9 @@ api.interceptors.response.use(
         localStorage.removeItem('skorpluss_token');
         localStorage.removeItem('lastActivity');
         store.dispatch(logout());
-        window.location.href = '/login';
+        if (window.location.pathname !== '/login') {
+          window.location.assign('/login');
+        }
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

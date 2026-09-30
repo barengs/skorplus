@@ -35,8 +35,8 @@ function PrivateRoute({ children }) {
 
 // Redirect if already logged in
 function GuestRoute({ children }) {
-  const token = useSelector((s) => s.auth.token);
-  if (token) return <Navigate to="/dashboard" replace />;
+  const { token, user } = useSelector((s) => s.auth);
+  if (token && user) return <Navigate to="/dashboard" replace />;
   return children;
 }
 

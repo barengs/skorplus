@@ -99,7 +99,12 @@ const authSlice = createSlice({
       .addCase(register.pending, pending).addCase(register.fulfilled, fulfilled).addCase(register.rejected, rejected)
       .addCase(fetchMe.pending, (state) => { state.loading = true; })
       .addCase(fetchMe.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; })
-      .addCase(fetchMe.rejected, (state) => { state.loading = false; })
+      .addCase(fetchMe.rejected, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem(TOKEN_KEY);
+      })
       .addCase(fetchSettings.fulfilled, (state, action) => {
         state.settings = action.payload;
       })
