@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\AdminExamQuestionController;
 use App\Http\Controllers\Api\Admin\AdminExamTypeController;
 use App\Http\Controllers\Api\Admin\AdminModuleLessonController;
 use App\Http\Controllers\Api\Admin\AdminRoleController;
+use App\Http\Controllers\Api\Admin\AdminSchoolController;
 use App\Http\Controllers\Api\Admin\FeatureController;
 use App\Http\Controllers\Api\Admin\LandingHeroController;
 use App\Http\Controllers\Api\Admin\LandingPromoController;
@@ -24,6 +25,8 @@ use App\Http\Controllers\Api\ForumController;
 use App\Http\Controllers\Api\LandingController;
 use App\Http\Controllers\Api\LearningPackageController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\SchoolAdmin\SchoolProfileController;
+use App\Http\Controllers\Api\SchoolAdmin\StudentController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StudentElearningController;
 use App\Http\Controllers\Api\UploadController;
@@ -141,5 +144,22 @@ Route::middleware('auth:api')->group(function () {
         // Learning Packages
         Route::get('learning-packages/courses', [App\Http\Controllers\Admin\LearningPackageController::class, 'getCourses']);
         Route::apiResource('learning-packages', App\Http\Controllers\Admin\LearningPackageController::class);
+
+        // School Management
+        Route::apiResource('schools', AdminSchoolController::class);
+        Route::post('schools/{school}/admin', [AdminSchoolController::class, 'createAdmin']);
+    });
+
+    // School Admin Routes
+    Route::prefix('school-admin')->group(function () {
+        Route::get('profile', [SchoolProfileController::class, 'show']);
+        Route::put('profile', [SchoolProfileController::class, 'update']);
+
+        Route::get('students', [StudentController::class, 'index']);
+        Route::post('students', [StudentController::class, 'store']);
+        Route::post('students/batch', [StudentController::class, 'batchStore']);
+        Route::get('students/{student}', [StudentController::class, 'show']);
+        Route::put('students/{student}', [StudentController::class, 'update']);
+        Route::delete('students/{student}', [StudentController::class, 'destroy']);
     });
 });

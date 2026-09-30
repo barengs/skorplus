@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -20,6 +21,7 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'nisn',
         'school',
+        'school_id',
         'phone',
         'program',
         'is_active',
@@ -50,6 +52,11 @@ class User extends Authenticatable implements JWTSubject
         return [
             'roles' => $this->getRoleNames(),
         ];
+    }
+
+    public function schoolEntity(): BelongsTo
+    {
+        return $this->belongsTo(School::class, 'school_id');
     }
 
     public function profile(): HasOne

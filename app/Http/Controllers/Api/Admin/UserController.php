@@ -51,6 +51,7 @@ class UserController extends Controller
             'program' => 'nullable|string',
             'phone' => 'nullable|string',
             'school' => 'nullable|string',
+            'school_id' => 'nullable|integer|exists:schools,id',
             'nisn' => 'nullable|string|unique:users',
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer',
@@ -70,6 +71,7 @@ class UserController extends Controller
             'program' => $validated['program'] ?? 'mandiri',
             'phone' => $validated['phone'] ?? null,
             'school' => $validated['school'] ?? null,
+            'school_id' => $validated['school_id'] ?? null,
             'nisn' => $validated['nisn'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
         ]);
@@ -109,6 +111,7 @@ class UserController extends Controller
             'program' => 'nullable|string',
             'phone' => 'nullable|string',
             'school' => 'nullable|string',
+            'school_id' => 'nullable|integer|exists:schools,id',
             'nisn' => 'nullable|string|unique:users,nisn,'.$user->id,
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer',
@@ -125,6 +128,7 @@ class UserController extends Controller
             'program' => $validated['program'] ?? $user->program,
             'phone' => $validated['phone'] ?? $user->phone,
             'school' => $validated['school'] ?? $user->school,
+            'school_id' => array_key_exists('school_id', $validated) ? $validated['school_id'] : $user->school_id,
             'nisn' => $validated['nisn'] ?? $user->nisn,
             'is_active' => $validated['is_active'] ?? $user->is_active,
         ]);

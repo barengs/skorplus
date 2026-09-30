@@ -13,6 +13,7 @@ use App\Models\LessonProgress;
 use App\Models\Module;
 use App\Models\Program;
 use App\Models\Question;
+use App\Models\School;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,10 @@ class DashboardController extends Controller
 
         if ($user->hasRole('tutor')) {
             return $this->tutorDashboard($user);
+        }
+
+        if ($user->hasRole('admin_sekolah')) {
+            return $this->schoolAdminDashboard($user);
         }
 
         // Default to Admin / Management Staff
@@ -326,6 +331,70 @@ class DashboardController extends Controller
             'admin_stats' => $adminStats,
             'course_stats' => $courseStats,
             'cbt_stats' => $cbtStats,
+        ]);
+    }
+
+    private function schoolAdminDashboard($user): JsonResponse
+    {
+        $school = $user->school_id ? School::find($user->school_id) : null;
+
+        if (! $school) {
+            return response()->json([
+                'dashboard_type' => 'admin_sekolah',
+                'user' => [
+                    'name' => $user->name,
+                    'roles' => $user->getRoleNames(),
+                ],
+                'message' => 'Akun Anda belum terhubung dengan sekolah mana pun. Silakan hubungi Admin SkorPluss.',
+            ]);
+        }
+
+        $totalStudents = $school->students()->count();
+        $activeStudents = $school->students()->where('is_active', true)->count();
+
+        // Get student IDs for this school
+        $studentIds = $school->students()->pluck('id');
+
+        $totalCbtSessions = CbtSession::whereIn('user_id', $studentIds)->count();
+        $completedSessions = CbtSession::whereIn('user_id', $studentIds)
+            ->where('status', 'submitted')
+            ->count();
+        $avgScore = round(CbtSession::whereIn('user_id', $studentIds)
+            ->where('status', 'submitted')
+            ->avg('score') ?? 0, 1);
+
+        $recentStudents = $school->students()
+            ->latest()
+            ->take(5)
+            ->get(['id', 'name', 'email', 'nisn', 'program', 'created_at']);
+
+        $recentSessions = CbtSession::whereIn('user_id', $studentIds)
+            ->with(['user:id,name,email'])
+            ->latest()
+            ->take(5)
+            ->get(['id', 'user_id', 'exam_title', 'exam_type', 'score', 'status', 'submitted_at', 'created_at']);
+
+        return response()->json([
+            'dashboard_type' => 'admin_sekolah',
+            'user' => [
+                'name' => $user->name,
+                'roles' => $user->getRoleNames(),
+            ],
+            'school' => [
+                'id' => $school->id,
+                'name' => $school->name,
+                'npsn' => $school->npsn,
+                'logo' => $school->logo,
+            ],
+            'stats' => [
+                'total_students' => $totalStudents,
+                'active_students' => $activeStudents,
+                'total_cbt_sessions' => $totalCbtSessions,
+                'completed_sessions' => $completedSessions,
+                'avg_score' => $avgScore,
+            ],
+            'recent_students' => $recentStudents,
+            'recent_sessions' => $recentSessions,
         ]);
     }
 }

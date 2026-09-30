@@ -19,6 +19,7 @@ class RolePermissionSeeder extends Seeder
         $siswa = Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
         $tutor = Role::firstOrCreate(['name' => 'tutor', 'guard_name' => 'api']);
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'api']);
+        $adminSekolah = Role::firstOrCreate(['name' => 'admin_sekolah', 'guard_name' => 'api']);
 
         // Create demo users
         $demoSiswa = User::firstOrCreate(
@@ -57,9 +58,20 @@ class RolePermissionSeeder extends Seeder
         );
         $demoAdmin->assignRole($admin);
 
+        $demoAdminSekolah = User::firstOrCreate(
+            ['email' => 'admin.sekolah@skorpluss.com'],
+            [
+                'name' => 'Admin Sekolah Demo',
+                'password' => Hash::make('password'),
+                'is_active' => true,
+            ]
+        );
+        $demoAdminSekolah->assignRole($adminSekolah);
+
         $this->command->info('Roles & demo users seeded:');
         $this->command->info('  siswa@skorpluss.com / password');
         $this->command->info('  tutor@skorpluss.com / password');
         $this->command->info('  admin@skorpluss.com / password');
+        $this->command->info('  admin.sekolah@skorpluss.com / password');
     }
 }

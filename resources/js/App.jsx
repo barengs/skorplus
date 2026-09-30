@@ -24,6 +24,9 @@ import AdminSettingsPage from './components/pages/Admin/Settings/AdminSettingsPa
 import AdminLearningPackagePage from './components/pages/Admin/LearningPackage/AdminLearningPackagePage';
 import AdminLearningPackageDetailPage from './components/pages/Admin/LearningPackage/AdminLearningPackageDetailPage';
 import AdminLearningPackageFormPage from './components/pages/Admin/LearningPackage/AdminLearningPackageFormPage';
+import AdminSchoolsPage from './components/pages/Admin/Schools';
+import SchoolAdminStudentsPage from './components/pages/SchoolAdmin/Students';
+import SchoolAdminProfilePage from './components/pages/SchoolAdmin/Profile';
 import ProfilePage from './components/pages/Profile';
 
 // Route guard — redirects to /login if no token
@@ -105,6 +108,11 @@ export default function App() {
       <Route path="/admin/learning-packages/create" element={<PrivateRoute><AdminLearningPackageFormPage /></PrivateRoute>} />
       <Route path="/admin/learning-packages/:id/edit" element={<PrivateRoute><AdminLearningPackageFormPage /></PrivateRoute>} />
       <Route path="/admin/learning-packages/:id" element={<PrivateRoute><AdminLearningPackageDetailPage /></PrivateRoute>} />
+      <Route path="/admin/schools" element={<PrivateRoute><AdminSchoolsPage /></PrivateRoute>} />
+
+      {/* School Admin routes */}
+      <Route path="/school-admin/students" element={<PrivateRoute><SchoolAdminStudentsPage /></PrivateRoute>} />
+      <Route path="/school-admin/profile" element={<PrivateRoute><SchoolAdminProfilePage /></PrivateRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -175,6 +175,7 @@ class AuthController extends Controller
             'email' => $user->email,
             'nisn' => $user->nisn,
             'school' => $user->school,
+            'school_id' => $user->school_id,
             'phone' => $profile?->phone ?? $user->phone,
             'program' => $user->program,
             'avatar' => $user->avatar,

@@ -54,6 +54,148 @@ export default function DashboardPage() {
     }
   };
 
+  if (data?.dashboard_type === 'admin_sekolah') {
+    const schoolStats = data?.stats;
+    const schoolInfo = data?.school;
+    const recentStudents = data?.recent_students || [];
+    const recentSchoolSessions = data?.recent_sessions || [];
+
+    return (
+      <AppLayout title="Dashboard Sekolah">
+        <div className="flex flex-col gap-8 max-w-6xl">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/20 rounded-2xl p-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge color="blue">Admin Mitra Sekolah</Badge>
+                  {schoolInfo?.npsn && <span className="text-xs text-slate-500 font-mono">NPSN: {schoolInfo.npsn}</span>}
+                </div>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">
+                  {schoolInfo?.name || 'Sekolah'}
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  Selamat datang kembali, <strong>{user?.name}</strong>. Pantau aktivitas dan kemajuan belajar seluruh siswa Anda.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Link to="/school-admin/students">
+                  <Button size="sm">
+                    <FontAwesomeIcon icon={['fas', 'user-plus']} className="mr-1.5" /> Kelola Siswa
+                  </Button>
+                </Link>
+                <Link to="/school-admin/profile">
+                  <Button variant="outline" size="sm">
+                    <FontAwesomeIcon icon={['fas', 'school']} className="mr-1.5" /> Profil Sekolah
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard
+              label="Total Siswa Terdaftar"
+              value={loading ? '—' : schoolStats?.total_students ?? 0}
+              icon={<FontAwesomeIcon icon={['fas', 'users']} className="text-blue-500" />}
+              color="blue"
+              to="/school-admin/students"
+            />
+            <StatCard
+              label="Siswa Aktif"
+              value={loading ? '—' : schoolStats?.active_students ?? 0}
+              icon={<FontAwesomeIcon icon={['fas', 'user-check']} className="text-emerald-500" />}
+              color="emerald"
+            />
+            <StatCard
+              label="Sesi Ujian CBT"
+              value={loading ? '—' : schoolStats?.total_cbt_sessions ?? 0}
+              icon={<FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-500" />}
+              color="purple"
+            />
+            <StatCard
+              label="Rata-rata Nilai CBT"
+              value={loading ? '—' : `${schoolStats?.avg_score ?? 0} pts`}
+              icon={<FontAwesomeIcon icon={['fas', 'chart-line']} className="text-amber-500" />}
+              color="gold"
+            />
+          </div>
+
+          {/* Quick Tables: Recent Students & Recent CBT Results */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Recent Students */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <FontAwesomeIcon icon={['fas', 'user-graduate']} className="text-blue-500" />
+                  Siswa Terbaru Terdaftar
+                </h3>
+                <Link to="/school-admin/students" className="text-xs text-blue-600 hover:underline">
+                  Lihat Semua →
+                </Link>
+              </div>
+
+              {recentStudents.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-sm">
+                  Belum ada siswa terdaftar. <Link to="/school-admin/students" className="text-blue-500 underline">Tambah siswa pertama</Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentStudents.map((st) => (
+                    <div key={st.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                      <div>
+                        <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{st.name}</div>
+                        <div className="text-xs text-slate-400">{st.email} {st.nisn ? `• NISN: ${st.nisn}` : ''}</div>
+                      </div>
+                      <Badge color="blue">{st.program || 'intensif'}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent CBT Activities */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <FontAwesomeIcon icon={['fas', 'file-circle-check']} className="text-purple-500" />
+                  Aktivitas Ujian CBT Siswa
+                </h3>
+                <span className="text-xs text-slate-400">Hasil Terkini</span>
+              </div>
+
+              {recentSchoolSessions.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-sm">
+                  Belum ada riwayat pengerjaan CBT dari siswa sekolah Anda.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentSchoolSessions.map((ss) => (
+                    <div key={ss.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                      <div>
+                        <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                          {ss.user?.name || 'Siswa'}
+                        </div>
+                        <div className="text-xs text-slate-400">{ss.exam_title || ss.exam_type || 'Ujian CBT'}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                          {ss.score !== null ? `${ss.score} pts` : '—'}
+                        </div>
+                        <div className="text-[10px] text-slate-400 uppercase">{ss.status}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   if (data?.dashboard_type && data?.dashboard_type !== 'student') {
     const isTutor = data?.dashboard_type === 'tutor';
     return (

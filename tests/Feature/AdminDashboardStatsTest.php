@@ -27,7 +27,6 @@ class AdminDashboardStatsTest extends TestCase
         Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'web']);
     }
 
-
     public function test_admin_dashboard_returns_course_and_cbt_stats(): void
     {
         $admin = User::factory()->create(['name' => 'Admin Test', 'email' => 'admin.test@skorpluss.com']);
