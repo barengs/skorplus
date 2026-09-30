@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers\Api\SchoolAdmin;
 
+use App\Exports\SchoolStudentsExport;
+use App\Exports\SchoolStudentsTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Imports\SchoolStudentsImport;
 use App\Models\School;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class StudentController extends Controller
 {
@@ -81,6 +87,7 @@ class StudentController extends Controller
             'password' => 'nullable|string|min:6',
             'nisn' => 'nullable|string|max:30|unique:users,nisn',
             'phone' => 'nullable|string|max:30',
+            'avatar' => 'nullable|string',
             'program' => 'nullable|string|in:mandiri,intensif,garansi',
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer',
@@ -94,6 +101,7 @@ class StudentController extends Controller
             'password' => Hash::make($validated['password'] ?? 'password123'),
             'nisn' => $validated['nisn'] ?? null,
             'phone' => $validated['phone'] ?? null,
+            'avatar' => $validated['avatar'] ?? null,
             'school' => $school->name,
             'school_id' => $school->id,
             'program' => $validated['program'] ?? 'intensif',
@@ -145,6 +153,7 @@ class StudentController extends Controller
             'password' => 'nullable|string|min:6',
             'nisn' => ['nullable', 'string', 'max:30', Rule::unique('users', 'nisn')->ignore($student->id)],
             'phone' => 'nullable|string|max:30',
+            'avatar' => 'nullable|string',
             'program' => 'nullable|string|in:mandiri,intensif,garansi',
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer',
@@ -157,6 +166,7 @@ class StudentController extends Controller
             'email' => $validated['email'] ?? $student->email,
             'nisn' => $validated['nisn'] ?? $student->nisn,
             'phone' => $validated['phone'] ?? $student->phone,
+            'avatar' => array_key_exists('avatar', $validated) ? $validated['avatar'] : $student->avatar,
             'program' => $validated['program'] ?? $student->program,
             'is_active' => $validated['is_active'] ?? $student->is_active,
         ];
@@ -260,5 +270,61 @@ class StudentController extends Controller
             'created_count' => $created,
             'errors' => $errors,
         ]);
+    }
+
+    /**
+     * Export students of school to Excel file.
+     */
+    public function export(): BinaryFileResponse
+    {
+        $school = $this->getSchool();
+        $filename = 'data-siswa-'.strtolower(str_replace(' ', '-', $school->name)).'-'.date('Y-m-d').'.xlsx';
+
+        return Excel::download(new SchoolStudentsExport($school), $filename);
+    }
+
+    /**
+     * Download Excel template for importing students.
+     */
+    public function downloadTemplate(): BinaryFileResponse
+    {
+        return Excel::download(new SchoolStudentsTemplateExport, 'template-import-data-siswa.xlsx');
+    }
+
+    /**
+     * Import students from Excel file.
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $school = $this->getSchool();
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:xlsx,xls',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $import = new SchoolStudentsImport($school);
+
+            Excel::import($import, $request->file('file'));
+
+            if ($import->getErrors()) {
+                return response()->json([
+                    'message' => 'Import selesai dengan beberapa kesalahan',
+                    'imported' => $import->getImportedCount(),
+                    'errors' => $import->getErrors(),
+                ], 207);
+            }
+
+            return response()->json([
+                'message' => "Berhasil mengimpor {$import->getImportedCount()} siswa.",
+                'imported' => $import->getImportedCount(),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Gagal mengimpor data: '.$e->getMessage()], 500);
+        }
     }
 }

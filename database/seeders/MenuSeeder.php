@@ -34,7 +34,8 @@ class MenuSeeder extends Seeder
             ['label' => 'Kelola E-Learning', 'path' => '/admin/elearning', 'icon' => 'fa-book-open-reader', 'section' => 'system', 'sort_order' => 6, 'roles' => array_values(array_filter([$admin?->id, $tutor?->id]))],
             ['label' => 'Kelola Landing Page', 'path' => '/admin/landing', 'icon' => 'fa-palette', 'section' => 'system', 'sort_order' => 7, 'roles' => array_values(array_filter([$admin?->id]))],
             ['label' => 'Kelola Role & Menu', 'path' => '/admin/roles', 'icon' => 'fa-user-shield', 'section' => 'system', 'sort_order' => 8, 'roles' => array_values(array_filter([$admin?->id]))],
-            ['label' => 'Pengaturan', 'path' => '/admin/settings', 'icon' => 'fa-gear', 'section' => 'system', 'sort_order' => 9, 'roles' => array_values(array_filter([$admin?->id]))],
+            ['label' => 'Audit & Laporan', 'path' => '/admin/audit', 'icon' => 'fa-shield-halved', 'section' => 'system', 'sort_order' => 9, 'roles' => array_values(array_filter([$admin?->id]))],
+            ['label' => 'Pengaturan', 'path' => '/admin/settings', 'icon' => 'fa-gear', 'section' => 'system', 'sort_order' => 10, 'roles' => array_values(array_filter([$admin?->id]))],
         ];
 
         Schema::disableForeignKeyConstraints();

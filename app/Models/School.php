@@ -17,6 +17,7 @@ class School extends Model
         'phone',
         'address',
         'logo',
+        'photo',
         'is_active',
     ];
 

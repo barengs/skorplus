@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
 import Badge from '../../../atoms/Badge';
 import Input from '../../../atoms/Input';
+import Avatar from '../../../atoms/Avatar';
 import DataTable from '../../../organisms/DataTable/DataTable';
 import api from '../../../../services/api';
 import { toast } from 'react-toastify';
@@ -18,15 +19,23 @@ export default function SchoolAdminStudentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', nisn: '', phone: '', program: 'intensif',
+    name: '', email: '', password: '', nisn: '', phone: '', avatar: '', program: 'intensif',
     gender: '', birth_year: '', address: '', is_active: true,
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef(null);
 
   // Batch import state
   const [batchModalOpen, setBatchModalOpen] = useState(false);
   const [batchText, setBatchText] = useState('');
   const [batchLoading, setBatchLoading] = useState(false);
+
+  // Excel Import state
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const importFileInputRef = useRef(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -47,7 +56,7 @@ export default function SchoolAdminStudentsPage() {
     if (student) {
       setFormData({
         name: student.name, email: student.email, password: '',
-        nisn: student.nisn || '', phone: student.phone || '',
+        nisn: student.nisn || '', phone: student.phone || '', avatar: student.avatar || '',
         program: student.program || 'intensif', gender: student.gender || '',
         birth_year: student.birth_year ? String(student.birth_year) : '',
         address: student.address || '', is_active: student.is_active,
@@ -55,12 +64,33 @@ export default function SchoolAdminStudentsPage() {
       setEditingStudent(student);
     } else {
       setFormData({
-        name: '', email: '', password: '', nisn: '', phone: '',
+        name: '', email: '', password: '', nisn: '', phone: '', avatar: '',
         program: 'intensif', gender: '', birth_year: '', address: '', is_active: true,
       });
       setEditingStudent(null);
     }
     setModalOpen(true);
+  };
+
+  const handleAvatarFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await api.post('/upload/avatar', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (res.data.url) {
+        setFormData(prev => ({ ...prev, avatar: res.data.url }));
+        toast.success('Foto profil berhasil diunggah!');
+      }
+    } catch {
+      toast.error('Gagal mengunggah foto profil');
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSave = async (e) => {
@@ -141,6 +171,90 @@ export default function SchoolAdminStudentsPage() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/school-admin/students/export', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `data-siswa-${school?.name?.replace(/\s+/g, '-').toLowerCase() || 'sekolah'}-${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('File Excel berhasil diunduh!');
+    } catch (err) {
+      toast.error('Gagal mengekspor data siswa');
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await api.get('/school-admin/students/template', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'template-import-data-siswa.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Template Excel berhasil diunduh!');
+    } catch (err) {
+      toast.error('Gagal mengunduh template Excel');
+    }
+  };
+
+  const handleImport = async (e) => {
+    e.preventDefault();
+    if (!importFile) {
+      toast.error('Pilih file Excel terlebih dahulu');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', importFile);
+
+    try {
+      setImporting(true);
+      const response = await api.post('/school-admin/students/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      
+      toast.success(response.data.message || 'Siswa berhasil diimpor!');
+      if (response.data.imported) {
+        toast.info(`${response.data.imported} siswa berhasil diimpor`);
+      }
+      
+      setImportModalOpen(false);
+      setImportFile(null);
+      if (importFileInputRef.current) {
+        importFileInputRef.current.value = '';
+      }
+      loadData();
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      if (errors) {
+        toast.error(
+          <div>
+            <strong>Gagal mengimpor:</strong>
+            <ul className="list-disc pl-4 mt-1 text-xs">
+              {Object.values(errors).flat().slice(0, 3).map((e, i) => <li key={i}>{e}</li>)}
+              {Object.values(errors).flat().length > 3 && <li>...dan lainnya</li>}
+            </ul>
+          </div>
+        );
+      } else {
+        toast.error(err.response?.data?.message || 'Gagal mengimpor data siswa');
+      }
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
       const matchSearch = !searchTerm ||
@@ -157,11 +271,18 @@ export default function SchoolAdminStudentsPage() {
       accessorKey: 'name',
       header: 'Nama Siswa',
       cell: (info) => (
-        <div>
-          <div className="font-bold text-slate-900 dark:text-slate-100">{info.getValue()}</div>
-          {info.row.original.nisn && (
-            <div className="text-xs text-slate-500 font-mono">NISN: {info.row.original.nisn}</div>
-          )}
+        <div className="flex items-center gap-3">
+          <Avatar
+            name={info.row.original.name}
+            src={info.row.original.avatar}
+            size="md"
+          />
+          <div>
+            <div className="font-bold text-slate-900 dark:text-slate-100">{info.getValue()}</div>
+            {info.row.original.nisn && (
+              <div className="text-xs text-slate-500 font-mono">NISN: {info.row.original.nisn}</div>
+            )}
+          </div>
         </div>
       ),
     },
@@ -224,6 +345,12 @@ export default function SchoolAdminStudentsPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setImportModalOpen(true)}>
+              <FontAwesomeIcon icon={['fas', 'file-import']} className="mr-2" /> Import Excel
+            </Button>
+            <Button variant="outline" onClick={handleExport}>
+              <FontAwesomeIcon icon={['fas', 'file-export']} className="mr-2" /> Export Excel
+            </Button>
             <Button variant="outline" onClick={() => setBatchModalOpen(true)}>
               <FontAwesomeIcon icon={['fas', 'file-import']} className="mr-2" /> Impor Massal
             </Button>
@@ -266,6 +393,44 @@ export default function SchoolAdminStudentsPage() {
             </h2>
 
             <form onSubmit={handleSave} className="space-y-4">
+              {/* Avatar Uploader */}
+              <div className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <Avatar name={formData.name || 'Siswa'} src={formData.avatar} size="xl" />
+                <div className="flex-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Foto Profil Siswa
+                  </label>
+                  <input
+                    type="file"
+                    ref={avatarInputRef}
+                    onChange={handleAvatarFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                    >
+                      {uploadingAvatar ? 'Mengunggah...' : 'Pilih Foto'}
+                    </Button>
+                    {formData.avatar && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, avatar: '' })}
+                      >
+                        Hapus Foto
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Nama Lengkap <span className="text-red-500">*</span>
@@ -345,7 +510,7 @@ export default function SchoolAdminStudentsPage() {
 
               <div className="flex gap-3 pt-4">
                 <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Batal</Button>
-                <Button type="submit" className="flex-1" disabled={saving}>
+                <Button type="submit" className="flex-1" disabled={saving || uploadingAvatar}>
                   {saving ? 'Menyimpan...' : 'Simpan Siswa'}
                 </Button>
               </div>
@@ -381,6 +546,73 @@ export default function SchoolAdminStudentsPage() {
                 <Button type="button" variant="ghost" onClick={() => setBatchModalOpen(false)} className="flex-1">Batal</Button>
                 <Button type="submit" className="flex-1" disabled={batchLoading}>
                   {batchLoading ? 'Mengimpor...' : 'Mulai Impor Siswa'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Excel Import Modal */}
+      {importModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <FontAwesomeIcon icon={['fas', 'file-import']} className="text-blue-500" />
+                Import Data Siswa
+              </h2>
+              <button
+                onClick={() => { setImportModalOpen(false); setImportFile(null); }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              Sekolah: <strong>{school?.name}</strong>. Unduh template Excel di bawah, lengkapi data siswa, lalu upload file kembali.
+            </p>
+
+            <div className="mb-5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-emerald-800 dark:text-emerald-200">Template Format Siswa</div>
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400">File format .xlsx siap isi</div>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={handleDownloadTemplate} className="border-emerald-500 text-emerald-600 hover:bg-emerald-500 hover:text-white">
+                <FontAwesomeIcon icon={['fas', 'download']} className="mr-1.5" />
+                Unduh Template
+              </Button>
+            </div>
+
+            <form onSubmit={handleImport} className="space-y-4">
+              <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-blue-500 transition-colors text-center">
+                <input
+                  type="file"
+                  ref={importFileInputRef}
+                  onChange={e => setImportFile(e.target.files?.[0])}
+                  accept=".xlsx, .xls"
+                  className="hidden"
+                  id="excel_file_input"
+                />
+                <label htmlFor="excel_file_input" className="cursor-pointer block">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 mx-auto flex items-center justify-center text-xl mb-2">
+                    <FontAwesomeIcon icon={['fas', 'file-excel']} />
+                  </div>
+                  <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    {importFile ? importFile.name : 'Klik untuk memilih file Excel'}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    Format yang didukung: .xlsx, .xls
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button type="button" variant="ghost" onClick={() => { setImportModalOpen(false); setImportFile(null); }} className="flex-1">
+                  Batal
+                </Button>
+                <Button type="submit" className="flex-1" disabled={importing || !importFile}>
+                  {importing ? 'Memproses...' : 'Mulai Import'}
                 </Button>
               </div>
             </form>

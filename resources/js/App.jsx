@@ -25,6 +25,8 @@ import AdminLearningPackagePage from './components/pages/Admin/LearningPackage/A
 import AdminLearningPackageDetailPage from './components/pages/Admin/LearningPackage/AdminLearningPackageDetailPage';
 import AdminLearningPackageFormPage from './components/pages/Admin/LearningPackage/AdminLearningPackageFormPage';
 import AdminSchoolsPage from './components/pages/Admin/Schools';
+import AdminSchoolDetailPage from './components/pages/Admin/Schools/Detail';
+import AdminAuditPage from './components/pages/Admin/Audit/AdminAuditPage';
 import SchoolAdminStudentsPage from './components/pages/SchoolAdmin/Students';
 import SchoolAdminProfilePage from './components/pages/SchoolAdmin/Profile';
 import ProfilePage from './components/pages/Profile';
@@ -109,6 +111,8 @@ export default function App() {
       <Route path="/admin/learning-packages/:id/edit" element={<PrivateRoute><AdminLearningPackageFormPage /></PrivateRoute>} />
       <Route path="/admin/learning-packages/:id" element={<PrivateRoute><AdminLearningPackageDetailPage /></PrivateRoute>} />
       <Route path="/admin/schools" element={<PrivateRoute><AdminSchoolsPage /></PrivateRoute>} />
+      <Route path="/admin/schools/:id" element={<PrivateRoute><AdminSchoolDetailPage /></PrivateRoute>} />
+      <Route path="/admin/audit" element={<PrivateRoute><AdminAuditPage /></PrivateRoute>} />
 
       {/* School Admin routes */}
       <Route path="/school-admin/students" element={<PrivateRoute><SchoolAdminStudentsPage /></PrivateRoute>} />

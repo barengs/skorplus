@@ -44,6 +44,7 @@ class SchoolProfileController extends Controller
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
             'logo' => 'nullable|string',
+            'photo' => 'nullable|string',
         ]);
 
         $school->update($validated);

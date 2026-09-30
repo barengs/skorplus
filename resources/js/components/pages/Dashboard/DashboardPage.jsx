@@ -64,19 +64,39 @@ export default function DashboardPage() {
       <AppLayout title="Dashboard Sekolah">
         <div className="flex flex-col gap-8 max-w-6xl">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/20 rounded-2xl p-6 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge color="blue">Admin Mitra Sekolah</Badge>
-                  {schoolInfo?.npsn && <span className="text-xs text-slate-500 font-mono">NPSN: {schoolInfo.npsn}</span>}
+          <div className="relative rounded-2xl overflow-hidden border border-blue-500/20 shadow-xs">
+            {/* Cover Photo */}
+            <div className="h-40 sm:h-48 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 relative">
+              {schoolInfo?.photo ? (
+                <img src={schoolInfo.photo} alt="Foto Sekolah" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/70 to-transparent dark:from-slate-900/90 dark:via-slate-900/70 dark:to-transparent" />
+            </div>
+            {/* Content */}
+            <div className="absolute inset-0 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                {/* Logo Badge */}
+                <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg flex items-center justify-center overflow-hidden shrink-0">
+                  {schoolInfo?.logo ? (
+                    <img src={schoolInfo.logo} alt="Logo Sekolah" className="w-full h-full object-contain" />
+                  ) : (
+                    <FontAwesomeIcon icon={['fas', 'school']} className="text-2xl text-blue-600" />
+                  )}
                 </div>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">
-                  {schoolInfo?.name || 'Sekolah'}
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  Selamat datang kembali, <strong>{user?.name}</strong>. Pantau aktivitas dan kemajuan belajar seluruh siswa Anda.
-                </p>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge color="blue">Admin Mitra Sekolah</Badge>
+                    {schoolInfo?.npsn && <span className="text-xs text-slate-500 font-mono">NPSN: {schoolInfo.npsn}</span>}
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">
+                    {schoolInfo?.name || 'Sekolah'}
+                  </h2>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">
+                    Selamat datang kembali, <strong>{user?.name}</strong>. Pantau aktivitas dan kemajuan belajar seluruh siswa Anda.
+                  </p>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Link to="/school-admin/students">

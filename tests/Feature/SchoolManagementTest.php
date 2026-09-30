@@ -6,6 +6,8 @@ use App\Models\School;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -218,5 +220,92 @@ class SchoolManagementTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'siswa1@test.sch.id', 'school_id' => $school->id]);
         $this->assertDatabaseHas('users', ['email' => 'siswa2@test.sch.id', 'school_id' => $school->id]);
         $this->assertDatabaseHas('users', ['email' => 'siswa3@test.sch.id', 'school_id' => $school->id]);
+    }
+
+    public function test_super_admin_can_view_school_detail_with_students(): void
+    {
+        $admin = User::factory()->create();
+        $this->assignRoleTo($admin, 'admin');
+
+        $school = School::create(['name' => 'SMAN 7 Test', 'npsn' => '88888888']);
+        $student = User::factory()->create([
+            'name' => 'Murid Contoh',
+            'school_id' => $school->id,
+            'school' => $school->name,
+        ]);
+        $this->assignRoleTo($student, 'siswa');
+
+        $response = $this->actingAs($admin, 'api')
+            ->getJson("/api/admin/schools/{$school->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonFragment(['name' => 'SMAN 7 Test'])
+            ->assertJsonFragment(['name' => 'Murid Contoh']);
+    }
+
+    public function test_super_admin_can_download_student_template_and_export_students(): void
+    {
+        $admin = User::factory()->create();
+        $this->assignRoleTo($admin, 'admin');
+
+        $school = School::create(['name' => 'SMAN 8 Test', 'npsn' => '99999999']);
+        $student = User::factory()->create([
+            'name' => 'Siswa Export',
+            'email' => 'siswa.export@test.sch.id',
+            'school_id' => $school->id,
+            'school' => $school->name,
+        ]);
+        $this->assignRoleTo($student, 'siswa');
+
+        // Test template download
+        $templateResponse = $this->actingAs($admin, 'api')
+            ->get('/api/admin/schools/students/template');
+        $templateResponse->assertStatus(200);
+        $this->assertStringContainsString('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $templateResponse->headers->get('content-type'));
+
+        // Test export students
+        $exportResponse = $this->actingAs($admin, 'api')
+            ->get("/api/admin/schools/{$school->id}/students/export");
+        $exportResponse->assertStatus(200);
+        $this->assertStringContainsString('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $exportResponse->headers->get('content-type'));
+    }
+
+    public function test_school_admin_can_download_student_template_and_export(): void
+    {
+        $school = School::create(['name' => 'SMAN 9 Test', 'npsn' => '77777777']);
+        $schoolAdmin = User::factory()->create([
+            'school_id' => $school->id,
+            'school' => $school->name,
+        ]);
+        $this->assignRoleTo($schoolAdmin, 'admin_sekolah');
+
+        // Template
+        $templateResponse = $this->actingAs($schoolAdmin, 'api')
+            ->get('/api/school-admin/students/template');
+        $templateResponse->assertStatus(200);
+
+        // Export
+        $exportResponse = $this->actingAs($schoolAdmin, 'api')
+            ->get('/api/school-admin/students/export');
+        $exportResponse->assertStatus(200);
+    }
+
+    public function test_super_admin_can_import_students_excel(): void
+    {
+        Excel::fake();
+
+        $admin = User::factory()->create();
+        $this->assignRoleTo($admin, 'admin');
+
+        $school = School::create(['name' => 'SMAN 10 Test', 'npsn' => '66666666']);
+        $file = UploadedFile::fake()->create('students.xlsx');
+
+        $response = $this->actingAs($admin, 'api')
+            ->post("/api/admin/schools/{$school->id}/students/import", [
+                'file' => $file,
+            ]);
+
+        $response->assertStatus(200);
+        Excel::assertImported('students.xlsx');
     }
 }

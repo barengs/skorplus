@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\CbtAnswer;
 use App\Models\CbtSession;
 use App\Models\Exam;
@@ -295,6 +296,14 @@ class CbtController extends Controller
             'score' => $normalizedScore,
             'total_score' => $totalScore,
         ]);
+
+        AuditLog::record(
+            'SUBMIT_EXAM',
+            "Siswa {$session->user?->name} menyelesaikan sesi ujian '{$session->exam_title}' dengan skor {$normalizedScore} pts.",
+            'cbt',
+            $session->exam,
+            ['score' => $normalizedScore, 'session_id' => $session->id]
+        );
 
         return response()->json([
             'message' => 'Ujian berhasil diselesaikan.',

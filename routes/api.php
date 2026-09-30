@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AdminAuditLogController;
 use App\Http\Controllers\Api\Admin\AdminCbtController;
 use App\Http\Controllers\Api\Admin\AdminCbtImportController;
 use App\Http\Controllers\Api\Admin\AdminCourseModuleController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Api\Admin\AdminElearningController;
 use App\Http\Controllers\Api\Admin\AdminExamQuestionController;
 use App\Http\Controllers\Api\Admin\AdminExamTypeController;
 use App\Http\Controllers\Api\Admin\AdminModuleLessonController;
+use App\Http\Controllers\Api\Admin\AdminReportController;
 use App\Http\Controllers\Api\Admin\AdminRoleController;
 use App\Http\Controllers\Api\Admin\AdminSchoolController;
 use App\Http\Controllers\Api\Admin\FeatureController;
@@ -148,6 +150,19 @@ Route::middleware('auth:api')->group(function () {
         // School Management
         Route::apiResource('schools', AdminSchoolController::class);
         Route::post('schools/{school}/admin', [AdminSchoolController::class, 'createAdmin']);
+        Route::post('schools/{school}/students', [AdminSchoolController::class, 'createStudent']);
+        Route::put('schools/{school}/students/{student}', [AdminSchoolController::class, 'updateStudent']);
+        Route::delete('schools/{school}/students/{student}', [AdminSchoolController::class, 'deleteStudent']);
+        Route::get('schools/{school}/students/export', [AdminSchoolController::class, 'exportStudents']);
+        Route::get('schools/students/template', [AdminSchoolController::class, 'downloadStudentTemplate']);
+        Route::post('schools/{school}/students/import', [AdminSchoolController::class, 'importStudents']);
+
+        // Audit Logs & Intelligence Reports (Decision Support)
+        Route::get('audit-logs', [AdminAuditLogController::class, 'index']);
+        Route::get('audit-logs/stats', [AdminAuditLogController::class, 'stats']);
+        Route::get('audit-logs/{auditLog}', [AdminAuditLogController::class, 'show']);
+        Route::get('reports/learning', [AdminReportController::class, 'learningReports']);
+        Route::get('reports/exams', [AdminReportController::class, 'examReports']);
     });
 
     // School Admin Routes
@@ -158,6 +173,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('students', [StudentController::class, 'index']);
         Route::post('students', [StudentController::class, 'store']);
         Route::post('students/batch', [StudentController::class, 'batchStore']);
+        Route::get('students/export', [StudentController::class, 'export']);
+        Route::get('students/template', [StudentController::class, 'downloadTemplate']);
+        Route::post('students/import', [StudentController::class, 'import']);
         Route::get('students/{student}', [StudentController::class, 'show']);
         Route::put('students/{student}', [StudentController::class, 'update']);
         Route::delete('students/{student}', [StudentController::class, 'destroy']);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +41,8 @@ class AuthController extends Controller
 
         $user->assignRole('siswa');
 
+        AuditLog::record('REGISTER', "Pendaftaran akun siswa baru: {$user->name} ({$user->email})", 'auth', $user, null, $user);
+
         $token = JWTAuth::fromUser($user);
 
         return response()->json([
@@ -57,6 +60,8 @@ class AuthController extends Controller
         }
 
         $user = auth('api')->user();
+
+        AuditLog::record('LOGIN', "Pengguna {$user->name} berhasil login ke sistem.", 'auth', $user, null, $user);
 
         return response()->json([
             'user' => $this->userPayload($user),

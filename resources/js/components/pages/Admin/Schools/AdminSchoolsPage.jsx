@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
 import Badge from '../../../atoms/Badge';
 import Input from '../../../atoms/Input';
+import Avatar from '../../../atoms/Avatar';
 import DataTable from '../../../organisms/DataTable/DataTable';
 import api from '../../../../services/api';
 import { toast } from 'react-toastify';
@@ -16,16 +18,25 @@ export default function AdminSchoolsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', npsn: '', email: '', phone: '', address: '', is_active: true,
+    name: '', npsn: '', email: '', phone: '', address: '', logo: '', photo: '', is_active: true,
     // Admin account creation (new school only)
-    admin_name: '', admin_email: '', admin_password: '',
+    admin_name: '', admin_email: '', admin_password: '', admin_avatar: '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingInitialAdminAvatar, setUploadingInitialAdminAvatar] = useState(false);
+
+  const logoInputRef = useRef(null);
+  const photoInputRef = useRef(null);
+  const initialAdminAvatarInputRef = useRef(null);
 
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState(null);
-  const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '', phone: '' });
+  const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '', phone: '', avatar: '' });
   const [savingAdmin, setSavingAdmin] = useState(false);
+  const [uploadingAdminAvatar, setUploadingAdminAvatar] = useState(false);
+  const adminAvatarInputRef = useRef(null);
 
   const loadSchools = async () => {
     setLoading(true);
@@ -41,16 +52,32 @@ export default function AdminSchoolsPage() {
 
   useEffect(() => { loadSchools(); }, []);
 
+  const handleFileUpload = async (file, type = 'avatar') => {
+    if (!file) return null;
+    const form = new FormData();
+    form.append('file', file);
+    const endpoint = type === 'thumbnail' ? '/admin/upload/thumbnail' : '/upload/avatar';
+    const res = await api.post(endpoint, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data.url;
+  };
+
   const openModal = (school = null) => {
     if (school) {
       setFormData({
         name: school.name, npsn: school.npsn || '', email: school.email || '',
         phone: school.phone || '', address: school.address || '',
-        is_active: school.is_active, admin_name: '', admin_email: '', admin_password: '',
+        logo: school.logo || '', photo: school.photo || '',
+        is_active: school.is_active,
+        admin_name: '', admin_email: '', admin_password: '', admin_avatar: '',
       });
       setEditingSchool(school);
     } else {
-      setFormData({ name: '', npsn: '', email: '', phone: '', address: '', is_active: true, admin_name: '', admin_email: '', admin_password: '' });
+      setFormData({
+        name: '', npsn: '', email: '', phone: '', address: '', logo: '', photo: '', is_active: true,
+        admin_name: '', admin_email: '', admin_password: '', admin_avatar: '',
+      });
       setEditingSchool(null);
     }
     setModalOpen(true);
@@ -90,7 +117,7 @@ export default function AdminSchoolsPage() {
 
   const openAdminModal = (school) => {
     setSelectedSchool(school);
-    setAdminForm({ name: '', email: '', password: '', phone: '' });
+    setAdminForm({ name: '', email: '', password: '', phone: '', avatar: '' });
     setAdminModalOpen(true);
   };
 
@@ -101,6 +128,7 @@ export default function AdminSchoolsPage() {
       await api.post(`/admin/schools/${selectedSchool.id}/admin`, adminForm);
       toast.success('Akun Admin Sekolah berhasil dibuat!');
       setAdminModalOpen(false);
+      loadSchools();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Gagal membuat akun admin');
     } finally {
@@ -121,13 +149,27 @@ export default function AdminSchoolsPage() {
   const columns = useMemo(() => [
     {
       accessorKey: 'name',
-      header: 'Nama Sekolah',
+      header: 'Sekolah & Logo',
       cell: (info) => (
-        <div>
-          <div className="font-bold text-slate-900 dark:text-slate-100">{info.getValue()}</div>
-          {info.row.original.npsn && (
-            <div className="text-xs text-slate-500">NPSN: {info.row.original.npsn}</div>
-          )}
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+            {info.row.original.logo ? (
+              <img src={info.row.original.logo} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <FontAwesomeIcon icon={['fas', 'school']} className="text-slate-400 text-lg" />
+            )}
+          </div>
+          <div>
+            <Link
+              to={`/admin/schools/${info.row.original.id}`}
+              className="font-bold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              {info.getValue()}
+            </Link>
+            {info.row.original.npsn && (
+              <div className="text-xs text-slate-500 font-mono">NPSN: {info.row.original.npsn}</div>
+            )}
+          </div>
         </div>
       ),
     },
@@ -137,7 +179,7 @@ export default function AdminSchoolsPage() {
       cell: (info) => (
         <div className="text-sm">
           {info.row.original.email && <div>{info.row.original.email}</div>}
-          {info.row.original.phone && <div className="text-slate-500">{info.row.original.phone}</div>}
+          {info.row.original.phone && <div className="text-xs text-slate-500">{info.row.original.phone}</div>}
         </div>
       ),
     },
@@ -169,6 +211,11 @@ export default function AdminSchoolsPage() {
       header: 'Aksi',
       cell: ({ row }) => (
         <div className="flex gap-1 justify-end flex-wrap">
+          <Link to={`/admin/schools/${row.original.id}`}>
+            <Button variant="outline" size="sm">
+              <FontAwesomeIcon icon={['fas', 'eye']} className="mr-1" /> Detail
+            </Button>
+          </Link>
           <Button variant="ghost" size="sm" onClick={() => openAdminModal(row.original)}>
             <FontAwesomeIcon icon={['fas', 'user-plus']} className="mr-1" /> Admin
           </Button>
@@ -212,7 +259,7 @@ export default function AdminSchoolsPage() {
         <DataTable columns={columns} data={filteredSchools} loading={loading} />
       </div>
 
-      {/* School Form Modal */}
+      {/* School Form Modal (With Logo and Photo Upload) */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
@@ -221,6 +268,87 @@ export default function AdminSchoolsPage() {
             </h2>
 
             <form onSubmit={handleSave} className="space-y-4">
+              {/* Logo & Photo Section */}
+              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+                {/* Logo */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Logo Sekolah</label>
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 h-12 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                      {formData.logo ? (
+                        <img src={formData.logo} alt="Logo" className="w-full h-full object-contain" />
+                      ) : (
+                        <FontAwesomeIcon icon={['fas', 'school']} className="text-slate-400" />
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={logoInputRef}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingLogo(true);
+                        try {
+                          const url = await handleFileUpload(file, 'thumbnail');
+                          if (url) setFormData(prev => ({ ...prev, logo: url }));
+                        } catch { toast.error('Gagal mengunggah logo'); }
+                        finally { setUploadingLogo(false); }
+                      }}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                    >
+                      {uploadingLogo ? '...' : 'Pilih'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Photo */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Foto Gedung</label>
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 h-12 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                      {formData.photo ? (
+                        <img src={formData.photo} alt="Photo" className="w-full h-full object-cover" />
+                      ) : (
+                        <FontAwesomeIcon icon={['fas', 'image']} className="text-slate-400" />
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={photoInputRef}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingPhoto(true);
+                        try {
+                          const url = await handleFileUpload(file, 'thumbnail');
+                          if (url) setFormData(prev => ({ ...prev, photo: url }));
+                        } catch { toast.error('Gagal mengunggah foto'); }
+                        finally { setUploadingPhoto(false); }
+                      }}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => photoInputRef.current?.click()}
+                      disabled={uploadingPhoto}
+                    >
+                      {uploadingPhoto ? '...' : 'Pilih'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               {/* School fields */}
               <div>
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
@@ -267,6 +395,39 @@ export default function AdminSchoolsPage() {
                   <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
                     Buat Akun Admin Sekolah (Opsional)
                   </p>
+
+                  {/* Initial Admin Avatar */}
+                  <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40">
+                    <Avatar name={formData.admin_name || 'Admin'} src={formData.admin_avatar} size="md" />
+                    <div>
+                      <input
+                        type="file"
+                        ref={initialAdminAvatarInputRef}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingInitialAdminAvatar(true);
+                          try {
+                            const url = await handleFileUpload(file, 'avatar');
+                            if (url) setFormData(prev => ({ ...prev, admin_avatar: url }));
+                          } catch { toast.error('Gagal mengunggah foto'); }
+                          finally { setUploadingInitialAdminAvatar(false); }
+                        }}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => initialAdminAvatarInputRef.current?.click()}
+                        disabled={uploadingInitialAdminAvatar}
+                      >
+                        {uploadingInitialAdminAvatar ? 'Mengunggah...' : 'Foto Admin'}
+                      </Button>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">Nama Admin</label>
                     <Input value={formData.admin_name} onChange={e => setFormData({ ...formData, admin_name: e.target.value })} placeholder="Pak/Bu ..." />
@@ -286,7 +447,7 @@ export default function AdminSchoolsPage() {
 
               <div className="flex gap-3 pt-4">
                 <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="flex-1">Batal</Button>
-                <Button type="submit" className="flex-1" disabled={saving}>
+                <Button type="submit" className="flex-1" disabled={saving || uploadingLogo || uploadingPhoto}>
                   {saving ? 'Menyimpan...' : 'Simpan Sekolah'}
                 </Button>
               </div>
@@ -302,9 +463,41 @@ export default function AdminSchoolsPage() {
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">
               Tambah Admin Sekolah
             </h2>
-            <p className="text-slate-500 text-sm mb-5">Sekolah: <strong>{selectedSchool?.name}</strong></p>
+            <p className="text-slate-500 text-sm mb-4">Sekolah: <strong>{selectedSchool?.name}</strong></p>
 
             <form onSubmit={handleSaveAdmin} className="space-y-4">
+              {/* Admin Avatar */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <Avatar name={adminForm.name || 'Admin'} src={adminForm.avatar} size="lg" />
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    ref={adminAvatarInputRef}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingAdminAvatar(true);
+                      try {
+                        const url = await handleFileUpload(file, 'avatar');
+                        if (url) setAdminForm(prev => ({ ...prev, avatar: url }));
+                      } catch { toast.error('Gagal mengunggah foto'); }
+                      finally { setUploadingAdminAvatar(false); }
+                    }}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => adminAvatarInputRef.current?.click()}
+                    disabled={uploadingAdminAvatar}
+                  >
+                    {uploadingAdminAvatar ? 'Mengunggah...' : 'Pilih Foto Admin'}
+                  </Button>
+                </div>
+              </div>
+
               <div>
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">Nama Admin <span className="text-red-500">*</span></label>
                 <Input value={adminForm.name} onChange={e => setAdminForm({ ...adminForm, name: e.target.value })} required />
@@ -325,7 +518,7 @@ export default function AdminSchoolsPage() {
               </div>
               <div className="flex gap-3 pt-2">
                 <Button type="button" variant="ghost" onClick={() => setAdminModalOpen(false)} className="flex-1">Batal</Button>
-                <Button type="submit" className="flex-1" disabled={savingAdmin}>
+                <Button type="submit" className="flex-1" disabled={savingAdmin || uploadingAdminAvatar}>
                   {savingAdmin ? 'Menyimpan...' : 'Buat Akun Admin'}
                 </Button>
               </div>
