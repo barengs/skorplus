@@ -25,6 +25,9 @@ jobs:
             
             # 2. Force Sync Repository dengan branch main (bersihkan file lokal yang konflik)
             if [ -d ".git" ]; then
+              # Revert ownership back to the host user so git doesn't throw Permission denied
+              sudo chown -R $USER:$USER . 2>/dev/null || docker run --rm -v $(pwd):/var/www/html alpine chown -R $(id -u):$(id -g) /var/www/html || true
+              
               git reset --hard HEAD
               git clean -fd
               git fetch origin main
