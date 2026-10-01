@@ -20,6 +20,16 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminSchoolController extends Controller
 {
+    public function publicList(): JsonResponse
+    {
+        $schools = School::where('is_active', true)
+            ->select('id', 'name', 'npsn')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($schools);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = School::withCount(['students', 'admins']);

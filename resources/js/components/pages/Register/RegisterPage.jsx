@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -6,6 +6,7 @@ import { register } from '../../../features/auth/authSlice';
 import AuthLayout from '../../templates/AuthLayout';
 import Input from '../../atoms/Input';
 import Button from '../../atoms/Button';
+import api from '../../../services/api';
 
 const PROGRAMS = [
   { id: 'mandiri', label: 'Mandiri', price: 'Rp 350.000/bln', desc: '10 soal/bln', icon: '📚' },
@@ -21,10 +22,23 @@ export default function RegisterPage() {
   const { loading, error } = useSelector((s) => s.auth);
 
   const [step, setStep] = useState(0);
+  const [schools, setSchools] = useState([]);
   const [form, setForm] = useState({
-    name: '', phone: '', school: '', nisn: '', program: 'intensif',
+    name: '', phone: '', school_id: '', nisn: '', program: 'intensif',
     email: '', password: '', password_confirmation: '',
   });
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        const res = await api.get('/schools/public');
+        setSchools(res.data);
+      } catch (err) {
+        console.error('Failed to fetch schools', err);
+      }
+    };
+    fetchSchools();
+  }, []);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const setVal = (k, v) => setForm({ ...form, [k]: v });
@@ -79,10 +93,24 @@ export default function RegisterPage() {
               <Input id="name" label="Nama Lengkap" placeholder="Nama sesuai ijazah" value={form.name} onChange={set('name')} required />
               <Input id="phone" label="No. WhatsApp" placeholder="08xxxxxxxxxx" value={form.phone} onChange={set('phone')} />
               <div className="grid grid-cols-2 gap-4">
-                <Input id="school" label="Asal Sekolah" placeholder="SMA/MA/SMK..." value={form.school} onChange={set('school')} />
+                <div>
+                  <label htmlFor="school_id" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Asal Sekolah</label>
+                  <select
+                    id="school_id"
+                    value={form.school_id}
+                    onChange={set('school_id')}
+                    className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-slate-900 dark:text-slate-100"
+                    required
+                  >
+                    <option value="">Pilih Sekolah</option>
+                    {schools.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <Input id="nisn" label="NISN" placeholder="10 digit NISN" value={form.nisn} onChange={set('nisn')} />
               </div>
-              <Button onClick={() => setStep(1)} disabled={!form.name} size="lg" className="w-full mt-2">
+              <Button onClick={() => setStep(1)} disabled={!form.name || !form.school_id} size="lg" className="w-full mt-2">
                 Lanjut →
               </Button>
             </div>
@@ -142,7 +170,7 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Konfirmasi Pendaftaran</h2>
               <div className="bg-slate-100 dark:bg-slate-800 rounded-md p-4 flex flex-col gap-2 text-sm">
-                {[['Nama', form.name], ['Sekolah', form.school], ['NISN', form.nisn], ['Program', form.program?.toUpperCase()], ['Email', form.email]].map(([label, val]) => (
+                {[['Nama', form.name], ['Sekolah', schools.find((s) => String(s.id) === String(form.school_id))?.name || 'Sekolah Terdaftar'], ['NISN', form.nisn], ['Program', form.program?.toUpperCase()], ['Email', form.email]].map(([label, val]) => (
                   val && <div key={label} className="flex justify-between"><span className="text-slate-600 dark:text-slate-400">{label}</span><span className="font-semibold text-slate-800 dark:text-slate-200">{val}</span></div>
                 ))}
               </div>

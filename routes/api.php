@@ -44,6 +44,7 @@ Route::get('elearning/catalog', [ElearningController::class, 'catalog']);
 Route::get('elearning/courses/{slug}', [ElearningController::class, 'courseDetail']);
 Route::get('courses/{course}/reviews', [ReviewController::class, 'courseReviews']);
 Route::get('programs/{slug}/reviews', [ReviewController::class, 'programReviews']);
+Route::get('schools/public', [AdminSchoolController::class, 'publicList']);
 
 // Public auth routes
 Route::prefix('auth')->group(function () {

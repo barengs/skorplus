@@ -13,6 +13,8 @@ export default function AdminSettingsPage() {
     tagline: 'Platform Pembelajaran & Ujian Online Terdepan',
     logo_url: '',
     default_language: 'id',
+    trial_enabled: 'true',
+    trial_days: 7,
   });
 
   const [loading, setLoading] = useState(true);
@@ -152,6 +154,45 @@ export default function AdminSettingsPage() {
             </select>
             <p className="text-xs text-slate-500 mt-1">Bahasa yang digunakan saat pengguna pertama kali membuka aplikasi</p>
           </FormField>
+
+          {/* Promo & Masa Uji Coba Gratis (Trial) */}
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <span>🎁</span> Promo & Masa Uji Coba Gratis (Free Trial)
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Atur apakah pendaftar baru otomatis mendapatkan akses gratis untuk periode promosi tertentu.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField label="Status Promo Gratis Akses">
+                <select
+                  value={formData.trial_enabled || 'false'}
+                  onChange={(e) => setFormData({ ...formData, trial_enabled: e.target.value })}
+                  className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent"
+                >
+                  <option value="true">🟢 Aktif (Pendaftar Baru Dapat Trial)</option>
+                  <option value="false">🔴 Nonaktif (Tanpa Akses Gratis)</option>
+                </select>
+                <p className="text-xs text-slate-500 mt-1">Pilih nonaktif jika periode promo sudah selesai</p>
+              </FormField>
+
+              <FormField label="Durasi Masa Trial (Hari)">
+                <Input
+                  type="number"
+                  min="0"
+                  max="365"
+                  value={formData.trial_days || 0}
+                  onChange={(e) => setFormData({ ...formData, trial_days: parseInt(e.target.value) || 0 })}
+                  placeholder="Contoh: 7"
+                  disabled={formData.trial_enabled !== 'true'}
+                />
+                <p className="text-xs text-slate-500 mt-1">Contoh: 7 untuk promo 7 hari gratis, 14 untuk 2 minggu</p>
+              </FormField>
+            </div>
+          </div>
 
           {/* Save Button */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">

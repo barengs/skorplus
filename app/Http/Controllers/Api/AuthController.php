@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\School;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +22,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'school' => 'nullable|string|max:255',
+            'school_id' => 'required|exists:schools,id',
             'nisn' => 'nullable|string|max:20|unique:users',
             'program' => 'nullable|in:mandiri,intensif,garansi',
         ]);
@@ -29,14 +31,27 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $school = School::find($request->school_id);
+
+        // Dynamic Trial Logic
+        $trialEnabled = Setting::where('key', 'trial_enabled')->value('value') ?? 'true';
+        $trialDays = (int) (Setting::where('key', 'trial_days')->value('value') ?? 7);
+
+        $trialEndsAt = null;
+        if ($trialEnabled === 'true' && $trialDays > 0) {
+            $trialEndsAt = now()->addDays($trialDays);
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            'school' => $request->school,
+            'school_id' => $school->id,
+            'school' => $school->name,
             'nisn' => $request->nisn,
             'program' => $request->program ?? 'mandiri',
+            'trial_ends_at' => $trialEndsAt,
         ]);
 
         $user->assignRole('siswa');
@@ -190,6 +205,12 @@ class AuthController extends Controller
             'social_media' => $profile?->social_media ?? (object) [],
             'bio' => $profile?->bio,
             'roles' => $user->getRoleNames(),
+            'trial' => [
+                'is_on_trial' => $user->isOnTrial(),
+                'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
+                'days_remaining' => $user->trialDaysRemaining(),
+                'is_expired' => $user->trial_ends_at && $user->trial_ends_at->isPast(),
+            ],
         ];
     }
 }

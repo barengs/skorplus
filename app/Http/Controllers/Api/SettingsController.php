@@ -18,6 +18,8 @@ class SettingsController extends Controller
             'tagline' => 'Platform Pembelajaran & Ujian Online Terdepan',
             'logo_url' => '',
             'default_language' => 'id',
+            'trial_enabled' => 'true',
+            'trial_days' => '7',
         ];
 
         return response()->json(array_merge($defaults, $settings));
@@ -30,6 +32,8 @@ class SettingsController extends Controller
             'tagline' => 'nullable|string|max:255',
             'logo_url' => 'nullable|string',
             'default_language' => 'nullable|string|in:id,en',
+            'trial_enabled' => 'nullable|in:true,false',
+            'trial_days' => 'nullable|integer|min:0|max:365',
         ]);
 
         foreach ($validated as $key => $value) {

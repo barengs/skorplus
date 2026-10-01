@@ -26,6 +26,7 @@ class User extends Authenticatable implements JWTSubject
         'program',
         'is_active',
         'avatar',
+        'trial_ends_at',
     ];
 
     protected $hidden = [
@@ -39,7 +40,22 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'trial_ends_at' => 'datetime',
         ];
+    }
+
+    public function isOnTrial(): bool
+    {
+        return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
+    }
+
+    public function trialDaysRemaining(): int
+    {
+        if (! $this->isOnTrial()) {
+            return 0;
+        }
+
+        return (int) ceil(now()->diffInSeconds($this->trial_ends_at, false) / 86400);
     }
 
     public function getJWTIdentifier(): mixed
