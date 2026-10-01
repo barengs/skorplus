@@ -30,6 +30,10 @@ class AdminModuleLessonController extends Controller
             'is_preview' => 'boolean',
         ]);
 
+        if (! isset($validated['min_pass_score']) || $validated['min_pass_score'] === null) {
+            $validated['min_pass_score'] = 60;
+        }
+
         $sortOrder = $module->lessons()->max('sort_order') + 1;
         $lesson = $module->lessons()->create(array_merge($validated, ['sort_order' => $sortOrder]));
 
@@ -62,6 +66,10 @@ class AdminModuleLessonController extends Controller
             'is_preview' => 'boolean',
             'sort_order' => 'sometimes|integer',
         ]);
+
+        if (array_key_exists('min_pass_score', $validated) && $validated['min_pass_score'] === null) {
+            $validated['min_pass_score'] = 60;
+        }
 
         $lesson->update($validated);
 

@@ -66,6 +66,32 @@ class ElearningQuizTest extends TestCase
         $this->assertCount(2, $lesson->quiz_questions[1]['options']);
     }
 
+    public function test_admin_can_create_reading_lesson_without_min_pass_score(): void
+    {
+        $admin = User::factory()->create();
+        $token = JWTAuth::fromUser($admin);
+
+        $course = Course::create(['title' => 'TPS', 'slug' => 'tps']);
+        $module = Module::create(['course_id' => $course->id, 'title' => 'Bab 1', 'sort_order' => 1]);
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson("/api/admin/elearning/modules/{$module->id}/lessons", [
+                'title' => 'Materi Membaca Bab 1',
+                'type' => 'reading',
+                'min_pass_score' => null,
+                'content' => '<p>Konten artikel</p>',
+                'attachment_doc' => '/storage/documents/sample.pdf',
+                'attachment_name' => 'sample.pdf',
+            ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('lessons', [
+            'title' => 'Materi Membaca Bab 1',
+            'type' => 'reading',
+            'min_pass_score' => 60,
+        ]);
+    }
+
     public function test_student_submit_quiz_passing_and_failing_threshold(): void
     {
         $student = User::factory()->create();
