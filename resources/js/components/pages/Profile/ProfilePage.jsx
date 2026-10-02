@@ -9,6 +9,7 @@ import { updateProfile } from '../../../features/auth/authSlice';
 import api from '../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { compressImageToFile } from '../../../utils/imageCompressor';
 import {
   faUser,
   faPhone,
@@ -116,16 +117,13 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Ukuran file maksimal 5MB.');
-      return;
-    }
-
-    const uploadPayload = new FormData();
-    uploadPayload.append('file', file);
-
-    setUploadingAvatar(true);
     try {
+      setUploadingAvatar(true);
+      const compressedFile = await compressImageToFile(file, { maxWidth: 512, maxHeight: 512, quality: 0.85 });
+      
+      const uploadPayload = new FormData();
+      uploadPayload.append('file', compressedFile);
+
       const { data } = await api.post('/upload/avatar', uploadPayload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });

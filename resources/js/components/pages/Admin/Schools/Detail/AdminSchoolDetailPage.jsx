@@ -10,6 +10,7 @@ import api from '../../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import SchoolPackagesSection from './SchoolPackagesSection';
+import { compressImageToFile } from '../../../../../utils/imageCompressor';
 
 export default function AdminSchoolDetailPage() {
   const { id } = useParams();
@@ -72,8 +73,10 @@ export default function AdminSchoolDetailPage() {
 
   const handleFileUpload = async (file, type = 'avatar') => {
     if (!file) return null;
+    const maxDim = type === 'thumbnail' ? 1280 : 512;
+    const compressedFile = await compressImageToFile(file, { maxWidth: maxDim, maxHeight: maxDim, quality: 0.85 });
     const form = new FormData();
-    form.append('file', file);
+    form.append('file', compressedFile);
     const endpoint = type === 'thumbnail' ? '/admin/upload/thumbnail' : '/upload/avatar';
     const res = await api.post(endpoint, form, {
       headers: { 'Content-Type': 'multipart/form-data' },

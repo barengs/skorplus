@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { formatRupiah } from '../../../../utils/currencyHelper';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { compressImageToFile } from '../../../../utils/imageCompressor';
 
 export default function AdminLearningPackageFormPage() {
   const { id } = useParams();
@@ -95,11 +96,13 @@ export default function AdminLearningPackageFormPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
       setThumbnailUploading(true);
+      const compressedFile = await compressImageToFile(file, { maxWidth: 1280, maxHeight: 720, quality: 0.8 });
+      
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+
       const res = await api.post('/admin/upload/thumbnail', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });

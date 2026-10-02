@@ -6,6 +6,7 @@ import Input from '../../../atoms/Input';
 import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { compressImageToFile } from '../../../../utils/imageCompressor';
 
 export default function AdminSettingsPage() {
   const [formData, setFormData] = useState({
@@ -41,9 +42,11 @@ export default function AdminSettingsPage() {
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const fd = new FormData();
-      fd.append('file', file);
       try {
+        const compressedFile = await compressImageToFile(file, { maxWidth: 512, maxHeight: 512, quality: 0.85 });
+        const fd = new FormData();
+        fd.append('file', compressedFile);
+
         const res = await api.post('/admin/upload/thumbnail', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });

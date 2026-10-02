@@ -8,6 +8,7 @@ import DataTable from '../../../organisms/DataTable/DataTable';
 import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { compressImageToFile } from '../../../../utils/imageCompressor';
 
 export default function SchoolAdminStudentsPage() {
   const [students, setStudents] = useState([]);
@@ -77,8 +78,9 @@ export default function SchoolAdminStudentsPage() {
     if (!file) return;
     setUploadingAvatar(true);
     try {
+      const compressedFile = await compressImageToFile(file, { maxWidth: 512, maxHeight: 512, quality: 0.85 });
       const form = new FormData();
-      form.append('file', file);
+      form.append('file', compressedFile);
       const res = await api.post('/upload/avatar', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });

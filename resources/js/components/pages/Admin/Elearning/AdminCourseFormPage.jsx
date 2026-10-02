@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { compressImageToFile } from '../../../../utils/imageCompressor';
 
 const CATEGORIES = [
   'TPS UTBK-SNBT',
@@ -72,14 +73,15 @@ export default function AdminCourseFormPage() {
     const file = e.target.files[0];
     if (!file) return;
 
-    setThumbnailFile(file);
-    setPreviewImg(URL.createObjectURL(file));
-
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-
     try {
       setUploading(true);
+      const compressedFile = await compressImageToFile(file, { maxWidth: 1280, maxHeight: 720, quality: 0.8 });
+      setThumbnailFile(compressedFile);
+      setPreviewImg(URL.createObjectURL(compressedFile));
+
+      const uploadData = new FormData();
+      uploadData.append('file', compressedFile);
+
       const res = await api.post('/admin/upload/thumbnail', uploadData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
