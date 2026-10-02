@@ -96,7 +96,7 @@ export default function AdminLearningPackageFormPage() {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file);
 
     try {
       setThumbnailUploading(true);

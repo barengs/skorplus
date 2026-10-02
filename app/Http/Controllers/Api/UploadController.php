@@ -5,17 +5,31 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class UploadController extends Controller
 {
     public function uploadThumbnail(Request $request)
     {
-        $validated = $request->validate([
-            'file' => 'required|file|mimes:webp,jpeg,png,jpg,gif|max:10240', // 10MB max
+        $file = $request->file('file') ?? $request->file('thumbnail') ?? $request->file('image');
+
+        if (! $file) {
+            return response()->json([
+                'message' => 'The file field is required.',
+                'errors' => ['file' => ['The file field is required.']],
+            ], 422);
+        }
+
+        $validator = Validator::make(['file' => $file], [
+            'file' => 'required|file|mimes:webp,jpeg,png,jpg,gif|max:20480', // 20MB max
         ]);
 
-        $path = $this->storeAsWebp($validated['file'], 'thumbnails');
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $path = $this->storeAsWebp($file, 'thumbnails');
 
         return response()->json([
             'success' => true,
@@ -26,11 +40,23 @@ class UploadController extends Controller
 
     public function uploadDocument(Request $request)
     {
-        $validated = $request->validate([
-            'file' => 'required|file|mimes:pdf,docx,doc|max:20480', // 20MB max
+        $file = $request->file('file') ?? $request->file('document');
+
+        if (! $file) {
+            return response()->json([
+                'message' => 'The file field is required.',
+                'errors' => ['file' => ['The file field is required.']],
+            ], 422);
+        }
+
+        $validator = Validator::make(['file' => $file], [
+            'file' => 'required|file|mimes:pdf,docx,doc|max:30720', // 30MB max
         ]);
 
-        $file = $validated['file'];
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
         $originalName = $file->getClientOriginalName();
         $ext = $file->getClientOriginalExtension();
         $filename = Str::uuid().'.'.$ext;
@@ -47,11 +73,24 @@ class UploadController extends Controller
 
     public function uploadAvatar(Request $request)
     {
-        $validated = $request->validate([
-            'file' => 'required|file|mimes:webp,jpeg,png,jpg,gif|max:10240', // 10MB max
+        $file = $request->file('file') ?? $request->file('avatar') ?? $request->file('image');
+
+        if (! $file) {
+            return response()->json([
+                'message' => 'The file field is required.',
+                'errors' => ['file' => ['The file field is required.']],
+            ], 422);
+        }
+
+        $validator = Validator::make(['file' => $file], [
+            'file' => 'required|file|mimes:webp,jpeg,png,jpg,gif|max:20480', // 20MB max
         ]);
 
-        $path = $this->storeAsWebp($validated['file'], 'avatars');
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $path = $this->storeAsWebp($file, 'avatars');
 
         return response()->json([
             'success' => true,

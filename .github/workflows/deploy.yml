@@ -73,3 +73,6 @@ jobs:
             
             # 10. Perbaiki Hak Akses Folder (SANGAT PENTING)
             docker compose exec -T app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/build /var/www/html/public/storage
+            
+            # 11. Restart Web Container (Nginx) agar konfigurasi baru terbaca
+            docker compose restart web

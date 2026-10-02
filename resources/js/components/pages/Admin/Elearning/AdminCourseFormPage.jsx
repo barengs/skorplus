@@ -76,7 +76,7 @@ export default function AdminCourseFormPage() {
     setPreviewImg(URL.createObjectURL(file));
 
     const uploadData = new FormData();
-    uploadData.append('thumbnail', file);
+    uploadData.append('file', file);
 
     try {
       setUploading(true);
