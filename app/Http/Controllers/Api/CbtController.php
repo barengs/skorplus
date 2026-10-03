@@ -218,7 +218,7 @@ class CbtController extends Controller
 
         $validator = Validator::make($request->all(), [
             'question_number' => 'required|integer|min:1',
-            'selected_option' => 'nullable|string|max:10',
+            'selected_option' => 'nullable',
             'is_flagged' => 'boolean',
         ]);
 
@@ -226,9 +226,16 @@ class CbtController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $selectedOption = $request->selected_option;
+        if (is_array($selectedOption)) {
+            $selectedOption = implode(',', array_filter($selectedOption));
+        } elseif ($selectedOption !== null) {
+            $selectedOption = (string) $selectedOption;
+        }
+
         CbtAnswer::updateOrCreate(
             ['cbt_session_id' => $session->id, 'question_number' => $request->question_number],
-            ['selected_option' => $request->selected_option, 'is_flagged' => $request->is_flagged ?? false]
+            ['selected_option' => $selectedOption, 'is_flagged' => $request->is_flagged ?? false]
         );
 
         return response()->json(['message' => 'Jawaban disimpan.']);
@@ -277,12 +284,45 @@ class CbtController extends Controller
             }
             $subtestBreakdown[$subtestName]['total']++;
 
+            $isCorrect = false;
+
             if ($userAnswer && isset($questionData['correct_option'])) {
-                if ($userAnswer->selected_option === $questionData['correct_option']) {
-                    $correctCount++;
-                    $totalScore += $questionData['points'] ?? 1;
-                    $subtestBreakdown[$subtestName]['correct']++;
+                $qType = $questionData['question_type'] ?? 'single_choice';
+
+                if ($qType === 'multiple_choice' || $qType === 'complex_choice') {
+                    $userSelected = is_array($userAnswer->selected_option)
+                        ? $userAnswer->selected_option
+                        : array_map('trim', explode(',', (string) $userAnswer->selected_option));
+
+                    $correctKeys = is_array($questionData['correct_option'])
+                        ? $questionData['correct_option']
+                        : array_map('trim', explode(',', (string) $questionData['correct_option']));
+
+                    sort($userSelected);
+                    sort($correctKeys);
+
+                    if (! empty($userSelected) && $userSelected === $correctKeys) {
+                        $isCorrect = true;
+                    }
+                } elseif ($qType === 'short_answer') {
+                    $cleanUser = preg_replace('/\s+/', '', strtolower(trim((string) $userAnswer->selected_option)));
+                    $cleanTarget = preg_replace('/\s+/', '', strtolower(trim((string) $questionData['correct_option'])));
+
+                    if ($cleanUser !== '' && $cleanUser === $cleanTarget) {
+                        $isCorrect = true;
+                    }
+                } else {
+                    // single_choice
+                    if (trim(strtoupper((string) $userAnswer->selected_option)) === trim(strtoupper((string) $questionData['correct_option']))) {
+                        $isCorrect = true;
+                    }
                 }
+            }
+
+            if ($isCorrect) {
+                $correctCount++;
+                $totalScore += $questionData['points'] ?? 1;
+                $subtestBreakdown[$subtestName]['correct']++;
             }
         }
 
@@ -332,7 +372,19 @@ class CbtController extends Controller
             : 90;
 
         return $questions->map(function ($question, $index) use ($proportionalDuration) {
-            $correctOption = $question->options->firstWhere('is_correct', true);
+            $qType = $question->question_type ?? 'single_choice';
+            $correctOption = null;
+
+            if ($qType === 'multiple_choice' || $qType === 'complex_choice') {
+                $correctOptions = $question->options->where('is_correct', true)->pluck('option_key')->toArray();
+                sort($correctOptions);
+                $correctOption = implode(',', $correctOptions);
+            } elseif ($qType === 'short_answer') {
+                $correctOpt = $question->options->firstWhere('is_correct', true);
+                $correctOption = $correctOpt ? trim($correctOpt->option_text ?? $correctOpt->option_key) : null;
+            } else {
+                $correctOption = $question->options->firstWhere('is_correct', true)?->option_key;
+            }
 
             return [
                 'number' => $index + 1,
@@ -347,7 +399,7 @@ class CbtController extends Controller
                 ] : null,
                 'text' => $question->question_text,
                 'options' => $question->options->pluck('option_text', 'option_key')->toArray(),
-                'correct_option' => $correctOption?->option_key, // Hidden from frontend, used for scoring
+                'correct_option' => $correctOption, // Hidden from frontend, used for scoring
                 'points' => $question->points,
                 'duration_seconds' => $question->duration_seconds ?? $proportionalDuration,
             ];

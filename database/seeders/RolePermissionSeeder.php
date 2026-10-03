@@ -28,7 +28,7 @@ class RolePermissionSeeder extends Seeder
                 'name' => 'Fathur Rahman',
                 'password' => Hash::make('password'),
                 'nisn' => '0064821901',
-                'school' => 'SMAN 8 Jakarta',
+                'school' => 'SMAN 5 Surabaya',
                 'program' => 'intensif',
                 'phone' => '08123456789',
                 'is_active' => true,

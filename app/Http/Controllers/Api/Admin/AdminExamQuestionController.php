@@ -29,8 +29,11 @@ class AdminExamQuestionController extends Controller
     {
         $exam = Exam::findOrFail($examId);
 
+        $minOptions = ($request->input('question_type') === 'short_answer') ? 1 : 2;
+
         $validated = $request->validate([
             'exam_type_id' => 'nullable|exists:exam_types,id',
+            'question_type' => 'nullable|string|in:single_choice,multiple_choice,short_answer',
             'subject' => 'nullable|string|max:255',
             'subtest' => 'nullable|string|max:255',
             'question_text' => 'required|string',
@@ -38,7 +41,7 @@ class AdminExamQuestionController extends Controller
             'points' => 'required|integer|min:1',
             'duration_seconds' => 'nullable|integer|min:10|max:3600',
             'is_active' => 'boolean',
-            'options' => 'required|array|min:2',
+            'options' => "required|array|min:{$minOptions}",
             'options.*.option_key' => 'required|string|max:10',
             'options.*.option_text' => 'required|string',
             'options.*.is_correct' => 'boolean',
@@ -48,6 +51,7 @@ class AdminExamQuestionController extends Controller
         try {
             $question = Question::create([
                 'exam_type_id' => $validated['exam_type_id'] ?? null,
+                'question_type' => $validated['question_type'] ?? 'single_choice',
                 'subject' => $validated['subject'] ?? null,
                 'subtest' => $validated['subtest'] ?? null,
                 'question_text' => $validated['question_text'],
@@ -87,8 +91,11 @@ class AdminExamQuestionController extends Controller
         $exam = Exam::findOrFail($examId);
         $question = $exam->questions()->findOrFail($questionId);
 
+        $minOptions = ($request->input('question_type', $question->question_type) === 'short_answer') ? 1 : 2;
+
         $validated = $request->validate([
             'exam_type_id' => 'nullable|exists:exam_types,id',
+            'question_type' => 'nullable|string|in:single_choice,multiple_choice,short_answer',
             'subject' => 'nullable|string|max:255',
             'subtest' => 'nullable|string|max:255',
             'question_text' => 'required|string',
@@ -96,7 +103,7 @@ class AdminExamQuestionController extends Controller
             'points' => 'required|integer|min:1',
             'duration_seconds' => 'nullable|integer|min:10|max:3600',
             'is_active' => 'boolean',
-            'options' => 'required|array|min:2',
+            'options' => "required|array|min:{$minOptions}",
             'options.*.id' => 'nullable|exists:question_options,id',
             'options.*.option_key' => 'required|string|max:10',
             'options.*.option_text' => 'required|string',
@@ -107,6 +114,7 @@ class AdminExamQuestionController extends Controller
         try {
             $question->update([
                 'exam_type_id' => $validated['exam_type_id'] ?? null,
+                'question_type' => $validated['question_type'] ?? $question->question_type,
                 'subject' => $validated['subject'] ?? null,
                 'subtest' => $validated['subtest'] ?? null,
                 'question_text' => $validated['question_text'],

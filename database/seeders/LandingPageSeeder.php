@@ -15,55 +15,65 @@ class LandingPageSeeder extends Seeder
     public function run(): void
     {
         // 1. Landing Hero
-        LandingHero::create([
-            'title' => 'Raih Impian-mu',
-            'subtitle' => 'Bersama SkorPluss',
-            'description' => 'Persiapan komprehensif UTBK-SNBT, Kedinasan, dan Olimpiade melalui CBT prediktif adaptif, tutor berpengalaman, dan analitik belajar berbasis data.',
-            'badge_text' => 'Platform Bimbel & LMS #1 untuk UTBK-SNBT dan Kedinasan',
-            'cta_primary_text' => '🚀 Mulai Belajar Gratis',
-            'cta_primary_link' => '/daftar',
-            'cta_secondary_text' => 'Lihat Program →',
-            'cta_secondary_link' => '#program',
-            'is_active' => true,
-        ]);
+        LandingHero::updateOrCreate(
+            ['id' => 1],
+            [
+                'title' => 'Raih Impian-mu',
+                'subtitle' => 'Bersama SkorPluss',
+                'description' => 'Persiapan komprehensif UTBK-SNBT 2027, Ujian Sekolah SMA, dan Kedinasan melalui CBT prediktif adaptif, tutor berpengalaman alumni PTN terkemuka, dan analitik belajar berbasis data.',
+                'badge_text' => 'Platform Bimbel & LMS #1 untuk SMA & UTBK-SNBT 2027',
+                'cta_primary_text' => '🚀 Mulai Belajar Gratis',
+                'cta_primary_link' => '/daftar',
+                'cta_secondary_text' => 'Lihat Program SMA →',
+                'cta_secondary_link' => '#program',
+                'is_active' => true,
+            ]
+        );
 
         // 2. Landing Promo
-        LandingPromo::create([
-            'text' => '🎉 Promo Gelombang Emas — Diskon 40% untuk pendaftar hari ini!',
-            'countdown_seconds' => 47 * 3600 + 23 * 60 + 59,
-            'is_active' => true,
-        ]);
+        LandingPromo::updateOrCreate(
+            ['id' => 1],
+            [
+                'text' => '🎉 Promo Gelombang Emas SNBT 2027 — Diskon 40% untuk pendaftaran hari ini!',
+                'countdown_seconds' => 47 * 3600 + 23 * 60 + 59,
+                'is_active' => true,
+            ]
+        );
 
         // 3. Stats
+        Stat::truncate();
         $stats = [
-            ['label' => 'Siswa Aktif', 'value' => '12.400+', 'sort_order' => 1],
-            ['label' => 'Tingkat Kelulusan PTN', 'value' => '94%', 'sort_order' => 2],
-            ['label' => 'Rata-rata Respons Tutor', 'value' => '14 mnt', 'sort_order' => 3],
-            ['label' => 'Bank Soal Premium', 'value' => '50.000+', 'sort_order' => 4],
+            ['label' => 'Siswa Aktif SMA', 'value' => '15.800+', 'sort_order' => 1],
+            ['label' => 'Tingkat Lolos PTN Favorit', 'value' => '95.4%', 'sort_order' => 2],
+            ['label' => 'Rata-rata Respons Tutor', 'value' => '12 mnt', 'sort_order' => 3],
+            ['label' => 'Bank Soal SNBT 2027', 'value' => '65.000+', 'sort_order' => 4],
         ];
         foreach ($stats as $s) {
             Stat::create($s);
         }
 
         // 4. Features
+        Feature::truncate();
         $features = [
-            ['icon' => '🧠', 'title' => 'CBT Adaptif Prediktif', 'description' => 'Simulasi UTBK-SNBT dengan soal prediktif berbasis AI yang terus diperbarui mengikuti tren ujian terkini.', 'sort_order' => 1],
-            ['icon' => '💬', 'title' => 'Forum Tanya Tutor', 'description' => 'Tanya langsung ke tutor alumni UI/ITB. Rata-rata dijawab dalam 14 menit, tersedia 24/7.', 'sort_order' => 2],
-            ['icon' => '📊', 'title' => 'Analitik Progres', 'description' => 'Dashboard personal menampilkan skor, kelemahan materi, dan rekomendasi belajar berbasis data.', 'sort_order' => 3],
-            ['icon' => '🧭', 'title' => 'Analisa RIASEC', 'description' => 'Temukan jurusan & karier yang paling cocok dengan kepribadian dan potensi akademis Anda.', 'sort_order' => 4],
-            ['icon' => '🎬', 'title' => 'E-Learning Video', 'description' => 'Ribuan video modul dari tutor berpengalaman, bisa ditonton kapan saja dan di mana saja.', 'sort_order' => 5],
-            ['icon' => '🏅', 'title' => 'Garansi Masuk PTN', 'description' => 'Jika tidak lolos, biaya bimbingan dikembalikan penuh. Komitmen kami untuk kesuksesan Anda.', 'sort_order' => 6],
+            ['icon' => '🧠', 'title' => 'CBT Adaptif SNBT 2027', 'description' => 'Simulasi UTBK lengkap dengan format Pilihan Ganda Tunggal, Pilihan Ganda Kompleks, dan Isian Singkat.', 'sort_order' => 1],
+            ['icon' => '💬', 'title' => 'Forum Tanya Tutor 24/7', 'description' => 'Tanya langsung ke tutor senior alumni UI, ITB, ITS, dan UNAIR. Respons cepat dan penjelasan mendalam.', 'sort_order' => 2],
+            ['icon' => '📊', 'title' => 'Analitik Progres Belajar', 'description' => 'Dashboard personal menampilkan skor subtes, diagnosis kelemahan materi, dan rekomendasi target jurusan.', 'sort_order' => 3],
+            ['icon' => '🧭', 'title' => 'Rekomendasi Jurusan PTN', 'description' => 'Temukan program studi PTN yang paling realistis dengan minat, bakat, dan proyeksi skor tryout Anda.', 'sort_order' => 4],
+            ['icon' => '🎬', 'title' => 'Video Modul Kurikulum Merdeka', 'description' => 'Ribuan modul video pembelajaran konsep esensial SMA dan trik cepat menjawab soal penalaran.', 'sort_order' => 5],
+            ['icon' => '🏅', 'title' => 'Garansi Lolos PTN Impian', 'description' => 'Program intensif bergaransi dengan pendampingan personal hingga pengumuman kelulusan SNBT.', 'sort_order' => 6],
         ];
         foreach ($features as $f) {
             Feature::create($f);
         }
 
-        // 5. Testimonials
+        // 5. Testimonials (Alumni Sekolah Jawa Timur)
+        Testimonial::truncate();
         $testimonials = [
-            ['name' => 'Aditya Pratama', 'school' => 'SMAN 3 Bandung', 'university' => 'Teknik Informatika UI', 'score' => 762, 'avatar_text' => 'AP', 'avatar_color' => 'from-blue-500 to-violet-600', 'sort_order' => 1],
-            ['name' => 'Salsabila Nur', 'school' => 'MAN 2 Surabaya', 'university' => 'Kedokteran UNAIR', 'score' => 741, 'avatar_text' => 'SN', 'avatar_color' => 'from-emerald-500 to-teal-600', 'sort_order' => 2],
-            ['name' => 'Rizky Fadillah', 'school' => 'SMAN 1 Yogyakarta', 'university' => 'Hukum UGM', 'score' => 718, 'avatar_text' => 'RF', 'avatar_color' => 'from-orange-500 to-amber-600', 'sort_order' => 3],
-            ['name' => 'Naura Azahra', 'school' => 'SMAN 8 Jakarta', 'university' => 'STAN Kedinasan', 'score' => 729, 'avatar_text' => 'NA', 'avatar_color' => 'from-violet-500 to-pink-600', 'sort_order' => 4],
+            ['name' => 'Aditya Pratama', 'school' => 'SMAN 5 Surabaya', 'university' => 'Teknik Elektro ITS', 'score' => 762, 'avatar_text' => 'AP', 'avatar_color' => 'from-blue-500 to-violet-600', 'sort_order' => 1],
+            ['name' => 'Salsabila Nur', 'school' => 'SMAN 1 Malang', 'university' => 'Kedokteran UNAIR', 'score' => 741, 'avatar_text' => 'SN', 'avatar_color' => 'from-emerald-500 to-teal-600', 'sort_order' => 2],
+            ['name' => 'Rizky Fadillah', 'school' => 'SMA Katolik St. Louis 1 Surabaya', 'university' => 'STEI ITB', 'score' => 758, 'avatar_text' => 'RF', 'avatar_color' => 'from-orange-500 to-amber-600', 'sort_order' => 3],
+            ['name' => 'Naura Azahra', 'school' => 'SMAN 1 Sidoarjo', 'university' => 'Farmasi UNAIR', 'score' => 730, 'avatar_text' => 'NA', 'avatar_color' => 'from-violet-500 to-pink-600', 'sort_order' => 4],
+            ['name' => 'Bima Prasetya', 'school' => 'MAN 2 Kota Malang', 'university' => 'Aktuaria UGM', 'score' => 745, 'avatar_text' => 'BP', 'avatar_color' => 'from-emerald-600 to-cyan-600', 'sort_order' => 5],
         ];
         foreach ($testimonials as $t) {
             Testimonial::create($t);
@@ -73,7 +83,7 @@ class LandingPageSeeder extends Seeder
         $programs = [
             [
                 'name' => 'Mandiri', 'slug' => 'mandiri', 'icon' => '📚', 'price' => 'Rp 350.000', 'price_period' => '/bulan',
-                'description' => null,
+                'description' => 'Paket belajar mandiri modul lengkap SMA dan latihan soal UTBK.',
                 'features' => ['10 soal forum/bulan', 'Akses bank soal dasar', 'CBT simulasi 5×/bulan', 'Progress tracking'],
                 'color' => 'from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800',
                 'ring_color' => 'ring-slate-300 dark:ring-slate-600',
@@ -82,8 +92,8 @@ class LandingPageSeeder extends Seeder
             ],
             [
                 'name' => 'Intensif', 'slug' => 'intensif', 'icon' => '🚀', 'price' => 'Rp 750.000', 'price_period' => '/bulan',
-                'description' => null,
-                'features' => ['Unlimited forum & tanya tutor', 'Akses bank soal premium', 'CBT simulasi unlimited', 'Live streaming 3×/minggu', 'Analisa RIASEC minat bakat'],
+                'description' => 'Paket terpopuler persiapan UTBK SNBT 2027 dengan live streaming interaktif.',
+                'features' => ['Unlimited forum & tanya tutor', 'Akses bank soal premium', 'CBT simulasi unlimited', 'Live streaming 3×/minggu', 'Analisa rekomendasi jurusan'],
                 'color' => 'from-blue-100 to-violet-200 dark:from-blue-700 dark:to-violet-700',
                 'ring_color' => 'ring-blue-400 dark:ring-blue-500',
                 'is_popular' => true,
@@ -91,8 +101,8 @@ class LandingPageSeeder extends Seeder
             ],
             [
                 'name' => 'Garansi', 'slug' => 'garansi', 'icon' => '🏆', 'price' => 'Rp 1.200.000', 'price_period' => '/bulan',
-                'description' => null,
-                'features' => ['Semua fitur Intensif', '4× sesi 1-on-1/bulan', 'Garansi masuk PTN/kedinasan', 'Konsultasi jurusan & kampus', 'Materi olimpiade eksklusif'],
+                'description' => 'Pendampingan 1-on-1 privat hingga lolos PTN impian Anda.',
+                'features' => ['Semua fitur Intensif', '4× sesi 1-on-1/bulan', 'Garansi masuk PTN/kedinasan', 'Konsultasi jurusan & kampus', 'Modul eksklusif olimpiade'],
                 'color' => 'from-amber-100 to-orange-200 dark:from-amber-700 dark:to-orange-700',
                 'ring_color' => 'ring-amber-400 dark:ring-amber-500',
                 'is_popular' => false,

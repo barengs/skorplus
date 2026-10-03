@@ -116,9 +116,22 @@ export default function CbtPage() {
     return () => clearTimeout(timer);
   }, [questionTimeLeft, currentSession, question?.id, currentQuestion, questions.length]);
 
-  const handleSelect = (letter) => {
-    dispatch(setLocalAnswer({ question_number: currentQuestion, selected_option: letter }));
-    dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: letter }));
+  const handleSelect = (val) => {
+    let newAnswer = val;
+    const qType = question?.question_type || 'single_choice';
+
+    if (qType === 'multiple_choice' || qType === 'complex_choice') {
+      const currentSelected = answers[currentQuestion]?.selected_option || '';
+      const selectedArr = currentSelected ? currentSelected.split(',') : [];
+      if (selectedArr.includes(val)) {
+        newAnswer = selectedArr.filter(v => v !== val).join(',');
+      } else {
+        newAnswer = [...selectedArr, val].sort().join(',');
+      }
+    }
+
+    dispatch(setLocalAnswer({ question_number: currentQuestion, selected_option: newAnswer }));
+    dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: newAnswer }));
   };
 
   const handleConfirmCancel = async () => {
@@ -608,18 +621,77 @@ export default function CbtPage() {
                 />
               </div>
 
-              {/* Dynamic Answer Options */}
-              <div className="flex flex-col gap-2.5">
-                {Object.entries(question.options || {}).map(([letter, text]) => (
-                  <CbtAnswerOption
-                    key={letter}
-                    letter={letter}
-                    text={text}
-                    selected={currentAnswers?.selected_option === letter}
-                    onClick={() => handleSelect(letter)}
-                  />
-                ))}
-              </div>
+              {/* Dynamic Answer Options / Input based on question_type */}
+              {question.question_type === 'short_answer' ? (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-lg w-fit">
+                    <span>✍️</span>
+                    <span>Tipe Soal: Isian Singkat (Ketikkan angka atau jawaban pasti Anda)</span>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-500 font-medium">Jawaban Anda:</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 text-lg font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                      placeholder="Ketikkan jawaban di sini..."
+                      value={currentAnswers?.selected_option || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        dispatch(setLocalAnswer({ question_number: currentQuestion, selected_option: val }));
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value;
+                        dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: val }));
+                      }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    💡 Tips: Masukkan angka atau teks jawaban tanpa spasi tambahan. Jawaban otomatis tersimpan saat Anda berpindah soal.
+                  </p>
+                </div>
+              ) : question.question_type === 'multiple_choice' || question.question_type === 'complex_choice' ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-lg w-fit">
+                    <span>☑️</span>
+                    <span>Tipe Soal: Pilihan Ganda Kompleks (Pilih satu atau lebih opsi yang benar)</span>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    {Object.entries(question.options || {}).map(([letter, text]) => {
+                      const isSelected = (currentAnswers?.selected_option || '')
+                        .split(',')
+                        .map(s => s.trim())
+                        .includes(letter);
+                      return (
+                        <CbtAnswerOption
+                          key={letter}
+                          letter={letter}
+                          text={text}
+                          selected={isSelected}
+                          onClick={() => handleSelect(letter)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg w-fit">
+                    <span>⚪</span>
+                    <span>Pilihan Ganda (Pilih satu jawaban yang paling tepat)</span>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    {Object.entries(question.options || {}).map(([letter, text]) => (
+                      <CbtAnswerOption
+                        key={letter}
+                        letter={letter}
+                        text={text}
+                        selected={currentAnswers?.selected_option === letter}
+                        onClick={() => handleSelect(letter)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Navigation Buttons */}
               <div className="flex items-center justify-between pt-2">
@@ -627,7 +699,12 @@ export default function CbtPage() {
                   variant="ghost"
                   size="sm"
                   disabled={currentQuestion <= 1}
-                  onClick={() => dispatch(setCurrentQuestion(currentQuestion - 1))}
+                  onClick={() => {
+                    if (currentAnswers?.selected_option !== undefined) {
+                      dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: currentAnswers.selected_option }));
+                    }
+                    dispatch(setCurrentQuestion(currentQuestion - 1));
+                  }}
                 >
                   ← Sebelumnya
                 </Button>
@@ -635,7 +712,12 @@ export default function CbtPage() {
                   variant="ghost"
                   size="sm"
                   disabled={currentQuestion >= questions.length}
-                  onClick={() => dispatch(setCurrentQuestion(currentQuestion + 1))}
+                  onClick={() => {
+                    if (currentAnswers?.selected_option !== undefined) {
+                      dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: currentAnswers.selected_option }));
+                    }
+                    dispatch(setCurrentQuestion(currentQuestion + 1));
+                  }}
                 >
                   Berikutnya →
                 </Button>
