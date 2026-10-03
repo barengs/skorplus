@@ -256,8 +256,13 @@ class ExamSeeder extends Seeder
             ],
         ];
 
-        // Attach questions to Main Exam
+        // Attach questions to Main Exam (delete old questions to prevent duplicates on re-seeding)
+        foreach ($examMain->questions as $oldQ) {
+            $oldQ->options()->delete();
+            $oldQ->delete();
+        }
         $examMain->questions()->detach();
+
         foreach ($questionsData as $index => $qData) {
             $options = $qData['options'];
             unset($qData['options']);
@@ -320,7 +325,13 @@ class ExamSeeder extends Seeder
             ],
         ];
 
+        // Delete old questions to prevent duplicates on re-seeding
+        foreach ($examPm->questions as $oldQ) {
+            $oldQ->options()->delete();
+            $oldQ->delete();
+        }
         $examPm->questions()->detach();
+
         foreach ($pmQuestions as $index => $qData) {
             $options = $qData['options'];
             unset($qData['options']);

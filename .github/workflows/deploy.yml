@@ -50,11 +50,9 @@ jobs:
             docker compose exec -T app php artisan key:generate --force
             docker compose exec -T app php artisan jwt:secret --always-no
             
-            # 6. Migrasi Database PostgreSQL & Seed Data Baru
+            # 6. Migrasi Database PostgreSQL & Seed Data Baru (Full Seeder)
             docker compose exec -T app php artisan migrate --force
-            docker compose exec -T app php artisan db:seed --class=RolePermissionSeeder --force
-            docker compose exec -T app php artisan db:seed --class=MenuSeeder --force
-            docker compose exec -T app php artisan db:seed --class=SchoolSeeder --force
+            docker compose exec -T app php artisan db:seed --force
             
             # 7. Setup Storage Symlink (Hapus yang lama, buat baru)
             docker compose exec -T app rm -rf /var/www/html/public/storage || true
