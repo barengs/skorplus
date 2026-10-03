@@ -210,26 +210,54 @@ export default function LandingPage() {
       .then(([resLanding, resSettings, resPackages]) => {
         const landingData = resLanding.data;
         
-        // Use programs from landing API or fallback to learning packages
-        const programsData = (landingData.programs && landingData.programs.length > 0)
-          ? landingData.programs.map((p) => ({
-              ...p,
-              slug: p.slug || String(p.name).toLowerCase().replace(/\s+/g, '-'),
-              originalData: p,
-            }))
-          : (resPackages.data || []).map((pkg, idx) => ({
+        // Priority: Use Learning Packages from Manajemen Paket (/admin/learning-packages)
+        const pkgs = (resPackages.data && resPackages.data.length > 0)
+          ? resPackages.data
+          : (landingData.learning_packages && landingData.learning_packages.length > 0)
+            ? landingData.learning_packages
+            : null;
+
+        const colors = [
+          'from-blue-600 to-violet-700',
+          'from-emerald-600 to-teal-700',
+          'from-amber-500 to-orange-700',
+          'from-violet-600 to-pink-700',
+          'from-indigo-600 to-cyan-700',
+        ];
+        const icons = ['🚀', '📖', '📚', '🏆', '🎯'];
+
+        let programsData = [];
+
+        if (pkgs && pkgs.length > 0) {
+          programsData = pkgs.map((pkg, idx) => {
+            const hasDiscount = pkg.discount_price && Number(pkg.discount_price) < Number(pkg.price);
+            return {
               id: pkg.id,
               name: pkg.name,
               slug: pkg.slug || String(pkg.name).toLowerCase().replace(/\s+/g, '-'),
-              icon: idx === 1 ? '🚀' : idx === 2 ? '🏆' : '📚',
-              color: idx === 1 ? 'from-blue-700 to-violet-700' : idx === 2 ? 'from-yellow-500 to-orange-600' : 'from-slate-700 to-slate-800',
-              price: formatRupiah(pkg.price),
+              icon: icons[idx % icons.length],
+              color: colors[idx % colors.length],
+              price: hasDiscount ? formatRupiah(pkg.discount_price) : formatRupiah(pkg.price),
+              strike_price: hasDiscount ? formatRupiah(pkg.price) : null,
               price_period: '/paket',
-              features: pkg.features || [],
-              is_popular: idx === 1,
+              description: pkg.description,
+              features: Array.isArray(pkg.features) ? pkg.features : (pkg.features ? JSON.parse(pkg.features) : []),
+              is_popular: idx === 0,
               is_active: pkg.is_published,
+              cbt_quota: pkg.cbt_quota,
+              courses_count: pkg.courses?.length || 0,
+              thumbnail: pkg.thumbnail,
               originalData: pkg,
-            }));
+              is_learning_package: true,
+            };
+          });
+        } else if (landingData.programs && landingData.programs.length > 0) {
+          programsData = landingData.programs.map((p) => ({
+            ...p,
+            slug: p.slug || String(p.name).toLowerCase().replace(/\s+/g, '-'),
+            originalData: p,
+          }));
+        }
         
         setData({
           ...landingData,
@@ -348,11 +376,29 @@ export default function LandingPage() {
                     </div>
                   )}
                   <div className="bg-slate-50 dark:bg-slate-950 rounded-md p-7 h-full flex flex-col">
-                    <div className="text-3xl mb-3">{p.icon}</div>
+                    {p.thumbnail && (
+                      <div className="w-full h-32 rounded-xl overflow-hidden mb-4 bg-slate-200 dark:bg-slate-800">
+                        <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="text-3xl">{p.icon}</div>
+                      {p.cbt_quota && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                          CBT {p.cbt_quota === 999 ? 'Unlimited' : p.cbt_quota + 'x'}
+                        </span>
+                      )}
+                    </div>
                     <div className="font-black text-xl text-slate-900 dark:text-slate-100 mb-1">{p.name}</div>
-                    <div className="flex items-baseline gap-1 mb-5">
+                    {p.description && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">{p.description}</p>
+                    )}
+                    <div className="flex items-baseline gap-2 mb-5">
                       <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{p.price}</span>
                       <span className="text-slate-500 text-sm">{p.price_period}</span>
+                      {p.strike_price && (
+                        <span className="text-sm text-slate-400 line-through">{p.strike_price}</span>
+                      )}
                     </div>
                     <ul className="flex flex-col gap-2.5 mb-7 flex-1">
                       {(p.features || []).map((f, i) => (
@@ -361,6 +407,12 @@ export default function LandingPage() {
                           {f}
                         </li>
                       ))}
+                      {p.courses_count > 0 && (
+                        <li className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+                          <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>
+                          {p.courses_count} Kursus SMA & SNBT
+                        </li>
+                      )}
                     </ul>
                       <div className="space-y-2 mt-auto">
                         <Link to={`/program/${p.slug || p.id}`} className="block">

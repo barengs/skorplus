@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Feature;
 use App\Models\LandingHero;
 use App\Models\LandingPromo;
+use App\Models\LearningPackage;
 use App\Models\Program;
 use App\Models\Review;
 use App\Models\Stat;
@@ -77,12 +78,19 @@ class LandingController extends Controller
             $testimonials = Testimonial::where('is_active', true)->orderBy('sort_order')->get();
         }
 
+        $learningPackages = LearningPackage::with(['courses' => function ($q) {
+            $q->where('is_active', true)->orderBy('sort_order');
+        }])
+            ->where('is_published', true)
+            ->get();
+
         return response()->json([
             'hero' => LandingHero::where('is_active', true)->latest()->first(),
             'promo' => LandingPromo::where('is_active', true)->latest()->first(),
             'stats' => Stat::where('is_active', true)->orderBy('sort_order')->get(),
             'features' => Feature::where('is_active', true)->orderBy('sort_order')->get(),
             'testimonials' => $testimonials,
+            'learning_packages' => $learningPackages,
             'programs' => Program::with(['courses' => function ($q) {
                 $q->where('is_active', true)->orderBy('sort_order');
             }])->where('is_active', true)->orderBy('sort_order')->get(),
@@ -115,8 +123,56 @@ class LandingController extends Controller
             $program = Program::with(['courses' => $courseEagerLoad])->where('id', $slug)->first();
         }
 
+        // If not found in Program, search in LearningPackage (Manajemen Paket)
         if (! $program) {
-            abort(404, 'Program tidak ditemukan');
+            $pkg = LearningPackage::with(['courses' => $courseEagerLoad])
+                ->where('slug', $slug)
+                ->orWhere('slug', $cleanSlug)
+                ->orWhere('id', is_numeric($slug) ? $slug : 0)
+                ->first();
+
+            if ($pkg) {
+                $allPackages = LearningPackage::where('is_published', true)->get()->map(function ($p) {
+                    $hasDiscount = $p->discount_price && $p->discount_price < $p->price;
+
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->name,
+                        'slug' => $p->slug,
+                        'price' => 'Rp '.number_format($hasDiscount ? $p->discount_price : $p->price, 0, ',', '.'),
+                        'price_period' => '/paket',
+                        'features' => $p->features ?? [],
+                        'icon' => '📦',
+                    ];
+                });
+
+                $hasDiscount = $pkg->discount_price && $pkg->discount_price < $pkg->price;
+                $displayPrice = 'Rp '.number_format($hasDiscount ? $pkg->discount_price : $pkg->price, 0, ',', '.');
+
+                $adaptedProgram = (object) [
+                    'id' => $pkg->id,
+                    'name' => $pkg->name,
+                    'slug' => $pkg->slug,
+                    'description' => $pkg->description,
+                    'price' => $displayPrice,
+                    'price_period' => '/paket',
+                    'features' => $pkg->features ?? [],
+                    'color' => 'from-blue-700 to-violet-700',
+                    'ring_color' => 'ring-blue-400',
+                    'is_popular' => true,
+                    'courses' => $pkg->courses,
+                    'cbt_quota' => $pkg->cbt_quota,
+                ];
+
+                return response()->json([
+                    'program' => $adaptedProgram,
+                    'courses' => $pkg->courses,
+                    'all_programs' => $allPackages,
+                    'user_cbt_usage' => null,
+                ]);
+            }
+
+            abort(404, 'Paket atau Program tidak ditemukan');
         }
 
         $allPrograms = Program::where('is_active', true)->orderBy('sort_order')->get();

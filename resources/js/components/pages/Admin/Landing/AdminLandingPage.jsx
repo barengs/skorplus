@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
 import Badge from '../../../atoms/Badge';
@@ -314,8 +315,28 @@ export default function AdminLandingPage() {
         {/* Tab 3: Programs */}
         {activeTab === 'programs' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Daftar Paket Belajar</h3>
+            <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <span className="text-2xl">📦</span>
+                <div>
+                  <h4 className="font-bold text-sm text-blue-900 dark:text-blue-200">Terintegrasi dengan Manajemen Paket</h4>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 sm:mt-0">
+                    Daftar paket dan harga yang ditampilkan ke pengunjung sekarang ditarik secara otomatis dari menu <strong>Manajemen Paket</strong> (jika ada).
+                  </p>
+                </div>
+              </div>
+              <Link to="/admin/learning-packages" className="shrink-0">
+                <Button size="sm" variant="outline" className="text-xs bg-white dark:bg-slate-900 w-full">
+                  Buka Manajemen Paket →
+                </Button>
+              </Link>
+            </div>
+
+            <div className="flex items-center justify-between mt-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Daftar Paket Belajar (Fallback)</h3>
+                <p className="text-xs text-slate-500 mt-1">Hanya ditampilkan jika tidak ada paket di Manajemen Paket.</p>
+              </div>
               <Button
                 size="sm"
                 onClick={() => {
