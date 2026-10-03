@@ -188,45 +188,68 @@ export default function AdminSchoolsPage() {
     },
     {
       accessorKey: 'students_count',
-      header: 'Siswa',
+      header: () => <div className="text-center w-full">Siswa</div>,
       cell: (info) => (
-        <Badge color="blue">{info.getValue() || 0} siswa</Badge>
+        <div className="flex justify-center">
+          <Badge color="blue">{info.getValue() || 0} siswa</Badge>
+        </div>
       ),
     },
     {
       accessorKey: 'admins_count',
-      header: 'Admin',
+      header: () => <div className="text-center w-full">Admin</div>,
       cell: (info) => (
-        <Badge color="purple">{info.getValue() || 0} admin</Badge>
+        <div className="flex justify-center">
+          <Badge color="purple">{info.getValue() || 0} admin</Badge>
+        </div>
       ),
     },
     {
       accessorKey: 'is_active',
-      header: 'Status',
+      header: () => <div className="text-center w-full">Status</div>,
       cell: (info) => (
-        info.getValue()
-          ? <Badge color="emerald">✓ Aktif</Badge>
-          : <Badge color="slate">Nonaktif</Badge>
+        <div className="flex justify-center">
+          {info.getValue()
+            ? <Badge color="emerald">✓ Aktif</Badge>
+            : <Badge color="slate">Nonaktif</Badge>}
+        </div>
       ),
     },
     {
       id: 'actions',
-      header: 'Aksi',
+      header: () => <div className="text-right w-full pr-1">Aksi</div>,
       cell: ({ row }) => (
-        <div className="flex gap-1 justify-end flex-wrap">
+        <div className="flex items-center gap-1.5 justify-end whitespace-nowrap min-w-[210px]">
           <Link to={`/admin/schools/${row.original.id}`}>
-            <Button variant="outline" size="sm">
-              <FontAwesomeIcon icon={['fas', 'eye']} className="mr-1" /> Detail
+            <Button variant="outline" size="sm" className="text-xs px-2.5 h-8 inline-flex items-center">
+              <FontAwesomeIcon icon={['fas', 'eye']} className="mr-1.5 text-slate-500" /> Detail
             </Button>
           </Link>
-          <Button variant="ghost" size="sm" onClick={() => openAdminModal(row.original)}>
-            <FontAwesomeIcon icon={['fas', 'user-plus']} className="mr-1" /> Admin
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs px-2.5 h-8 text-blue-600 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 inline-flex items-center"
+            onClick={() => openAdminModal(row.original)}
+          >
+            <FontAwesomeIcon icon={['fas', 'user-plus']} className="mr-1.5" /> Admin
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => openModal(row.original)}>
-            Edit
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 p-0 inline-flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+            title="Edit Sekolah"
+            onClick={() => openModal(row.original)}
+          >
+            <FontAwesomeIcon icon={['fas', 'pen']} className="text-xs" />
           </Button>
-          <Button variant="danger" size="sm" onClick={() => handleDelete(row.original.id)}>
-            Hapus
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 p-0 inline-flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/20 rounded-lg border border-transparent hover:border-rose-200 dark:hover:border-rose-900/40"
+            title="Hapus Sekolah"
+            onClick={() => handleDelete(row.original.id)}
+          >
+            <FontAwesomeIcon icon={['fas', 'trash']} className="text-xs" />
           </Button>
         </div>
       ),
