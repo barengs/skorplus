@@ -20,10 +20,20 @@ export default function SessionManager({ children }) {
   const [unlocking, setUnlocking] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      localStorage.removeItem('lastActivity');
+      return;
+    }
+
+    // Reset activity timer immediately upon getting a valid token/logging in
+    lastActivity.current = Date.now();
+    localStorage.setItem('lastActivity', Date.now());
 
     const handleActivity = () => {
-      lastActivity.current = Date.now();
+      const now = Date.now();
+      lastActivity.current = now;
+      // Debounce or periodically update localStorage for multi-tab
+      localStorage.setItem('lastActivity', now);
     };
 
     const events = ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'];

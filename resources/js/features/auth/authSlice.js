@@ -88,6 +88,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.user = action.payload.user;
       state.token = action.payload.token ?? state.token;
+      state.isLocked = false;
     };
     const rejected = (state, action) => {
       state.loading = false;
