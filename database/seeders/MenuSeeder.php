@@ -4,8 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Menu;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
 
 class MenuSeeder extends Seeder
@@ -36,6 +34,7 @@ class MenuSeeder extends Seeder
             ['label' => 'Kelola Role & Menu', 'path' => '/admin/roles', 'icon' => 'fa-user-shield', 'section' => 'system', 'sort_order' => 8, 'roles' => array_values(array_filter([$admin->id]))],
             ['label' => 'Audit & Laporan', 'path' => '/admin/audit', 'icon' => 'fa-shield-halved', 'section' => 'system', 'sort_order' => 9, 'roles' => array_values(array_filter([$admin->id]))],
             ['label' => 'Pengaturan', 'path' => '/admin/settings', 'icon' => 'fa-gear', 'section' => 'system', 'sort_order' => 10, 'roles' => array_values(array_filter([$admin->id]))],
+            ['label' => 'Buku Panduan', 'path' => '/admin/guide', 'icon' => 'fa-book-bookmark', 'section' => 'system', 'sort_order' => 11, 'roles' => array_values(array_filter([$admin->id, $adminSekolah->id]))],
         ];
 
         foreach ($menus as $m) {
