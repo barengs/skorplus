@@ -23,5 +23,18 @@ class AppServiceProvider extends ServiceProvider
         if (str_starts_with((string) config('app.url'), 'https://') || ! app()->isLocal()) {
             URL::forceScheme('https');
         }
+
+        $storagePaths = [
+            storage_path('framework/views'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/sessions'),
+            storage_path('logs'),
+        ];
+
+        foreach ($storagePaths as $path) {
+            if (! is_dir($path)) {
+                @mkdir($path, 0777, true);
+            }
+        }
     }
 }
