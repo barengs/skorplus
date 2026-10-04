@@ -72,8 +72,10 @@ class AdminCbtController extends Controller
 
     public function destroy($id)
     {
-        Exam::destroy($id);
+        $exam = Exam::findOrFail($id);
+        $exam->questions()->detach();
+        $exam->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Paket ujian berhasil dihapus'], 200);
     }
 }

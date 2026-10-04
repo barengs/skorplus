@@ -145,7 +145,7 @@ export default function AdminCbtPage() {
         await dispatch(deleteAdminExam(id)).unwrap();
         toast.success('Paket ujian berhasil dihapus!');
       } catch (err) {
-        toast.error('Gagal menghapus paket ujian');
+        toast.error(err?.message || 'Gagal menghapus paket ujian');
       }
     }
   };

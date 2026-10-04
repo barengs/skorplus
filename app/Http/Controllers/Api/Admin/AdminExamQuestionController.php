@@ -163,13 +163,16 @@ class AdminExamQuestionController extends Controller
     public function destroy($examId, $questionId)
     {
         $exam = Exam::findOrFail($examId);
-        $question = $exam->questions()->findOrFail($questionId);
+        $question = $exam->questions()->find($questionId);
 
-        $exam->questions()->detach($questionId);
-        $question->delete(); // this will cascade delete options
+        if ($question) {
+            $exam->questions()->detach($questionId);
+            $question->options()->delete();
+            $question->delete();
+        }
 
         $exam->update(['total_questions' => $exam->questions()->count()]);
 
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Soal berhasil dihapus'], 200);
     }
 }

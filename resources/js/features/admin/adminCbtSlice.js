@@ -82,7 +82,7 @@ const adminCbtSlice = createSlice({
         }
       })
       .addCase(deleteAdminExam.fulfilled, (state, action) => {
-        state.exams = state.exams.filter(e => e.id !== action.payload);
+        state.exams = state.exams.filter(e => String(e.id) !== String(action.payload));
       });
   },
 });

@@ -27,10 +27,20 @@ class ForumController extends Controller
             ->withCount('replies')
             ->latest();
 
-        if ($request->subject && $request->subject !== 'semua') {
-            $query->where(function ($q) use ($request) {
-                $q->where('subject', $request->subject)
-                    ->orWhere('course_id', $request->subject);
+        if ($request->filled('subject') && $request->subject !== 'semua') {
+            $subjectVal = $request->subject;
+            $query->where(function ($q) use ($subjectVal) {
+                $q->where('subject', $subjectVal);
+
+                if (is_numeric($subjectVal)) {
+                    $q->orWhere('course_id', (int) $subjectVal);
+                } else {
+                    $q->orWhereHas('course', function ($cq) use ($subjectVal) {
+                        $cq->where('title', $subjectVal)
+                            ->orWhere('slug', $subjectVal)
+                            ->orWhere('category', $subjectVal);
+                    });
+                }
             });
         }
 
