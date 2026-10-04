@@ -30,23 +30,21 @@ export default function AdminLandingPage() {
     is_active: true,
   });
 
-  const [programs, setPrograms] = useState([]);
   const [features, setFeatures] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [stats, setStats] = useState([]);
 
   // Modal states
-  const [modalType, setModalType] = useState(null); // 'program' | 'feature' | 'testimonial' | 'stat'
+  const [modalType, setModalType] = useState(null); // 'feature' | 'testimonial' | 'stat'
   const [editingItem, setEditingItem] = useState(null);
 
   // Fetch all CMS data
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [hRes, pRes, prgRes, fRes, tRes, sRes] = await Promise.all([
+      const [hRes, pRes, fRes, tRes, sRes] = await Promise.all([
         api.get('/admin/landing-hero'),
         api.get('/admin/landing-promo'),
-        api.get('/admin/programs'),
         api.get('/admin/features'),
         api.get('/admin/testimonials'),
         api.get('/admin/stats'),
@@ -54,7 +52,6 @@ export default function AdminLandingPage() {
 
       if (hRes.data) setHero(hRes.data);
       if (pRes.data) setPromo(pRes.data);
-      setPrograms(prgRes.data || []);
       setFeatures(fRes.data || []);
       setTestimonials(tRes.data || []);
       setStats(sRes.data || []);
@@ -108,19 +105,7 @@ export default function AdminLandingPage() {
   const handleSaveModalItem = async (e) => {
     e.preventDefault();
     try {
-      if (modalType === 'program') {
-        const payload = {
-          ...editingItem,
-          features: typeof editingItem.features === 'string'
-            ? editingItem.features.split('\n').filter(Boolean)
-            : editingItem.features,
-        };
-        if (editingItem.id) {
-          await api.put(`/admin/programs/${editingItem.id}`, payload);
-        } else {
-          await api.post('/admin/programs', payload);
-        }
-      } else if (modalType === 'feature') {
+      if (modalType === 'feature') {
         if (editingItem.id) {
           await api.put(`/admin/features/${editingItem.id}`, editingItem);
         } else {
@@ -170,7 +155,6 @@ export default function AdminLandingPage() {
           {[
             { id: 'hero', label: '🎯 Hero Section' },
             { id: 'promo', label: '📢 Promo Banner' },
-            { id: 'programs', label: '🎓 Program Belajar' },
             { id: 'features', label: '⚡ Fitur' },
             { id: 'testimonials', label: '💬 Testimoni' },
             { id: 'stats', label: '📊 Statistik' },
@@ -312,107 +296,7 @@ export default function AdminLandingPage() {
           </form>
         )}
 
-        {/* Tab 3: Programs */}
-        {activeTab === 'programs' && (
-          <div className="space-y-6">
-            <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start sm:items-center gap-3">
-                <span className="text-2xl">📦</span>
-                <div>
-                  <h4 className="font-bold text-sm text-blue-900 dark:text-blue-200">Terintegrasi dengan Manajemen Paket</h4>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 sm:mt-0">
-                    Daftar paket dan harga yang ditampilkan ke pengunjung sekarang ditarik secara otomatis dari menu <strong>Manajemen Paket</strong> (jika ada).
-                  </p>
-                </div>
-              </div>
-              <Link to="/admin/learning-packages" className="shrink-0">
-                <Button size="sm" variant="outline" className="text-xs bg-white dark:bg-slate-900 w-full">
-                  Buka Manajemen Paket →
-                </Button>
-              </Link>
-            </div>
-
-            <div className="flex items-center justify-between mt-4">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Daftar Paket Belajar (Fallback)</h3>
-                <p className="text-xs text-slate-500 mt-1">Hanya ditampilkan jika tidak ada paket di Manajemen Paket.</p>
-              </div>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditingItem({
-                    name: '',
-                    slug: '',
-                    icon: '📚',
-                    price: 'Rp 500.000',
-                    price_period: '/bulan',
-                    features: ['Akses CBT', 'Forum Tutor'],
-                    color: 'from-blue-700 to-violet-700',
-                    ring_color: 'ring-blue-500',
-                    is_popular: false,
-                    is_active: true,
-                    sort_order: programs.length + 1,
-                    cbt_quota: null,
-                  });
-                  setModalType('program');
-                }}
-              >
-                + Tambah Paket
-              </Button>
-            </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {programs.map((p) => (
-                <div key={p.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-6 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-3xl">{p.icon}</span>
-                      {p.is_popular && <Badge color="blue">Populer</Badge>}
-                    </div>
-                    <h4 className="text-lg font-black text-slate-900 dark:text-slate-100">{p.name}</h4>
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                      {p.price} <span className="text-xs text-slate-500 font-normal">{p.price_period}</span>
-                    </p>
-                    <div className="mt-2">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        p.cbt_quota 
-                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300' 
-                          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                      }`}>
-                        <span>🎯</span> CBT: {p.cbt_quota ? `${p.cbt_quota}x Pengerjaan` : 'Tak Terbatas'}
-                      </span>
-                    </div>
-                    <ul className="mt-4 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
-                      {(p.features || []).map((f, idx) => (
-                        <li key={idx}>✓ {f}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingItem({
-                          ...p,
-                          features: Array.isArray(p.features) ? p.features.join('\n') : p.features,
-                        });
-                        setModalType('program');
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDelete('program', p.id)}>
-                      Hapus
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Features */}
+        {/* Tab 3: Features */}
         {activeTab === 'features' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -583,112 +467,6 @@ export default function AdminLandingPage() {
               </h3>
 
               <form onSubmit={handleSaveModalItem} className="space-y-4">
-                {modalType === 'program' && (
-                  <>
-                    <FormField label="Nama Paket">
-                      <Input
-                        value={editingItem.name || ''}
-                        onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                        required
-                      />
-                    </FormField>
-                    <FormField label="Slug URL">
-                      <Input
-                        value={editingItem.slug || ''}
-                        onChange={(e) => setEditingItem({ ...editingItem, slug: e.target.value })}
-                        required
-                      />
-                    </FormField>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField label="Icon Emoji">
-                        <Input
-                          value={editingItem.icon || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, icon: e.target.value })}
-                        />
-                      </FormField>
-                      <FormField label="Urutan Sort">
-                        <Input
-                          type="number"
-                          value={editingItem.sort_order || 0}
-                          onChange={(e) => setEditingItem({ ...editingItem, sort_order: parseInt(e.target.value) || 0 })}
-                        />
-                      </FormField>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField label="Harga">
-                        <Input
-                          value={editingItem.price || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
-                          required
-                        />
-                      </FormField>
-                      <FormField label="Periode Harga">
-                        <Input
-                          value={editingItem.price_period || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, price_period: e.target.value })}
-                        />
-                      </FormField>
-                    </div>
-                    <FormField label="Fitur (Pisahkan dengan baris baru / Enter)">
-                      <textarea
-                        className="w-full p-3 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows={4}
-                        value={editingItem.features || ''}
-                        onChange={(e) => setEditingItem({ ...editingItem, features: e.target.value })}
-                      />
-                    </FormField>
-
-                    <div className="space-y-1.5 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                        Kuota Pengerjaan CBT (Tryout)
-                      </label>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {[
-                          { label: '2x Pengerjaan', value: 2 },
-                          { label: '10x Pengerjaan', value: 10 },
-                          { label: 'Tak Terbatas', value: null },
-                        ].map((preset) => (
-                          <button
-                            key={preset.label}
-                            type="button"
-                            onClick={() => setEditingItem({ ...editingItem, cbt_quota: preset.value })}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                              editingItem.cbt_quota === preset.value
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                            }`}
-                          >
-                            {preset.label}
-                          </button>
-                        ))}
-                      </div>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="Atau isi angka khusus (kosongkan jika tak terbatas)"
-                        value={editingItem.cbt_quota === null || editingItem.cbt_quota === undefined ? '' : editingItem.cbt_quota}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
-                          setEditingItem({ ...editingItem, cbt_quota: isNaN(val) ? null : val });
-                        }}
-                      />
-                      <p className="text-[11px] text-slate-500">
-                        Batas jumlah pengerjaan ujian CBT untuk siswa di program ini. Peringatan dan modal blokir akan muncul jika batas tercapai.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="is_popular"
-                        checked={!!editingItem.is_popular}
-                        onChange={(e) => setEditingItem({ ...editingItem, is_popular: e.target.checked })}
-                      />
-                      <label htmlFor="is_popular" className="text-sm font-semibold">Tandai Paling Populer ⭐</label>
-                    </div>
-                  </>
-                )}
-
                 {modalType === 'feature' && (
                   <>
                     <FormField label="Icon Emoji">

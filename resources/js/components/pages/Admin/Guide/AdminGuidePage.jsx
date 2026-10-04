@@ -389,7 +389,6 @@ export default function AdminGuidePage() {
           tagColor: 'purple',
           icon: 'fa-arrows-rotate',
           items: [
-            'Di tab "Program Belajar", Anda akan melihat pemberitahuan integrasi otomatis.',
             'Paket yang tampil di landing page depan secara otomatis terhubung langsung dengan menu "Kelola Program/Paket" (/admin/learning-packages).',
             'Cukup ubah atau tambah paket di Manajemen Paket, maka tampilan kartu harga di halaman depan otomatis terupdate.'
           ]
