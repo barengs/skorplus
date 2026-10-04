@@ -29,13 +29,14 @@ api.interceptors.response.use(
     const original = err.config;
 
     // Prevent interceptor deadlock if the refresh request itself fails
-    // DO NOT attempt to refresh token on auth routes (login, register)
+    // DO NOT attempt to refresh token on auth routes (login, register, logout)
     if (
       original.url?.includes('/auth/refresh') ||
       original.url?.includes('/auth/login') ||
-      original.url?.includes('/auth/register')
+      original.url?.includes('/auth/register') ||
+      original.url?.includes('/auth/logout')
     ) {
-      if (original.url?.includes('/auth/refresh')) {
+      if (original.url?.includes('/auth/refresh') || original.url?.includes('/auth/logout')) {
         processQueue(err, null);
         localStorage.removeItem('skorpluss_token');
         localStorage.removeItem('lastActivity');

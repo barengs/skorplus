@@ -17,8 +17,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    localStorage.removeItem('lastActivity');
     const result = await dispatch(login(form));
     if (login.fulfilled.match(result)) {
+      toast.dismiss();
       toast.success(`Selamat datang kembali, ${result.payload.user.name}! 🎉`);
       navigate('/dashboard');
     } else {

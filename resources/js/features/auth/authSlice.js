@@ -34,9 +34,10 @@ export const fetchMe = createAsyncThunk('auth/me', async (_, { rejectWithValue }
 });
 
 export const logoutUser = createAsyncThunk('auth/logout', async (_, { dispatch }) => {
-  try { await api.post('/auth/logout'); } catch (_) { /* ignore */ }
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('lastActivity');
   dispatch(logout());
+  try { await api.post('/auth/logout'); } catch (_) { /* ignore */ }
 });
 
 export const updateProfile = createAsyncThunk('auth/updateProfile', async (payload, { rejectWithValue }) => {
@@ -73,6 +74,7 @@ const authSlice = createSlice({
       state.token = null;
       state.isLocked = false;
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('lastActivity');
     },
     setToken(state, action) {
       state.token = action.payload;
@@ -105,6 +107,7 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem('lastActivity');
       })
       .addCase(fetchSettings.fulfilled, (state, action) => {
         state.settings = action.payload;

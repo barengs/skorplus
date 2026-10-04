@@ -20,43 +20,49 @@ export default function SessionManager({ children }) {
   const [unlocking, setUnlocking] = useState(false);
 
   useEffect(() => {
-    if (!token) {
-      localStorage.removeItem('lastActivity');
-      return;
-    }
-
-    // Reset activity timer immediately upon getting a valid token/logging in
-    lastActivity.current = Date.now();
-    localStorage.setItem('lastActivity', Date.now());
+    let checkInterval;
+    let refreshInterval;
 
     const handleActivity = () => {
       const now = Date.now();
       lastActivity.current = now;
-      // Debounce or periodically update localStorage for multi-tab
       localStorage.setItem('lastActivity', now);
     };
+
+    if (!token) {
+      localStorage.removeItem('lastActivity');
+      return () => {
+        if (checkInterval) clearInterval(checkInterval);
+        if (refreshInterval) clearInterval(refreshInterval);
+        const events = ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'];
+        events.forEach(event => window.removeEventListener(event, handleActivity));
+      };
+    }
+
+    lastActivity.current = Date.now();
+    localStorage.setItem('lastActivity', Date.now());
 
     const events = ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'];
     events.forEach(event => window.addEventListener(event, handleActivity));
 
-    // Check lock/logout every second for testing
-    const checkInterval = setInterval(() => {
+    // Check lock/logout every second
+    checkInterval = setInterval(() => {
       const now = Date.now();
       const idleTime = now - lastActivity.current;
 
       if (idleTime >= LOGOUT_TIMEOUT) {
         dispatch(logoutUser());
+        toast.dismiss();
         toast.info('Sesi Anda telah berakhir karena tidak ada aktivitas.');
       } else if (idleTime >= LOCK_TIMEOUT && !isLocked) {
         dispatch(lockScreen());
         toast.info('Layar dikunci karena tidak ada aktivitas.');
       }
-    }, 1000); // Check every second
+    }, 1000);
 
     // Proactive token refresh every 15 minutes if user is active
-    const refreshInterval = setInterval(() => {
+    refreshInterval = setInterval(() => {
       const idleTime = Date.now() - lastActivity.current;
-      // Only refresh if user has been active in last 15 minutes
       if (idleTime < REFRESH_INTERVAL && !isLocked) {
         api.post('/auth/refresh')
           .then(res => {
@@ -64,12 +70,11 @@ export default function SessionManager({ children }) {
               dispatch(setToken(res.data.token));
             }
           })
-          .catch(() => {
-            // Silent fail, axios interceptor will handle it on next request
-          });
+          .catch(() => {});
       }
     }, REFRESH_INTERVAL);
 
+    // Cleanup on unmount or token change
     return () => {
       events.forEach(event => window.removeEventListener(event, handleActivity));
       clearInterval(checkInterval);
