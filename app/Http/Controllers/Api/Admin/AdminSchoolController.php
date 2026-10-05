@@ -23,6 +23,7 @@ class AdminSchoolController extends Controller
     public function publicList(): JsonResponse
     {
         $schools = School::where('is_active', true)
+            ->with(['activeLearningPackages:id,name,slug'])
             ->select('id', 'name', 'npsn')
             ->orderBy('name')
             ->get();

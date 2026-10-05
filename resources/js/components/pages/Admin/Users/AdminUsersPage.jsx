@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
@@ -16,6 +17,7 @@ import { toast } from 'react-toastify';
 
 export default function AdminUsersPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { users, loading } = useSelector((state) => state.adminUsers);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +26,8 @@ export default function AdminUsersPage() {
   const [availableRoles, setAvailableRoles] = useState([]);
   const [availablePrograms, setAvailablePrograms] = useState([]);
   
+  const [availableSchools, setAvailableSchools] = useState([]);
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -31,6 +35,7 @@ export default function AdminUsersPage() {
     email: '',
     program: '',
     phone: '',
+    school_id: '',
     school: '',
     nisn: '',
     gender: '',
@@ -44,16 +49,37 @@ export default function AdminUsersPage() {
     dispatch(fetchAdminUsers());
     api.get('/admin/roles').then((res) => setAvailableRoles(res.data)).catch(() => {});
     api.get('/learning-packages').then((res) => setAvailablePrograms(res.data)).catch(() => {});
+    api.get('/schools/public').then((res) => setAvailableSchools(res.data)).catch(() => {});
   }, [dispatch]);
+
+  const handleSchoolChange = (e) => {
+    const selectedId = e.target.value;
+    const selectedSchool = availableSchools.find(s => String(s.id) === String(selectedId));
+    
+    setFormData(prev => {
+      const nextData = { ...prev, school_id: selectedId, school: selectedSchool ? selectedSchool.name : '' };
+      // Auto-select program if school has an active package
+      if (selectedSchool && selectedSchool.active_learning_packages && selectedSchool.active_learning_packages.length > 0) {
+        nextData.program = selectedSchool.active_learning_packages[0].name;
+      }
+      return nextData;
+    });
+  };
 
   const openModal = (user = null) => {
     if (user) {
+      const userSchool = availableSchools.find(
+        (s) => String(s.id) === String(user.school_id) || (s.name && s.name.toLowerCase() === (user.school || '').toLowerCase())
+      );
+      const schoolProgram = userSchool?.active_learning_packages?.[0]?.name;
+
       setFormData({
         name: user.name,
         email: user.email,
-        program: user.program || '',
+        program: schoolProgram || user.program || '',
         phone: user.phone || '',
-        school: user.school || '',
+        school_id: user.school_id || (userSchool ? String(userSchool.id) : ''),
+        school: user.school || (userSchool ? userSchool.name : ''),
         nisn: user.nisn || '',
         gender: user.gender || '',
         birth_year: user.birth_year ? String(user.birth_year) : '',
@@ -69,6 +95,7 @@ export default function AdminUsersPage() {
         email: '',
         program: '',
         phone: '',
+        school_id: '',
         school: '',
         nisn: '',
         gender: '',
@@ -107,6 +134,14 @@ export default function AdminUsersPage() {
       }
     }
   };
+
+  const currentSchool = useMemo(() => {
+    return availableSchools.find(
+      (s) => String(s.id) === String(formData.school_id) || (s.name && s.name.toLowerCase() === (formData.school || '').toLowerCase())
+    );
+  }, [availableSchools, formData.school_id, formData.school]);
+
+  const currentSchoolPackages = currentSchool?.active_learning_packages || [];
 
   const getProgramBadgeColor = (val) => {
     const colors = { mandiri: 'slate', intensif: 'blue', garansi: 'gold' };
@@ -171,10 +206,10 @@ export default function AdminUsersPage() {
         header: 'Aksi',
         cell: ({ row }) => (
           <div className="flex gap-2 justify-end">
-            <Button variant="ghost" size="sm" onClick={() => openModal(row.original)}>
+            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openModal(row.original); }}>
               Edit
             </Button>
-            <Button variant="danger" size="sm" onClick={() => handleDelete(row.original.id)}>
+            <Button variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); handleDelete(row.original.id); }}>
               Hapus
             </Button>
           </div>
@@ -183,6 +218,12 @@ export default function AdminUsersPage() {
     ],
     []
   );
+
+  const handleRowClick = (user) => {
+    if (user.roles?.includes('siswa') || activeTab === 'siswa') {
+      navigate(`/admin/users/${user.id}`);
+    }
+  };
 
   return (
     <AppLayout title="Kelola Pengguna & Siswa">
@@ -245,7 +286,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* TanStack Paginated Table */}
-        <DataTable columns={columns} data={filteredUsers} loading={loading} />
+        <DataTable columns={columns} data={filteredUsers} loading={loading} onRowClick={handleRowClick} />
 
         {/* Modal */}
         {modalOpen && (
@@ -290,10 +331,31 @@ export default function AdminUsersPage() {
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     >
                       <option value="">Pilih Program</option>
-                      {availablePrograms.map((p) => (
-                        <option key={p.id} value={p.name}>{p.name}</option>
-                      ))}
+                      {currentSchoolPackages.length > 0 && (
+                        <optgroup label={`Paket Mitra: ${currentSchool?.name}`}>
+                          {currentSchoolPackages.map((p) => (
+                            <option key={`school-pkg-${p.id}`} value={p.name}>
+                              ⭐ {p.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="Daftar Paket Program">
+                        {availablePrograms.map((p) => (
+                          <option key={p.id} value={p.name}>{p.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Program Standar (Legacy)">
+                        <option value="intensif">Intensif</option>
+                        <option value="mandiri">Mandiri</option>
+                        <option value="garansi">Garansi</option>
+                      </optgroup>
                     </select>
+                    {currentSchoolPackages.length > 0 && (
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                        <span>✓</span> Terpilih otomatis dari paket sekolah
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -371,11 +433,16 @@ export default function AdminUsersPage() {
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Asal Sekolah
                   </label>
-                  <Input
-                    value={formData.school}
-                    onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-                    placeholder="Contoh: SMAN 1 Jakarta"
-                  />
+                  <select
+                    value={formData.school_id}
+                    onChange={handleSchoolChange}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="">Pilih Sekolah (Opsional)</option>
+                    {availableSchools.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

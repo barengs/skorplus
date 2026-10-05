@@ -13,6 +13,18 @@ export const fetchAdminUsers = createAsyncThunk(
   }
 );
 
+export const fetchAdminUser = createAsyncThunk(
+  'adminUsers/fetchOne',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/admin/users/${id}`);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 export const createAdminUser = createAsyncThunk(
   'adminUsers/create',
   async (payload, { rejectWithValue }) => {

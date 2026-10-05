@@ -26,6 +26,7 @@ import AdminLearningPackageDetailPage from './components/pages/Admin/LearningPac
 import AdminLearningPackageFormPage from './components/pages/Admin/LearningPackage/AdminLearningPackageFormPage';
 import AdminSchoolsPage from './components/pages/Admin/Schools';
 import AdminSchoolDetailPage from './components/pages/Admin/Schools/Detail';
+import AdminUserDetailPage from './components/pages/Admin/Users/Detail';
 import AdminAuditPage from './components/pages/Admin/Audit/AdminAuditPage';
 import AdminGuidePage from './components/pages/Admin/Guide/AdminGuidePage';
 import SchoolAdminStudentsPage from './components/pages/SchoolAdmin/Students';
@@ -97,6 +98,7 @@ export default function App() {
       {/* Admin routes */}
       <Route path="/admin/landing" element={<PrivateRoute><AdminLandingPage /></PrivateRoute>} />
       <Route path="/admin/users" element={<PrivateRoute><AdminUsersPage /></PrivateRoute>} />
+      <Route path="/admin/users/:id" element={<PrivateRoute><AdminUserDetailPage /></PrivateRoute>} />
       <Route path="/admin/elearning" element={<PrivateRoute><AdminElearningPage /></PrivateRoute>} />
       <Route path="/admin/elearning/courses/create" element={<PrivateRoute><AdminCourseFormPage /></PrivateRoute>} />
       <Route path="/admin/elearning/courses/:courseId/edit" element={<PrivateRoute><AdminCourseFormPage /></PrivateRoute>} />

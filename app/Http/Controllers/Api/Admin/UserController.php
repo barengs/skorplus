@@ -103,6 +103,28 @@ class UserController extends Controller
         return response()->json($data, 201);
     }
 
+    public function show(User $user)
+    {
+        $user->load(['roles', 'profile', 'schoolEntity', 'cbtSessions' => function ($q) {
+            $q->with('exam')->latest()->take(10);
+        }]);
+
+        $data = $user->toArray();
+        $data['roles'] = $user->getRoleNames();
+        $data['phone'] = $user->profile?->phone ?? $user->phone;
+        $data['gender'] = $user->profile?->gender;
+        $data['birth_year'] = $user->profile?->birth_year;
+        $data['address'] = $user->profile?->address;
+        $data['social_media'] = $user->profile?->social_media ?? [];
+        $data['bio'] = $user->profile?->bio;
+
+        $data['is_on_trial'] = $user->isOnTrial();
+        $data['trial_days_remaining'] = $user->trialDaysRemaining();
+        $data['school_name'] = $user->schoolEntity?->name ?? $user->school;
+
+        return response()->json($data);
+    }
+
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([

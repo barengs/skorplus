@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-table';
 import Button from '../../atoms/Button';
 
-export default function DataTable({ columns, data, loading, onSearch }) {
+export default function DataTable({ columns, data, loading, onSearch, onRowClick }) {
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
 
@@ -83,7 +83,13 @@ export default function DataTable({ columns, data, loading, onSearch }) {
               </tr>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <tr
+                  key={row.id}
+                  onClick={(e) => {
+                    if (onRowClick) onRowClick(row.original, e);
+                  }}
+                  className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-6 py-4 text-slate-700 dark:text-slate-300">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
