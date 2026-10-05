@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CbtSession;
 use App\Models\Exam;
 use Illuminate\Http\Request;
 
@@ -113,5 +114,43 @@ class AdminCbtController extends Controller
         $exam->delete();
 
         return response()->json(['message' => 'Paket ujian berhasil dihapus'], 200);
+    }
+
+    public function activeSessions($examId)
+    {
+        $exam = Exam::findOrFail($examId);
+
+        $sessions = CbtSession::with(['user'])
+            ->where('exam_id', $examId)
+            ->where('status', 'ongoing')
+            ->orderBy('started_at', 'desc')
+            ->get()
+            ->map(function ($session) {
+                $answeredCount = $session->answers()->count();
+                $totalQuestions = $session->exam ? $session->exam->questions()->count() : 0;
+
+                return [
+                    'id' => $session->id,
+                    'user_id' => $session->user_id,
+                    'user_name' => $session->user?->name ?? 'N/A',
+                    'user_email' => $session->user?->email ?? 'N/A',
+                    'started_at' => $session->started_at?->format('Y-m-d H:i:s'),
+                    'duration_seconds' => $session->duration_seconds,
+                    'answered_count' => $answeredCount,
+                    'total_questions' => $totalQuestions,
+                    'progress_percent' => $totalQuestions > 0 ? round(($answeredCount / $totalQuestions) * 100) : 0,
+                    'elapsed_seconds' => $session->started_at ? now()->diffInSeconds($session->started_at) : 0,
+                ];
+            });
+
+        return response()->json([
+            'exam' => [
+                'id' => $exam->id,
+                'title' => $exam->title,
+                'duration_minutes' => $exam->duration_minutes,
+            ],
+            'active_sessions' => $sessions,
+            'total_active' => $sessions->count(),
+        ]);
     }
 }

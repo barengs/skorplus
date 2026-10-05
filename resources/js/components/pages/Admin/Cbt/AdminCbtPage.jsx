@@ -62,6 +62,19 @@ export default function AdminCbtPage() {
     is_active: true,
   });
 
+  // Detail Soal state
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailExam, setDetailExam] = useState(null);
+  const [detailQuestions, setDetailQuestions] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Active Students state
+  const [activeModalOpen, setActiveModalOpen] = useState(false);
+  const [activeExam, setActiveExam] = useState(null);
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [activeLoading, setActiveLoading] = useState(false);
+  const [activeRefreshInterval, setActiveRefreshInterval] = useState(null);
+
   const fetchExamTypes = async () => {
     try {
       setTypesLoading(true);
@@ -159,6 +172,12 @@ export default function AdminCbtPage() {
         const exam = row.original;
         return (
           <div className="flex gap-2 justify-end">
+            <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800 hover:bg-purple-50" onClick={() => openDetailModal(exam)}>
+              Detail Soal
+            </Button>
+            <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50" onClick={() => openActiveModal(exam)}>
+              Siswa Aktif
+            </Button>
             <Link to={`/admin/cbt/${exam.id}/questions`}>
               <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">Kelola Soal</Button>
             </Link>
@@ -257,6 +276,59 @@ export default function AdminCbtPage() {
         toast.error(err?.message || 'Gagal menghapus paket ujian');
       }
     }
+  };
+
+  // Detail Soal handlers
+  const openDetailModal = async (exam) => {
+    setDetailExam(exam);
+    setDetailModalOpen(true);
+    setDetailLoading(true);
+    try {
+      const res = await api.get(`/admin/cbt/exams/${exam.id}`);
+      setDetailQuestions(res.data.questions || []);
+    } catch (err) {
+      toast.error('Gagal memuat detail soal');
+      setDetailQuestions([]);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // Active Students handlers
+  const openActiveModal = async (exam) => {
+    setActiveExam(exam);
+    setActiveModalOpen(true);
+    setActiveLoading(true);
+    try {
+      const res = await api.get(`/admin/cbt/exams/${exam.id}/active-sessions`);
+      setActiveSessions(res.data.active_sessions || []);
+    } catch (err) {
+      toast.error('Gagal memuat data siswa aktif');
+      setActiveSessions([]);
+    } finally {
+      setActiveLoading(false);
+    }
+
+    // Auto refresh every 10 seconds
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.get(`/admin/cbt/exams/${exam.id}/active-sessions`);
+        setActiveSessions(res.data.active_sessions || []);
+      } catch (err) {
+        // silent fail on refresh
+      }
+    }, 10000);
+    setActiveRefreshInterval(interval);
+  };
+
+  const closeActiveModal = () => {
+    if (activeRefreshInterval) {
+      clearInterval(activeRefreshInterval);
+      setActiveRefreshInterval(null);
+    }
+    setActiveModalOpen(false);
+    setActiveExam(null);
+    setActiveSessions([]);
   };
 
   // Exam Types Handlers
@@ -709,7 +781,149 @@ export default function AdminCbtPage() {
             </div>
           </div>
         )}
+
+        {/* Modal Detail Soal */}
+        {detailModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Detail Soal</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    {detailExam?.title} • {detailQuestions.length} soal
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setDetailModalOpen(false)}>Tutup</Button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6">
+                {detailLoading ? (
+                  <div className="text-center py-12 text-slate-500">Memuat soal...</div>
+                ) : detailQuestions.length === 0 ? (
+                  <div className="text-center py-12 text-slate-500">
+                    <span className="text-4xl mb-4 block">📝</span>
+                    Belum ada soal dalam paket ujian ini.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {detailQuestions.map((q, idx) => (
+                      <div key={q.id} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-sm">
+                            {idx + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              {q.exam_type && (
+                                <Badge color="blue" className="text-[10px]">{q.exam_type.name}</Badge>
+                              )}
+                              {q.subtest && (
+                                <Badge color="slate" className="text-[10px]">{q.subtest}</Badge>
+                              )}
+                              <Badge color={q.is_active ? 'emerald' : 'slate'} className="text-[10px]">
+                                {q.is_active ? 'Aktif' : 'Non-aktif'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed" dangerouslySetInnerHTML={{ __html: q.question_text }} />
+                            
+                            {q.options && q.options.length > 0 && (
+                              <div className="mt-3 grid grid-cols-2 gap-2">
+                                {q.options.map(opt => (
+                                  <div key={opt.id} className={`text-xs p-2 rounded-lg border ${opt.is_correct ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+                                    <span className="font-bold mr-1">{opt.option_label}.</span>
+                                    {opt.option_text}
+                                    {opt.is_correct && <span className="ml-1">✓</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            <div className="mt-3 flex items-center gap-4 text-[11px] text-slate-500">
+                              <span>Bobot: {q.points || 1}</span>
+                              <span>Durasi: {q.duration_seconds || 90} detik</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Siswa Aktif */}
+        {activeModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Siswa Sedang Mengerjakan</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    {activeExam?.title} • {activeSessions.length} siswa aktif
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={closeActiveModal}>Tutup</Button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6">
+                {activeLoading ? (
+                  <div className="text-center py-12 text-slate-500">Memuat data...</div>
+                ) : activeSessions.length === 0 ? (
+                  <div className="text-center py-12 text-slate-500">
+                    <span className="text-4xl mb-4 block">👤</span>
+                    Tidak ada siswa yang sedang mengerjakan ujian ini saat ini.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activeSessions.map((session) => (
+                      <div key={session.id} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                              {session.user_name?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">{session.user_name}</p>
+                              <p className="text-xs text-slate-500">{session.user_email}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge color="emerald" className="text-[10px]">Sedang Mengerjakan</Badge>
+                            <p className="text-[11px] text-slate-500 mt-1">
+                              Mulai: {new Date(session.started_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
+                            <span>Progres Pengerjaan</span>
+                            <span className="font-semibold">{session.answered_count}/{session.total_questions} soal ({session.progress_percent}%)</span>
+                          </div>
+                          <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500"
+                              style={{ width: `${session.progress_percent}%` }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2 flex items-center gap-4 text-[11px] text-slate-500">
+                          <span>⏱️ Elapsed: {Math.floor(session.elapsed_seconds / 60)}m {session.elapsed_seconds % 60}s</span>
+                          <span>📊 Durasi: {Math.floor(session.duration_seconds / 60)} menit</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
 }
+
