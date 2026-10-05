@@ -157,7 +157,16 @@ export default function AdminUsersPage() {
       const matchProgram = filterProgram === '' || u.program === filterProgram;
       
       const isSiswa = u.roles?.includes('siswa');
-      const matchTab = activeTab === 'siswa' ? isSiswa : !isSiswa;
+      const hasNoRole = !u.roles || u.roles.length === 0;
+
+      let matchTab = false;
+      if (activeTab === 'siswa') {
+        matchTab = isSiswa || hasNoRole;
+      } else if (activeTab === 'pengurus') {
+        matchTab = !isSiswa && !hasNoRole;
+      } else if (activeTab === 'semua') {
+        matchTab = true;
+      }
 
       return matchSearch && matchProgram && matchTab;
     });
@@ -186,13 +195,19 @@ export default function AdminUsersPage() {
       {
         accessorKey: 'roles',
         header: 'Role',
-        cell: (info) => (
-          <div className="flex gap-1">
-            {(info.getValue() || []).map((r) => (
-              <Badge key={r} color="blue">{r}</Badge>
-            ))}
-          </div>
-        ),
+        cell: (info) => {
+          const roles = info.getValue() || [];
+          if (roles.length === 0) {
+            return <Badge color="rose">⚠️ Tanpa Role</Badge>;
+          }
+          return (
+            <div className="flex gap-1">
+              {roles.map((r) => (
+                <Badge key={r} color="blue">{r}</Badge>
+              ))}
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'is_active',
@@ -258,6 +273,16 @@ export default function AdminUsersPage() {
             }`}
           >
             Data Pengurus (Admin & Tutor)
+          </button>
+          <button
+            onClick={() => setActiveTab('semua')}
+            className={`px-4 py-2 font-semibold text-sm rounded-md transition-all ${
+              activeTab === 'semua'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            Semua Pengguna
           </button>
         </div>
 
