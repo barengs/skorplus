@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Models\Role;
@@ -50,23 +51,27 @@ class AuthController extends Controller
             $program = $activePackage->name;
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'phone' => $request->phone,
-            'school_id' => $school->id,
-            'school' => $school->name,
-            'nisn' => $request->nisn,
-            'program' => $program,
-            'trial_ends_at' => $trialEndsAt,
-        ]);
+        $user = DB::transaction(function () use ($request, $school, $program, $trialEndsAt) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone' => $request->phone,
+                'school_id' => $school->id,
+                'school' => $school->name,
+                'nisn' => $request->nisn,
+                'program' => $program,
+                'trial_ends_at' => $trialEndsAt,
+            ]);
 
-        $siswaRole = Role::where('name', 'siswa')->first()
-            ?? Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
-        $user->assignRole($siswaRole);
+            $siswaRole = Role::where('name', 'siswa')->first()
+                ?? Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
+            $user->assignRole($siswaRole);
 
-        AuditLog::record('REGISTER', "Pendaftaran akun siswa baru: {$user->name} ({$user->email})", 'auth', $user, null, $user);
+            AuditLog::record('REGISTER', "Pendaftaran akun siswa baru: {$user->name} ({$user->email})", 'auth', $user, null, $user);
+
+            return $user;
+        });
 
         $token = JWTAuth::fromUser($user);
 
