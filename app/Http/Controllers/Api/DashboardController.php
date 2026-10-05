@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Exam;
 use App\Models\ForumPost;
+use App\Models\LearningPackage;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\Module;
@@ -46,7 +47,7 @@ class DashboardController extends Controller
     {
         // Auto-enroll/sync active courses under student's program if assigned
         if (! empty($user->program)) {
-            $program = Program::where('is_active', true)
+            $learningPkg = LearningPackage::where('is_published', true)
                 ->where(function ($q) use ($user) {
                     $q->where('slug', $user->program)
                         ->orWhere('name', $user->program)
@@ -55,27 +56,38 @@ class DashboardController extends Controller
                 })
                 ->first();
 
-            if ($program) {
-                $courses = Course::where('is_active', true)
-                    ->where(function ($q) use ($program) {
-                        $q->where('program_id', $program->id)
-                            ->orWhere('program_name', $program->name)
-                            ->orWhereRaw('LOWER(program_name) = ?', [strtolower($program->slug)]);
+            if ($learningPkg) {
+                $courses = $learningPkg->courses()->where('is_active', true)->get();
+            } else {
+                $legacyProg = Program::where('is_active', true)
+                    ->where(function ($q) use ($user) {
+                        $q->where('slug', $user->program)
+                            ->orWhere('name', $user->program)
+                            ->orWhereRaw('LOWER(name) = ?', [strtolower($user->program)])
+                            ->orWhereRaw('LOWER(slug) = ?', [strtolower($user->program)]);
                     })
-                    ->get();
+                    ->first();
 
-                foreach ($courses as $course) {
-                    /** @var Course $course */
-                    $totalLessons = $course->modules()->withCount('lessons')->get()->sum('lessons_count');
-                    CourseEnrollment::firstOrCreate(
-                        ['user_id' => $user->id, 'course_id' => $course->id],
-                        [
-                            'total_lessons' => $totalLessons,
-                            'progress_percentage' => 0,
-                            'completed_lessons' => 0,
-                        ]
-                    );
-                }
+                $courses = $legacyProg ? Course::where('is_active', true)
+                    ->where(function ($q) use ($legacyProg) {
+                        $q->where('program_id', $legacyProg->id)
+                            ->orWhere('program_name', $legacyProg->name)
+                            ->orWhereRaw('LOWER(program_name) = ?', [strtolower($legacyProg->slug)]);
+                    })
+                    ->get() : collect();
+            }
+
+            foreach ($courses as $course) {
+                /** @var Course $course */
+                $totalLessons = $course->modules()->withCount('lessons')->get()->sum('lessons_count');
+                CourseEnrollment::firstOrCreate(
+                    ['user_id' => $user->id, 'course_id' => $course->id],
+                    [
+                        'total_lessons' => $totalLessons,
+                        'progress_percentage' => 0,
+                        'completed_lessons' => 0,
+                    ]
+                );
             }
         }
 
@@ -101,18 +113,55 @@ class DashboardController extends Controller
             'certificates' => $enrollments->whereNotNull('completed_at')->count(),
         ];
 
-        $availablePrograms = Program::where('is_active', true)
+        $publishedPackages = LearningPackage::where('is_published', true)
             ->withCount(['courses' => function ($q) {
                 $q->where('is_active', true);
             }])
-            ->orderBy('sort_order')
-            ->get()
-            ->map(function ($p) use ($user) {
-                $p->is_current = strtolower($user->program ?? '') === strtolower($p->slug)
+            ->get();
+
+        if ($publishedPackages->isNotEmpty()) {
+            $availablePrograms = $publishedPackages->map(function ($p) use ($user) {
+                $isCurrent = strtolower($user->program ?? '') === strtolower($p->slug)
                     || strtolower($user->program ?? '') === strtolower($p->name);
 
-                return $p;
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'slug' => $p->slug,
+                    'icon' => '🚀',
+                    'price' => 'Rp '.number_format($p->price, 0, ',', '.'),
+                    'price_period' => '',
+                    'courses_count' => $p->courses_count,
+                    'features' => is_array($p->features) ? $p->features : [],
+                    'is_current' => $isCurrent,
+                    'is_popular' => false,
+                ];
             });
+        } else {
+            $availablePrograms = Program::where('is_active', true)
+                ->withCount(['courses' => function ($q) {
+                    $q->where('is_active', true);
+                }])
+                ->orderBy('sort_order')
+                ->get()
+                ->map(function ($p) use ($user) {
+                    $isCurrent = strtolower($user->program ?? '') === strtolower($p->slug)
+                        || strtolower($user->program ?? '') === strtolower($p->name);
+
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->name,
+                        'slug' => $p->slug,
+                        'icon' => $p->icon ?? '🚀',
+                        'price' => $p->price,
+                        'price_period' => $p->price_period ?? '/bulan',
+                        'courses_count' => $p->courses_count,
+                        'features' => is_array($p->features) ? $p->features : [],
+                        'is_current' => $isCurrent,
+                        'is_popular' => (bool) $p->is_popular,
+                    ];
+                });
+        }
 
         // Prioritize courses with active progress (> 0%)
         $activeWithProgress = $enrollments->filter(fn ($enr) => ($enr->progress_percentage ?? 0) > 0)->sortByDesc('progress_percentage')->values();
@@ -151,25 +200,37 @@ class DashboardController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $program = Program::where('is_active', true)
+        $learningPkg = LearningPackage::where('is_published', true)
             ->where(function ($q) use ($request) {
                 $q->where('id', $request->program_id)
                     ->orWhere('slug', $request->program_id);
             })
-            ->firstOrFail();
+            ->first();
 
-        // Update user program
-        $user->program = strtolower($program->slug ?: $program->name);
-        $user->save();
+        if ($learningPkg) {
+            $user->program = $learningPkg->name;
+            $user->save();
+            $courses = $learningPkg->courses()->where('is_active', true)->get();
+            $enrolledProgram = $learningPkg;
+        } else {
+            $legacyProg = Program::where('is_active', true)
+                ->where(function ($q) use ($request) {
+                    $q->where('id', $request->program_id)
+                        ->orWhere('slug', $request->program_id);
+                })
+                ->firstOrFail();
 
-        // Auto-enroll student into all active courses under this program
-        $courses = Course::where('is_active', true)
-            ->where(function ($q) use ($program) {
-                $q->where('program_id', $program->id)
-                    ->orWhere('program_name', $program->name)
-                    ->orWhereRaw('LOWER(program_name) = ?', [strtolower($program->slug)]);
-            })
-            ->get();
+            $user->program = strtolower($legacyProg->slug ?: $legacyProg->name);
+            $user->save();
+            $courses = Course::where('is_active', true)
+                ->where(function ($q) use ($legacyProg) {
+                    $q->where('program_id', $legacyProg->id)
+                        ->orWhere('program_name', $legacyProg->name)
+                        ->orWhereRaw('LOWER(program_name) = ?', [strtolower($legacyProg->slug)]);
+                })
+                ->get();
+            $enrolledProgram = $legacyProg;
+        }
 
         $enrolledCount = 0;
         foreach ($courses as $course) {
@@ -182,8 +243,12 @@ class DashboardController extends Controller
         }
 
         return response()->json([
-            'message' => "Selamat! Anda berhasil mengambil Program {$program->name}.",
-            'program' => $program,
+            'message' => "Selamat! Anda berhasil mengambil Program {$enrolledProgram->name}.",
+            'program' => [
+                'id' => $enrolledProgram->id,
+                'name' => $enrolledProgram->name,
+                'slug' => $enrolledProgram->slug,
+            ],
             'enrolled_courses_count' => $enrolledCount,
             'user' => [
                 'id' => $user->id,
@@ -195,6 +260,7 @@ class DashboardController extends Controller
                 'school' => $user->school,
             ],
         ]);
+
     }
 
     private function tutorDashboard($user): JsonResponse

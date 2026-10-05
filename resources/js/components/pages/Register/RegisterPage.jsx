@@ -39,8 +39,8 @@ export default function RegisterPage() {
   const handleSubmit = async () => {
     const result = await dispatch(register(form));
     if (register.fulfilled.match(result)) {
-      toast.success('Pendaftaran berhasil! Selamat bergabung 🎉');
-      navigate('/dashboard');
+      toast.success('Pendaftaran berhasil! Silakan login untuk melanjutkan. 🎉');
+      navigate('/login', { state: { email: form.email } });
     } else {
       const errs = result.payload?.errors;
       if (errs) {

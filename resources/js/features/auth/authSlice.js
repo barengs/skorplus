@@ -17,7 +17,6 @@ export const login = createAsyncThunk('auth/login', async (credentials, { reject
 export const register = createAsyncThunk('auth/register', async (payload, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/auth/register', payload);
-    localStorage.setItem(TOKEN_KEY, data.token);
     return data;
   } catch (err) {
     return rejectWithValue(err.response?.data ?? 'Registrasi gagal.');
@@ -99,7 +98,12 @@ const authSlice = createSlice({
 
     builder
       .addCase(login.pending, pending).addCase(login.fulfilled, fulfilled).addCase(login.rejected, rejected)
-      .addCase(register.pending, pending).addCase(register.fulfilled, fulfilled).addCase(register.rejected, rejected)
+      .addCase(register.pending, pending)
+      .addCase(register.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(register.rejected, rejected)
       .addCase(fetchMe.pending, (state) => { state.loading = true; })
       .addCase(fetchMe.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; })
       .addCase(fetchMe.rejected, (state) => {
