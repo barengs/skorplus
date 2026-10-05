@@ -36,7 +36,25 @@ class AdminCbtController extends Controller
             'description' => 'nullable|string',
             'duration_minutes' => 'required|integer|min:1',
             'is_active' => 'boolean',
+            'schedule_type' => 'nullable|string|in:always,once,daily,weekly,interval',
+            'start_time' => 'nullable|date',
+            'end_time' => 'nullable|date|after_or_equal:start_time',
+            'start_hour' => 'nullable|string|max:10',
+            'end_hour' => 'nullable|string|max:10',
+            'scheduled_days' => 'nullable|array',
+            'scheduled_days.*' => 'integer|between:1,7',
+            'interval_hours' => 'nullable|integer|min:1',
         ]);
+
+        $nullableFields = ['start_time', 'end_time', 'start_hour', 'end_hour', 'schedule_type', 'interval_hours'];
+        foreach ($nullableFields as $field) {
+            if (empty($validated[$field])) {
+                $validated[$field] = null;
+            }
+        }
+        if (empty($validated['schedule_type'])) {
+            $validated['schedule_type'] = 'always';
+        }
 
         $exam = Exam::create($validated);
         $exam->load('examType');
@@ -61,7 +79,25 @@ class AdminCbtController extends Controller
             'description' => 'nullable|string',
             'duration_minutes' => 'sometimes|required|integer|min:1',
             'is_active' => 'boolean',
+            'schedule_type' => 'nullable|string|in:always,once,daily,weekly,interval',
+            'start_time' => 'nullable|date',
+            'end_time' => 'nullable|date|after_or_equal:start_time',
+            'start_hour' => 'nullable|string|max:10',
+            'end_hour' => 'nullable|string|max:10',
+            'scheduled_days' => 'nullable|array',
+            'scheduled_days.*' => 'integer|between:1,7',
+            'interval_hours' => 'nullable|integer|min:1',
         ]);
+
+        $nullableFields = ['start_time', 'end_time', 'start_hour', 'end_hour', 'schedule_type', 'interval_hours'];
+        foreach ($nullableFields as $field) {
+            if (array_key_exists($field, $validated) && empty($validated[$field])) {
+                $validated[$field] = null;
+            }
+        }
+        if (array_key_exists('schedule_type', $validated) && empty($validated['schedule_type'])) {
+            $validated['schedule_type'] = 'always';
+        }
 
         $exam->update($validated);
 

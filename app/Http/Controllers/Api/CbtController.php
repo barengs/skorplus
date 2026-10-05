@@ -143,6 +143,29 @@ class CbtController extends Controller
         // If exam_id provided, use exam from database
         if ($request->exam_id) {
             $exam = Exam::findOrFail($request->exam_id);
+
+            if (! $exam->isAvailableNow()) {
+                $status = $exam->schedule_status;
+                $desc = $exam->schedule_description;
+
+                if ($status === 'upcoming') {
+                    return response()->json([
+                        'message' => "Ujian ini belum dapat dimulai. Jadwal ujian: {$desc}.",
+                        'schedule_status' => 'upcoming',
+                    ], 422);
+                } elseif ($status === 'expired') {
+                    return response()->json([
+                        'message' => "Jadwal pengerjaan ujian ini telah berakhir ({$desc}).",
+                        'schedule_status' => 'expired',
+                    ], 422);
+                }
+
+                return response()->json([
+                    'message' => "Ujian sedang di luar jadwal pelaksanaan ({$desc}).",
+                    'schedule_status' => $status,
+                ], 422);
+            }
+
             $questions = $this->getQuestionsFromExam($exam);
         } else {
             // Fallback to legacy mode (dummy questions)

@@ -11,6 +11,18 @@ import api from '../../../../services/api';
 import { fetchAdminExams, createAdminExam, updateAdminExam, deleteAdminExam } from '../../../../features/admin/adminCbtSlice';
 import { toast } from 'react-toastify';
 
+const formatDateTimeLocal = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  const yyyy = date.getFullYear();
+  const MM = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+};
+
 export default function AdminCbtPage() {
   const dispatch = useDispatch();
   const { exams, loading } = useSelector((state) => state.adminCbt);
@@ -19,7 +31,20 @@ export default function AdminCbtPage() {
 
   // Exams state
   const [modalOpen, setModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ title: '', exam_type_id: '', description: '', duration_minutes: 120, is_active: true });
+  const [formData, setFormData] = useState({
+    title: '',
+    exam_type_id: '',
+    description: '',
+    duration_minutes: 120,
+    is_active: true,
+    schedule_type: 'always',
+    start_time: '',
+    end_time: '',
+    start_hour: '',
+    end_hour: '',
+    scheduled_days: [],
+    interval_hours: 2,
+  });
   const [editingId, setEditingId] = useState(null);
 
   // Exam Types state
@@ -80,6 +105,45 @@ export default function AdminCbtPage() {
       cell: (info) => <span className="text-slate-500">{info.getValue() || 0} soal</span>,
     },
     {
+      header: 'Jadwal Penyelenggaraan',
+      cell: ({ row }) => {
+        const exam = row.original;
+        const type = exam.schedule_type || 'always';
+        const status = exam.schedule_status || 'always';
+
+        if (type === 'always') {
+          return (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <span>Setiap Saat (Bebas)</span>
+            </div>
+          );
+        }
+
+        const badgeMap = {
+          upcoming: { color: 'amber', label: 'Belum Dibuka' },
+          ongoing: { color: 'emerald', label: 'Sedang Berlangsung' },
+          expired: { color: 'rose', label: 'Telah Berakhir' },
+        };
+
+        const badge = badgeMap[status] || { color: 'slate', label: status };
+
+        return (
+          <div className="space-y-1 max-w-xs">
+            <div className="flex items-center gap-2">
+              <Badge color={badge.color}>{badge.label}</Badge>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {type === 'once' ? 'Sekali' : type === 'daily' ? 'Harian' : type === 'weekly' ? 'Mingguan' : 'Interval'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+              {exam.schedule_description || '-'}
+            </p>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: 'is_active',
       header: 'Status',
       cell: (info) => (
@@ -114,10 +178,30 @@ export default function AdminCbtPage() {
         description: exam.description || '',
         duration_minutes: exam.duration_minutes,
         is_active: exam.is_active,
+        schedule_type: exam.schedule_type || 'always',
+        start_time: formatDateTimeLocal(exam.start_time),
+        end_time: formatDateTimeLocal(exam.end_time),
+        start_hour: exam.start_hour || '',
+        end_hour: exam.end_hour || '',
+        scheduled_days: Array.isArray(exam.scheduled_days) ? exam.scheduled_days : [],
+        interval_hours: exam.interval_hours || 2,
       });
       setEditingId(exam.id);
     } else {
-      setFormData({ title: '', exam_type_id: '', description: '', duration_minutes: 120, is_active: true });
+      setFormData({
+        title: '',
+        exam_type_id: '',
+        description: '',
+        duration_minutes: 120,
+        is_active: true,
+        schedule_type: 'always',
+        start_time: '',
+        end_time: '',
+        start_hour: '',
+        end_hour: '',
+        scheduled_days: [],
+        interval_hours: 2,
+      });
       setEditingId(null);
     }
     setModalOpen(true);
@@ -126,11 +210,36 @@ export default function AdminCbtPage() {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      let payload = { ...formData };
+
+      if (payload.schedule_type === 'always') {
+        payload.start_time = null;
+        payload.end_time = null;
+        payload.start_hour = null;
+        payload.end_hour = null;
+        payload.scheduled_days = null;
+        payload.interval_hours = null;
+      } else if (payload.schedule_type === 'once') {
+        payload.start_hour = null;
+        payload.end_hour = null;
+        payload.scheduled_days = null;
+        payload.interval_hours = null;
+      } else {
+        payload.start_time = null;
+        payload.end_time = null;
+        if (payload.schedule_type !== 'weekly') {
+          payload.scheduled_days = null;
+        }
+        if (payload.schedule_type !== 'interval') {
+          payload.interval_hours = null;
+        }
+      }
+
       if (editingId) {
-        await dispatch(updateAdminExam({ id: editingId, data: formData })).unwrap();
+        await dispatch(updateAdminExam({ id: editingId, data: payload })).unwrap();
         toast.success('Paket ujian berhasil diperbarui!');
       } else {
-        await dispatch(createAdminExam(formData)).unwrap();
+        await dispatch(createAdminExam(payload)).unwrap();
         toast.success('Paket ujian berhasil ditambahkan!');
       }
       setModalOpen(false);
@@ -374,6 +483,138 @@ export default function AdminCbtPage() {
                     <span>Aktif (Ditampilkan kepada Siswa)</span>
                   </label>
                 </FormField>
+
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-4">
+                  <FormField label="Pengaturan Waktu & Penyelenggaraan">
+                    <select
+                      value={formData.schedule_type}
+                      onChange={e => setFormData({ ...formData, schedule_type: e.target.value })}
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="always">🟢 Bebas / Tersedia Setiap Saat (Kapan Saja)</option>
+                      <option value="once">📅 Sekali Saja (Rentang Tanggal & Jam Tertentu)</option>
+                      <option value="daily">🔄 Berulang Harian (Jam Tertentu Tiap Hari)</option>
+                      <option value="weekly">📆 Berulang Mingguan (Hari & Jam Tertentu)</option>
+                      <option value="interval">⏱️ Berulang Interval (Misal: Tiap 2 Jam Sekali)</option>
+                    </select>
+                  </FormField>
+
+                  {/* Keterangan & Form Dinamis berdasarkan schedule_type */}
+                  {formData.schedule_type === 'always' && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+                      ℹ️ Ujian dapat diakses oleh siswa kapan saja tanpa batasan tanggal maupun jam pelaksanaan.
+                    </p>
+                  )}
+
+                  {formData.schedule_type === 'once' && (
+                    <div className="grid grid-cols-2 gap-4 animate-fadeIn">
+                      <FormField label="Waktu Buka Ujian" required>
+                        <Input
+                          type="datetime-local"
+                          value={formData.start_time}
+                          onChange={e => setFormData({ ...formData, start_time: e.target.value })}
+                          required
+                        />
+                      </FormField>
+                      <FormField label="Waktu Tutup Ujian" required>
+                        <Input
+                          type="datetime-local"
+                          value={formData.end_time}
+                          onChange={e => setFormData({ ...formData, end_time: e.target.value })}
+                          required
+                        />
+                      </FormField>
+                    </div>
+                  )}
+
+                  {(formData.schedule_type === 'daily' || formData.schedule_type === 'weekly' || formData.schedule_type === 'interval') && (
+                    <div className="space-y-4 animate-fadeIn">
+                      {formData.schedule_type === 'weekly' && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                            Pilih Hari Penyelenggaraan:
+                          </label>
+                          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                            {[
+                              { id: 1, label: 'Sen' },
+                              { id: 2, label: 'Sel' },
+                              { id: 3, label: 'Rab' },
+                              { id: 4, label: 'Kam' },
+                              { id: 5, label: 'Jum' },
+                              { id: 6, label: 'Sab' },
+                              { id: 7, label: 'Min' },
+                            ].map(day => {
+                              const isChecked = (formData.scheduled_days || []).includes(day.id);
+                              return (
+                                <button
+                                  type="button"
+                                  key={day.id}
+                                  onClick={() => {
+                                    const current = formData.scheduled_days || [];
+                                    const next = isChecked
+                                      ? current.filter(d => d !== day.id)
+                                      : [...current, day.id].sort((a, b) => a - b);
+                                    setFormData({ ...formData, scheduled_days: next });
+                                  }}
+                                  className={`py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                    isChecked
+                                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-blue-400'
+                                  }`}
+                                >
+                                  {day.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {formData.schedule_type === 'interval' && (
+                        <FormField label="Interval Pengerjaan (Setiap Berapa Jam?)" required>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="24"
+                              value={formData.interval_hours}
+                              onChange={e => setFormData({ ...formData, interval_hours: parseInt(e.target.value) || 1 })}
+                              className="w-28"
+                              required
+                            />
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Jam Sekali</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Contoh: Jika diatur 2 jam dengan jam mulai 08:00, ujian dapat dimulai pada 08:00, 10:00, 12:00, dst.
+                          </p>
+                        </FormField>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField label="Mulai Pukul (WIB)">
+                          <Input
+                            type="time"
+                            value={formData.start_hour}
+                            onChange={e => setFormData({ ...formData, start_hour: e.target.value })}
+                            placeholder="08:00"
+                          />
+                        </FormField>
+                        <FormField label="Berakhir Pukul (WIB)">
+                          <Input
+                            type="time"
+                            value={formData.end_hour}
+                            onChange={e => setFormData({ ...formData, end_hour: e.target.value })}
+                            placeholder="17:00"
+                          />
+                        </FormField>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Kosongkan jam jika berlaku 24 jam penuh pada hari yang ditentukan.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-end gap-3 pt-4">
                   <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Batal</Button>
                   <Button type="submit">Simpan</Button>

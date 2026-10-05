@@ -256,16 +256,31 @@ export default function CbtPage() {
               {availableExams.map((exam) => (
                 <button
                   key={exam.id}
-                  onClick={() => setSelectedType({
-                    id: exam.id,
-                    is_real: true,
-                    label: exam.title,
-                    description: exam.description,
-                    duration: exam.duration_minutes * 60,
-                    total_questions: exam.questions_count,
-                  })}
-                  className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all cursor-pointer
-                    ${selectedType?.id === exam.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                  onClick={() => {
+                    if (exam.is_open === false) {
+                      if (exam.schedule_status === 'upcoming') {
+                        toast.info(`Ujian belum dibuka. Jadwal: ${exam.schedule_description}`);
+                      } else if (exam.schedule_status === 'expired') {
+                        toast.error(`Jadwal ujian ini telah berakhir. (${exam.schedule_description})`);
+                      }
+                      return;
+                    }
+                    setSelectedType({
+                      id: exam.id,
+                      is_real: true,
+                      label: exam.title,
+                      description: exam.description,
+                      duration: exam.duration_minutes * 60,
+                      total_questions: exam.questions_count,
+                      is_open: exam.is_open,
+                      schedule_status: exam.schedule_status,
+                      schedule_description: exam.schedule_description,
+                      start_time: exam.start_time,
+                      end_time: exam.end_time,
+                    });
+                  }}
+                  className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all ${exam.is_open === false ? 'opacity-70 cursor-not-allowed border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50' : 'cursor-pointer'}
+                    ${selectedType?.id === exam.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'}`}
                 >
                   <span className="text-2xl mt-0.5">{exam.exam_type?.icon || '📝'}</span>
                   <div className="flex-1 min-w-0">
@@ -277,7 +292,18 @@ export default function CbtPage() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{exam.duration_minutes} menit · {exam.questions_count} soal</p>
+                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{exam.duration_minutes} menit · {exam.questions_count} soal</p>
+                      {exam.schedule_status === 'upcoming' && (
+                        <Badge color="amber" className="text-[10px]">⏰ {exam.schedule_description}</Badge>
+                      )}
+                      {exam.schedule_status === 'expired' && (
+                        <Badge color="rose" className="text-[10px]">❌ {exam.schedule_description}</Badge>
+                      )}
+                      {exam.schedule_status === 'ongoing' && exam.schedule_type !== 'always' && (
+                        <Badge color="emerald" className="text-[10px]">🟢 Sedang Dibuka</Badge>
+                      )}
+                    </div>
                     
                     {/* Daftar Subtes Terkandung */}
                     {exam.subtests_list && exam.subtests_list.length > 0 && (
@@ -371,9 +397,38 @@ export default function CbtPage() {
                 </div>
               )}
 
+              {selectedType?.is_real && selectedType.schedule_status && selectedType.schedule_status !== 'always' && (
+                <div className={`p-4 rounded-xl border text-sm space-y-1.5 animate-fadeIn ${
+                  selectedType.schedule_status === 'ongoing'
+                    ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-200'
+                    : selectedType.schedule_status === 'upcoming'
+                    ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-200'
+                    : 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 text-rose-900 dark:text-rose-200'
+                }`}>
+                  <div className="font-bold flex items-center gap-1.5">
+                    <span>🕐 Status Jadwal Ujian:</span>
+                  </div>
+                  <p className="text-xs sm:text-sm leading-relaxed pl-5">
+                    {selectedType.schedule_status === 'ongoing' && (
+                      <span>Ujian sedang berlangsung dan dapat dikerjakan saat ini. ({selectedType.schedule_description})</span>
+                    )}
+                    {selectedType.schedule_status === 'upcoming' && (
+                      <span>
+                        Ujian belum dapat dimulai. ({selectedType.schedule_description})
+                      </span>
+                    )}
+                    {selectedType.schedule_status === 'expired' && (
+                      <span>
+                        Jadwal pengerjaan ujian ini telah berakhir. ({selectedType.schedule_description})
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+
               <Button
                 size="lg"
-                disabled={!selectedType}
+                disabled={!selectedType || (selectedType?.is_real && selectedType.schedule_status !== 'always' && selectedType.schedule_status !== 'ongoing')}
                 loading={loading}
                 onClick={handleStartExam}
               >
