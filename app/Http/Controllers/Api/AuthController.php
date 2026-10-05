@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Spatie\Permission\Models\Role;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -61,7 +62,9 @@ class AuthController extends Controller
             'trial_ends_at' => $trialEndsAt,
         ]);
 
-        $user->assignRole('siswa');
+        $siswaRole = Role::where('name', 'siswa')->first()
+            ?? Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
+        $user->assignRole($siswaRole);
 
         AuditLog::record('REGISTER', "Pendaftaran akun siswa baru: {$user->name} ({$user->email})", 'auth', $user, null, $user);
 
