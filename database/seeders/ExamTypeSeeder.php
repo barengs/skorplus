@@ -93,6 +93,16 @@ class ExamTypeSeeder extends Seeder
                 'is_active' => true,
                 'sort_order' => 8,
             ],
+            [
+                'code' => 'tpa-if',
+                'name' => 'TPA — Informatika',
+                'description' => 'Tes Potensi Akademik masuk jurusan Informatika mencakup logika proposisi, sistem bilangan, dan algoritma.',
+                'icon' => '💻',
+                'duration_seconds' => 5400,
+                'total_questions' => 20,
+                'is_active' => true,
+                'sort_order' => 9,
+            ],
         ];
 
         foreach ($types as $type) {

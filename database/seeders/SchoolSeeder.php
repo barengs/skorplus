@@ -167,6 +167,16 @@ class SchoolSeeder extends Seeder
                 'photo' => '/storage/schools/building_sman1.jpg',
                 'is_active' => true,
             ],
+            [
+                'npsn' => '071068',
+                'name' => 'Universitas Islam Madura (UIM Pamekasan)',
+                'email' => 'info@uim.ac.id',
+                'phone' => '0324-321746',
+                'address' => 'Jl. Raya Bettet No. 4, Bettet, Kec. Pamekasan, Kabupaten Pamekasan, Jawa Timur 69317',
+                'logo' => '/storage/schools/logo_sman1.jpg',
+                'photo' => '/storage/schools/building_sman1.jpg',
+                'is_active' => true,
+            ],
         ];
 
         $primarySchool = null;
@@ -256,6 +266,58 @@ class SchoolSeeder extends Seeder
                     'notes' => 'Kontrak kerja sama kemitraan bimbel persiapan UTBK-SNBT 2027 untuk SMAN 5 Surabaya.',
                 ]
             );
+        }
+
+        // Create sample student and package for UIM Pamekasan
+        $uimSchool = School::where('npsn', '071068')->first();
+        if ($uimSchool) {
+            $studentUim = User::updateOrCreate(
+                ['email' => 'calon.informatika@uim.ac.id'],
+                [
+                    'name' => 'Achmad Fauzi (Informatika UIM)',
+                    'password' => Hash::make('password'),
+                    'nisn' => '0087654321',
+                    'school' => $uimSchool->name,
+                    'school_id' => $uimSchool->id,
+                    'program' => 'intensif',
+                    'phone' => '082334567890',
+                    'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+                    'is_active' => true,
+                ]
+            );
+            $studentUim->assignRole($siswaRole);
+
+            if ($firstPackage) {
+                $uimPackage = SchoolLearningPackage::updateOrCreate(
+                    [
+                        'school_id' => $uimSchool->id,
+                        'learning_package_id' => $firstPackage->id,
+                    ],
+                    [
+                        'current_contract_number' => 'KTR/2026/01/UIM-PMK-001',
+                        'start_date' => now()->subMonth()->toDateString(),
+                        'end_date' => now()->addYear()->toDateString(),
+                        'max_students' => 200,
+                        'status' => 'active',
+                    ]
+                );
+
+                SchoolContractRenewal::firstOrCreate(
+                    [
+                        'school_learning_package_id' => $uimPackage->id,
+                        'contract_number' => 'KTR/2026/01/UIM-PMK-001',
+                    ],
+                    [
+                        'renewal_type' => 'initial',
+                        'previous_end_date' => null,
+                        'new_end_date' => now()->addYear()->toDateString(),
+                        'quota_students' => 200,
+                        'renewed_by' => 1,
+                        'renewal_date' => now()->subMonth()->toDateString(),
+                        'notes' => 'Kerja sama pelaksanaan Tes Potensi Akademik dan CBT UIM Pamekasan.',
+                    ]
+                );
+            }
         }
     }
 }

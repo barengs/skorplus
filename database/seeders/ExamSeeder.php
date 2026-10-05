@@ -343,5 +343,259 @@ class ExamSeeder extends Seeder
             $examPm->questions()->attach($question->id, ['sort_order' => $index + 1]);
         }
         $examPm->update(['total_questions' => count($pmQuestions)]);
+
+        // 3. Ujian Masuk Informatika: Tes Potensi Akademik UIM Pamekasan
+        $typeTpaIf = ExamType::where('code', 'tpa-if')->first();
+        $examTpaIf = Exam::updateOrCreate(
+            ['title' => 'Tes Potensi Akademik (TPA) Masuk Jurusan Informatika - UIM Pamekasan'],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'title' => 'Tes Potensi Akademik (TPA) Masuk Jurusan Informatika - UIM Pamekasan',
+                'description' => 'Ujian seleksi masuk Jurusan Informatika Universitas Islam Madura Pamekasan. Menguji logika proposisi, sistem bilangan, algoritma, dan penalaran analitik.',
+                'duration_minutes' => 60,
+                'total_questions' => 12,
+                'passing_score' => 65,
+                'is_active' => true,
+            ]
+        );
+
+        $tpaIfQuestions = [
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Logika Proposisi',
+                'subtest' => 'Modus Ponens & Modus Tollens',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Diberikan premis:</p><p>Jika sebuah bilangan habis dibagi 4, maka bilangan tersebut adalah bilangan genap.</p><p>Angka 28 habis dibagi 4.</p><p>Kesimpulan yang sah berdasarkan modus ponens adalah...</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>Modus ponens: Jika P maka Q. P benar. Maka Q benar.<br>P = habis dibagi 4, Q = bilangan genap.<br>Karena 28 habis dibagi 4, maka 28 adalah bilangan genap.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '28 adalah bilangan ganjil', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => '28 adalah bilangan genap', 'is_correct' => true],
+                    ['option_key' => 'C', 'option_text' => 'Semua bilangan genap habis dibagi 4', 'is_correct' => false],
+                    ['option_key' => 'D', 'option_text' => '28 tidak habis dibagi 4', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => 'Bilangan yang tidak habis dibagi 4 adalah ganjil', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Logika Proposisi',
+                'subtest' => 'Silogisme & Kontrapositif',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Semua programmer yang mahir algoritma lulus ujian TPA dengan nilai tinggi. Andi tidak lulus ujian TPA dengan nilai tinggi.</p><p>Kesimpulan yang paling tepat adalah...</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>Premis: Mahir algoritma → Nilai tinggi. Andi tidak bernilai tinggi.<br>Kontrapositif: Tidak nilai tinggi → Tidak mahir algoritma.<br>Jadi Andi bukan programmer yang mahir algoritma.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => 'Andi adalah programmer yang mahir algoritma', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => 'Andi bukan programmer yang mahir algoritma', 'is_correct' => true],
+                    ['option_key' => 'C', 'option_text' => 'Semua programmer mahir algoritma', 'is_correct' => false],
+                    ['option_key' => 'D', 'option_text' => 'Andi lulus ujian TPA', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => 'Tidak ada programmer yang mahir algoritma', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Sistem Bilangan',
+                'subtest' => 'Konversi Biner ke Desimal',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Berapakah nilai desimal dari bilangan biner <strong>101101</strong>?</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>101101₂ = 1×2⁵ + 0×2⁴ + 1×2³ + 1×2² + 0×2¹ + 1×2⁰<br>= 32 + 0 + 8 + 4 + 0 + 1 = <strong>45</strong>.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '43', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => '45', 'is_correct' => true],
+                    ['option_key' => 'C', 'option_text' => '47', 'is_correct' => false],
+                    ['option_key' => 'D', 'option_text' => '53', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => '55', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Sistem Bilangan',
+                'subtest' => 'Konversi Heksadesimal ke Desimal',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Berapakah nilai desimal dari bilangan heksadesimal <strong>1F3</strong>?</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>1F3₁₆ = 1×16² + 15×16¹ + 3×16⁰<br>= 256 + 240 + 3 = <strong>499</strong>.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '483', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => '499', 'is_correct' => true],
+                    ['option_key' => 'C', 'option_text' => '513', 'is_correct' => false],
+                    ['option_key' => 'D', 'option_text' => '529', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => '547', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Sistem Bilangan',
+                'subtest' => 'Operasi Bitwise',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Jika A = 12 (1100₂) dan B = 10 (1010₂), berapakah hasil dari operasi <strong>A AND B</strong>?</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>1100 AND 1010 = 1000₂ = <strong>8</strong>.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '8', 'is_correct' => true],
+                    ['option_key' => 'B', 'option_text' => '10', 'is_correct' => false],
+                    ['option_key' => 'C', 'option_text' => '12', 'is_correct' => false],
+                    ['option_key' => 'D', 'option_text' => '14', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => '15', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Sistem Bilangan',
+                'subtest' => 'Operasi Bitwise XOR',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Berapakah hasil dari operasi <strong>13 XOR 7</strong>?</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>13 = 1101₂, 7 = 0111₂<br>1101 XOR 0111 = 1010₂ = <strong>10</strong>.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '6', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => '8', 'is_correct' => false],
+                    ['option_key' => 'C', 'option_text' => '10', 'is_correct' => true],
+                    ['option_key' => 'D', 'option_text' => '12', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => '14', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Algoritma & Pseudocode',
+                'subtest' => 'Trace Loop & Akumulator',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Perhatikan pseudocode berikut:</p><pre>sum = 0\nfor i = 1 to 5 do\n    sum = sum + i\nend for\nprint sum</pre><p>Output yang dihasilkan adalah...</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>Loop menjumlahkan 1+2+3+4+5 = <strong>15</strong>.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '10', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => '12', 'is_correct' => false],
+                    ['option_key' => 'C', 'option_text' => '15', 'is_correct' => true],
+                    ['option_key' => 'D', 'option_text' => '20', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => '25', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Algoritma & Pseudocode',
+                'subtest' => 'Trace Nested Loop',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Perhatikan pseudocode berikut:</p><pre>count = 0\nfor i = 1 to 3 do\n    for j = 1 to 2 do\n        count = count + 1\n    end for\nend for\nprint count</pre><p>Output yang dihasilkan adalah...</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>Nested loop: 3 × 2 = <strong>6</strong> iterasi.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '3', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => '5', 'is_correct' => false],
+                    ['option_key' => 'C', 'option_text' => '6', 'is_correct' => true],
+                    ['option_key' => 'D', 'option_text' => '8', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => '9', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Algoritma & Pseudocode',
+                'subtest' => 'Trace Recursive Function',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Perhatikan fungsi rekursif berikut:</p><pre>function f(n):\n    if n <= 1 then return 1\n    return n * f(n-1)\nprint f(5)</pre><p>Output yang dihasilkan adalah...</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>f(5) = 5 × 4 × 3 × 2 × 1 = <strong>120</strong> (faktorial).</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '24', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => '60', 'is_correct' => false],
+                    ['option_key' => 'C', 'option_text' => '100', 'is_correct' => false],
+                    ['option_key' => 'D', 'option_text' => '120', 'is_correct' => true],
+                    ['option_key' => 'E', 'option_text' => '720', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Algoritma & Pseudocode',
+                'subtest' => 'Trace Conditional Logic',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Perhatikan pseudocode berikut:</p><pre>x = 7\nif x > 5 then\n    print "A"\nelse if x > 3 then\n    print "B"\nelse\n    print "C"\nend if</pre><p>Output yang dihasilkan adalah...</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>x = 7 > 5, maka kondisi pertama terpenuhi dan output adalah <strong>"A"</strong>.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => 'A', 'is_correct' => true],
+                    ['option_key' => 'B', 'option_text' => 'B', 'is_correct' => false],
+                    ['option_key' => 'C', 'option_text' => 'C', 'is_correct' => false],
+                    ['option_key' => 'D', 'option_text' => 'A dan B', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => 'Tidak ada output', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Penalaran Analitik',
+                'subtest' => 'Analisis Pola Deret',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Perhatikan deret berikut: 2, 6, 12, 20, 30, ...</p><p>Angka berikutnya dalam deret tersebut adalah...</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>Selisih: 4, 6, 8, 10, ... (selisih bertambah 2).<br>Selisih berikutnya = 12, jadi 30 + 12 = <strong>42</strong>.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => '36', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => '40', 'is_correct' => false],
+                    ['option_key' => 'C', 'option_text' => '42', 'is_correct' => true],
+                    ['option_key' => 'D', 'option_text' => '44', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => '48', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Penalaran Analitik',
+                'subtest' => 'Analisis Hubungan Sebab Akibat',
+                'question_type' => 'single_choice',
+                'question_text' => '<p>Jika semua server di laboratorium informatika mati, maka semua komputer tidak dapat mengakses internet. Beberapa komputer di laboratorium informatika dapat mengakses internet.</p><p>Kesimpulan yang pasti benar adalah...</p>',
+                'points' => 10,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>Premis: Server mati → Tidak ada internet.<br>Beberapa komputer ada internet → Server tidak semua mati.</p>',
+                'options' => [
+                    ['option_key' => 'A', 'option_text' => 'Semua server di laboratorium informatika mati', 'is_correct' => false],
+                    ['option_key' => 'B', 'option_text' => 'Tidak semua server di laboratorium informatika mati', 'is_correct' => true],
+                    ['option_key' => 'C', 'option_text' => 'Semua komputer tidak dapat mengakses internet', 'is_correct' => false],
+                    ['option_key' => 'D', 'option_text' => 'Server tidak berpengaruh pada akses internet', 'is_correct' => false],
+                    ['option_key' => 'E', 'option_text' => 'Komputer yang tidak mengakses internet adalah yang rusak', 'is_correct' => false],
+                ],
+            ],
+            [
+                'exam_type_id' => $typeTpaIf?->id,
+                'subject' => 'Penalaran Analitik',
+                'subtest' => 'Isian Singkat - Konversi Biner',
+                'question_type' => 'short_answer',
+                'question_text' => '<p>Ubahlah bilangan desimal <strong>25</strong> ke dalam bilangan biner.</p><p><em>Tuliskan jawaban Anda dalam bentuk bilangan biner tanpa spasi (contoh: 1010).</em></p>',
+                'points' => 15,
+                'duration_seconds' => 120,
+                'explanation_text' => '<p><strong>Pembahasan:</strong><br>25 ÷ 2 = 12 sisa 1<br>12 ÷ 2 = 6 sisa 0<br>6 ÷ 2 = 3 sisa 0<br>3 ÷ 2 = 1 sisa 1<br>1 ÷ 2 = 0 sisa 1<br>Dibaca dari bawah: <strong>11001</strong>.</p>',
+                'options' => [
+                    ['option_key' => 'ANS', 'option_text' => '11001', 'is_correct' => true],
+                ],
+            ],
+        ];
+
+        // Delete old questions to prevent duplicates on re-seeding
+        foreach ($examTpaIf->questions as $oldQ) {
+            $oldQ->options()->delete();
+            $oldQ->delete();
+        }
+        $examTpaIf->questions()->detach();
+
+        foreach ($tpaIfQuestions as $index => $qData) {
+            $options = $qData['options'];
+            unset($qData['options']);
+            $qData['is_active'] = true;
+            $question = Question::create($qData);
+            foreach ($options as $opt) {
+                $question->options()->create($opt);
+            }
+            $examTpaIf->questions()->attach($question->id, ['sort_order' => $index + 1]);
+        }
+        $examTpaIf->update(['total_questions' => count($tpaIfQuestions)]);
     }
 }
