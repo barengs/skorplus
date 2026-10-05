@@ -62,15 +62,12 @@ export default function AdminCbtPage() {
     is_active: true,
   });
 
-  // Detail Soal state
+  // Detail Soal & Siswa Aktif (Merged Fullscreen Modal)
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailExam, setDetailExam] = useState(null);
+  const [detailTab, setDetailTab] = useState('questions'); // 'questions' | 'active_students'
   const [detailQuestions, setDetailQuestions] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
-
-  // Active Students state
-  const [activeModalOpen, setActiveModalOpen] = useState(false);
-  const [activeExam, setActiveExam] = useState(null);
   const [activeSessions, setActiveSessions] = useState([]);
   const [activeLoading, setActiveLoading] = useState(false);
   const [activeRefreshInterval, setActiveRefreshInterval] = useState(null);
@@ -175,9 +172,6 @@ export default function AdminCbtPage() {
             <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800 hover:bg-purple-50" onClick={() => openDetailModal(exam)}>
               Detail Soal
             </Button>
-            <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50" onClick={() => openActiveModal(exam)}>
-              Siswa Aktif
-            </Button>
             <Link to={`/admin/cbt/${exam.id}/questions`}>
               <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">Kelola Soal</Button>
             </Link>
@@ -278,56 +272,57 @@ export default function AdminCbtPage() {
     }
   };
 
-  // Detail Soal handlers
-  const openDetailModal = async (exam) => {
+  // Detail Soal & Monitoring Handlers (Combined)
+  const fetchActiveSessions = async (examId) => {
+    try {
+      const res = await api.get(`/admin/cbt/exams/${examId}/active-sessions`);
+      setActiveSessions(res.data.active_sessions || []);
+    } catch (err) {
+      // silent fail on poll
+    }
+  };
+
+  const openDetailModal = async (exam, initialTab = 'questions') => {
     setDetailExam(exam);
+    setDetailTab(initialTab);
     setDetailModalOpen(true);
     setDetailLoading(true);
+    setActiveLoading(true);
+
     try {
-      const res = await api.get(`/admin/cbt/exams/${exam.id}`);
-      setDetailQuestions(res.data.questions || []);
+      const resExam = await api.get(`/admin/cbt/exams/${exam.id}`);
+      setDetailQuestions(resExam.data.questions || []);
     } catch (err) {
       toast.error('Gagal memuat detail soal');
       setDetailQuestions([]);
     } finally {
       setDetailLoading(false);
     }
-  };
 
-  // Active Students handlers
-  const openActiveModal = async (exam) => {
-    setActiveExam(exam);
-    setActiveModalOpen(true);
-    setActiveLoading(true);
     try {
-      const res = await api.get(`/admin/cbt/exams/${exam.id}/active-sessions`);
-      setActiveSessions(res.data.active_sessions || []);
+      const resActive = await api.get(`/admin/cbt/exams/${exam.id}/active-sessions`);
+      setActiveSessions(resActive.data.active_sessions || []);
     } catch (err) {
-      toast.error('Gagal memuat data siswa aktif');
       setActiveSessions([]);
     } finally {
       setActiveLoading(false);
     }
 
-    // Auto refresh every 10 seconds
-    const interval = setInterval(async () => {
-      try {
-        const res = await api.get(`/admin/cbt/exams/${exam.id}/active-sessions`);
-        setActiveSessions(res.data.active_sessions || []);
-      } catch (err) {
-        // silent fail on refresh
-      }
+    // Auto-refresh data siswa aktif setiap 10 detik selama modal terbuka
+    const interval = setInterval(() => {
+      fetchActiveSessions(exam.id);
     }, 10000);
     setActiveRefreshInterval(interval);
   };
 
-  const closeActiveModal = () => {
+  const closeDetailModal = () => {
     if (activeRefreshInterval) {
       clearInterval(activeRefreshInterval);
       setActiveRefreshInterval(null);
     }
-    setActiveModalOpen(false);
-    setActiveExam(null);
+    setDetailModalOpen(false);
+    setDetailExam(null);
+    setDetailQuestions([]);
     setActiveSessions([]);
   };
 
@@ -782,140 +777,289 @@ export default function AdminCbtPage() {
           </div>
         )}
 
-        {/* Modal Detail Soal */}
+        {/* Modal Detail Soal & Siswa Aktif (FULLSCREEN DENGAN TAB) */}
         {detailModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
-              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Detail Soal</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    {detailExam?.title} • {detailQuestions.length} soal
+          <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden animate-fadeIn">
+            {/* Topbar Header */}
+            <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-xs">
+              <div className="flex items-center gap-4 min-w-0">
+                <button
+                  type="button"
+                  onClick={closeDetailModal}
+                  className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                  title="Kembali / Tutup"
+                >
+                  <span className="text-xl font-bold">←</span>
+                </button>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 truncate">
+                      {detailExam?.title}
+                    </h2>
+                    {detailExam?.exam_type && (
+                      <Badge color="blue" className="text-xs">
+                        {detailExam.exam_type.icon} {detailExam.exam_type.name}
+                      </Badge>
+                    )}
+                    <Badge color={detailExam?.is_active ? 'emerald' : 'slate'} className="text-xs">
+                      {detailExam?.is_active ? 'Aktif' : 'Draft'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    ⏱ Durasi: {detailExam?.duration_minutes} menit • 📝 {detailQuestions.length} Soal • {detailExam?.schedule_description || 'Tersedia Bebas'}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setDetailModalOpen(false)}>Tutup</Button>
               </div>
-              
-              <div className="flex-1 overflow-y-auto p-6">
-                {detailLoading ? (
-                  <div className="text-center py-12 text-slate-500">Memuat soal...</div>
-                ) : detailQuestions.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500">
-                    <span className="text-4xl mb-4 block">📝</span>
-                    Belum ada soal dalam paket ujian ini.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {detailQuestions.map((q, idx) => (
-                      <div key={q.id} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-sm">
-                            {idx + 1}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                              {q.exam_type && (
-                                <Badge color="blue" className="text-[10px]">{q.exam_type.name}</Badge>
-                              )}
-                              {q.subtest && (
-                                <Badge color="slate" className="text-[10px]">{q.subtest}</Badge>
-                              )}
-                              <Badge color={q.is_active ? 'emerald' : 'slate'} className="text-[10px]">
-                                {q.is_active ? 'Aktif' : 'Non-aktif'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed" dangerouslySetInnerHTML={{ __html: q.question_text }} />
-                            
-                            {q.options && q.options.length > 0 && (
-                              <div className="mt-3 grid grid-cols-2 gap-2">
-                                {q.options.map(opt => (
-                                  <div key={opt.id} className={`text-xs p-2 rounded-lg border ${opt.is_correct ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
-                                    <span className="font-bold mr-1">{opt.option_label}.</span>
-                                    {opt.option_text}
-                                    {opt.is_correct && <span className="ml-1">✓</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            
-                            <div className="mt-3 flex items-center gap-4 text-[11px] text-slate-500">
-                              <span>Bobot: {q.points || 1}</span>
-                              <span>Durasi: {q.duration_seconds || 90} detik</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <Link to={`/admin/cbt/${detailExam?.id}/questions`}>
+                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">
+                    ✏️ Kelola Soal Ujian
+                  </Button>
+                </Link>
+                <Button size="sm" onClick={closeDetailModal}>
+                  ✕ Tutup
+                </Button>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Modal Siswa Aktif */}
-        {activeModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
-              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Siswa Sedang Mengerjakan</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    {activeExam?.title} • {activeSessions.length} siswa aktif
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={closeActiveModal}>Tutup</Button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-6">
-                {activeLoading ? (
-                  <div className="text-center py-12 text-slate-500">Memuat data...</div>
-                ) : activeSessions.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500">
-                    <span className="text-4xl mb-4 block">👤</span>
-                    Tidak ada siswa yang sedang mengerjakan ujian ini saat ini.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {activeSessions.map((session) => (
-                      <div key={session.id} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                              {session.user_name?.charAt(0)?.toUpperCase() || '?'}
-                            </div>
-                            <div>
-                              <p className="font-semibold text-slate-900 dark:text-slate-100">{session.user_name}</p>
-                              <p className="text-xs text-slate-500">{session.user_email}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <Badge color="emerald" className="text-[10px]">Sedang Mengerjakan</Badge>
-                            <p className="text-[11px] text-slate-500 mt-1">
-                              Mulai: {new Date(session.started_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-3">
-                          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
-                            <span>Progres Pengerjaan</span>
-                            <span className="font-semibold">{session.answered_count}/{session.total_questions} soal ({session.progress_percent}%)</span>
-                          </div>
-                          <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500"
-                              style={{ width: `${session.progress_percent}%` }}
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="mt-2 flex items-center gap-4 text-[11px] text-slate-500">
-                          <span>⏱️ Elapsed: {Math.floor(session.elapsed_seconds / 60)}m {session.elapsed_seconds % 60}s</span>
-                          <span>📊 Durasi: {Math.floor(session.duration_seconds / 60)} menit</span>
-                        </div>
+            {/* Navigation Tabs */}
+            <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setDetailTab('questions')}
+                className={`py-3.5 px-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+                  detailTab === 'questions'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <span>📝 Daftar Soal</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  detailTab === 'questions'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                }`}>
+                  {detailQuestions.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDetailTab('active_students')}
+                className={`py-3.5 px-4 text-sm font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+                  detailTab === 'active_students'
+                    ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <span>👥 Siswa Sedang Mengerjakan</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 ${
+                  activeSessions.length > 0
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                }`}>
+                  {activeSessions.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                  {activeSessions.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8">
+              <div className="max-w-6xl mx-auto">
+                {/* TAB 1: DAFTAR SOAL */}
+                {detailTab === 'questions' && (
+                  <div>
+                    {detailLoading ? (
+                      <div className="py-24 text-center text-slate-500">
+                        <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+                        <p className="text-sm font-medium">Memuat bank soal ujian...</p>
                       </div>
-                    ))}
+                    ) : detailQuestions.length === 0 ? (
+                      <div className="py-24 text-center bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-12">
+                        <span className="text-5xl mb-4 block">📝</span>
+                        <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">Belum Ada Soal</h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                          Paket ujian ini belum memiliki soal. Tambahkan soal secara manual atau import dari template Excel.
+                        </p>
+                        <Link to={`/admin/cbt/${detailExam?.id}/questions`}>
+                          <Button>+ Kelola & Tambah Soal</Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+                          <span>Menampilkan seluruh {detailQuestions.length} butir soal</span>
+                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                            ✓ Kunci jawaban ditandai warna hijau
+                          </span>
+                        </div>
+
+                        {detailQuestions.map((q, idx) => (
+                          <div
+                            key={q.id}
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                          >
+                            <div className="flex items-start gap-4">
+                              <span className="flex-shrink-0 w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 flex items-center justify-center font-black text-sm">
+                                {idx + 1}
+                              </span>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-3">
+                                  {q.exam_type && (
+                                    <Badge color="blue" className="text-xs font-semibold">
+                                      {q.exam_type.name}
+                                    </Badge>
+                                  )}
+                                  {q.subtest && (
+                                    <Badge color="slate" className="text-xs">
+                                      🧩 {q.subtest}
+                                    </Badge>
+                                  )}
+                                  <Badge color={q.is_active ? 'emerald' : 'slate'} className="text-xs">
+                                    {q.is_active ? 'Aktif' : 'Non-aktif'}
+                                  </Badge>
+                                  <span className="text-xs text-slate-400 font-mono ml-auto">
+                                    ⏱ {q.duration_seconds || 90} detik • {q.points || 1} poin
+                                  </span>
+                                </div>
+
+                                <div
+                                  className="text-sm sm:text-base text-slate-800 dark:text-slate-200 leading-relaxed prose dark:prose-invert max-w-none mb-4"
+                                  dangerouslySetInnerHTML={{ __html: q.question_text }}
+                                />
+
+                                {/* Opsi Jawaban */}
+                                {q.options && q.options.length > 0 && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    {q.options.map((opt) => (
+                                      <div
+                                        key={opt.id}
+                                        className={`p-3 rounded-xl border text-xs sm:text-sm flex items-start gap-2.5 transition-colors ${
+                                          opt.is_correct
+                                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 font-semibold'
+                                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                        }`}
+                                      >
+                                        <span className={`w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${
+                                          opt.is_correct
+                                            ? 'bg-emerald-600 text-white'
+                                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                                        }`}>
+                                          {opt.option_label}
+                                        </span>
+                                        <span className="flex-1 min-w-0 leading-snug">{opt.option_text}</span>
+                                        {opt.is_correct && (
+                                          <span className="text-emerald-600 dark:text-emerald-400 font-bold ml-1">✓ Kunci</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 2: SISWA AKTIF MENGERJAKAN */}
+                {detailTab === 'active_students' && (
+                  <div>
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                          Monitoring Siswa Sedang Mengerjakan
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Data otomatis diperbarui setiap 10 detik saat tab ini aktif.
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => fetchActiveSessions(detailExam?.id)}
+                        className="text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
+                      >
+                        🔄 Refresh Sekarang
+                      </Button>
+                    </div>
+
+                    {activeLoading ? (
+                      <div className="py-24 text-center text-slate-500">
+                        <div className="inline-block w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
+                        <p className="text-sm font-medium">Memeriksa siswa aktif...</p>
+                      </div>
+                    ) : activeSessions.length === 0 ? (
+                      <div className="py-24 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12">
+                        <span className="text-5xl mb-4 block">🧘</span>
+                        <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          Tidak Ada Siswa Sedang Mengerjakan
+                        </h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Saat ini belum ada siswa yang sedang aktif dalam sesi pengerjaan ujian ini.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {activeSessions.map((session) => (
+                          <div
+                            key={session.id}
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-all flex flex-col justify-between"
+                          >
+                            <div>
+                              <div className="flex items-start justify-between gap-3 mb-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-base shadow-xs shrink-0">
+                                    {session.user_name?.charAt(0)?.toUpperCase() || '?'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h5 className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">
+                                      {session.user_name}
+                                    </h5>
+                                    <p className="text-xs text-slate-500 truncate">{session.user_email}</p>
+                                  </div>
+                                </div>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                  Aktif
+                                </span>
+                              </div>
+
+                              {/* Progress bar */}
+                              <div className="space-y-1.5 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 mb-3">
+                                <div className="flex items-center justify-between text-xs font-semibold">
+                                  <span className="text-slate-600 dark:text-slate-400">Progres Pengerjaan</span>
+                                  <span className="text-blue-600 dark:text-blue-400">
+                                    {session.answered_count} / {session.total_questions} Soal ({session.progress_percent}%)
+                                  </span>
+                                </div>
+                                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${session.progress_percent}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                              <span>
+                                🕒 Mulai: {session.started_at ? new Date(session.started_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'} WIB
+                              </span>
+                              <span>
+                                ⏱ Berjalan: {Math.floor(session.elapsed_seconds / 60)}m {session.elapsed_seconds % 60}s
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
