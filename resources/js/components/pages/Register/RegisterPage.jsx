@@ -8,13 +8,7 @@ import Input from '../../atoms/Input';
 import Button from '../../atoms/Button';
 import api from '../../../services/api';
 
-const PROGRAMS = [
-  { id: 'mandiri', label: 'Mandiri', price: 'Rp 350.000/bln', desc: '10 soal/bln', icon: '📚' },
-  { id: 'intensif', label: 'Intensif', price: 'Rp 750.000/bln', desc: 'Unlimited', icon: '🚀', popular: true },
-  { id: 'garansi', label: 'Garansi', price: 'Rp 1.200.000/bln', desc: 'Unlimited + 1-on-1', icon: '🏆' },
-];
-
-const STEPS = ['Data Diri', 'Pilih Program', 'Akun & Password', 'Konfirmasi'];
+const STEPS = ['Data Diri', 'Akun & Password', 'Konfirmasi'];
 
 export default function RegisterPage() {
   const dispatch = useDispatch();
@@ -24,7 +18,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState(0);
   const [schools, setSchools] = useState([]);
   const [form, setForm] = useState({
-    name: '', phone: '', school_id: '', nisn: '', program: 'intensif',
+    name: '', phone: '', school_id: '', nisn: '',
     email: '', password: '', password_confirmation: '',
   });
 
@@ -41,7 +35,6 @@ export default function RegisterPage() {
   }, []);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-  const setVal = (k, v) => setForm({ ...form, [k]: v });
 
   const handleSubmit = async () => {
     const result = await dispatch(register(form));
@@ -116,67 +109,32 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* Step 1: Program */}
+          {/* Step 1: Akun */}
           {step === 1 && (
-            <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Pilih Program Belajar</h2>
-              <div className="flex flex-col gap-3">
-                {PROGRAMS.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setVal('program', p.id)}
-                    className={`flex items-center gap-4 p-4 rounded-lg border-2 transition-all text-left
-                      ${form.program === p.id
-                        ? 'border-blue-500 bg-blue-500/10'
-                        : 'border-slate-700 bg-slate-100 dark:bg-slate-800/40 hover:border-slate-600'
-                      }`}
-                  >
-                    <span className="text-2xl">{p.icon}</span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 dark:text-slate-100">{p.label}</span>
-                        {p.popular && <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-semibold">POPULER</span>}
-                      </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">{p.desc}</p>
-                    </div>
-                    <span className="font-bold text-blue-400 text-sm">{p.price}</span>
-                    {form.program === p.id && <span className="text-blue-400">✓</span>}
-                  </button>
-                ))}
-              </div>
-              <div className="flex gap-3">
-                <Button variant="ghost" onClick={() => setStep(0)} className="flex-1">← Kembali</Button>
-                <Button onClick={() => setStep(2)} className="flex-1">Lanjut →</Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Akun */}
-          {step === 2 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Buat Akun Login</h2>
               <Input id="reg-email" type="email" label="Email" placeholder="nama@email.com" value={form.email} onChange={set('email')} required />
               <Input id="reg-password" type="password" label="Password" placeholder="Min. 8 karakter" value={form.password} onChange={set('password')} required />
               <Input id="reg-password-confirm" type="password" label="Ulangi Password" placeholder="Sama dengan password" value={form.password_confirmation} onChange={set('password_confirmation')} required />
               <div className="flex gap-3">
-                <Button variant="ghost" onClick={() => setStep(1)} className="flex-1">← Kembali</Button>
-                <Button onClick={() => setStep(3)} disabled={!form.email || !form.password} className="flex-1">Lanjut →</Button>
+                <Button variant="ghost" onClick={() => setStep(0)} className="flex-1">← Kembali</Button>
+                <Button onClick={() => setStep(2)} disabled={!form.email || !form.password} className="flex-1">Lanjut →</Button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Konfirmasi */}
-          {step === 3 && (
+          {/* Step 2: Konfirmasi */}
+          {step === 2 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Konfirmasi Pendaftaran</h2>
               <div className="bg-slate-100 dark:bg-slate-800 rounded-md p-4 flex flex-col gap-2 text-sm">
-                {[['Nama', form.name], ['Sekolah', schools.find((s) => String(s.id) === String(form.school_id))?.name || 'Sekolah Terdaftar'], ['NISN', form.nisn], ['Program', form.program?.toUpperCase()], ['Email', form.email]].map(([label, val]) => (
+                {[['Nama', form.name], ['Sekolah', schools.find((s) => String(s.id) === String(form.school_id))?.name || 'Sekolah Terdaftar'], ['NISN', form.nisn], ['Email', form.email]].map(([label, val]) => (
                   val && <div key={label} className="flex justify-between"><span className="text-slate-600 dark:text-slate-400">{label}</span><span className="font-semibold text-slate-800 dark:text-slate-200">{val}</span></div>
                 ))}
               </div>
               <p className="text-xs text-slate-500">Dengan mendaftar, Anda menyetujui syarat & ketentuan SkorPluss.</p>
               <div className="flex gap-3">
-                <Button variant="ghost" onClick={() => setStep(2)} className="flex-1">← Kembali</Button>
+                <Button variant="ghost" onClick={() => setStep(1)} className="flex-1">← Kembali</Button>
                 <Button onClick={handleSubmit} loading={loading} className="flex-1">🎉 Daftar Sekarang</Button>
               </div>
             </div>

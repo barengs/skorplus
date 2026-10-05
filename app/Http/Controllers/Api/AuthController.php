@@ -42,6 +42,13 @@ class AuthController extends Controller
             $trialEndsAt = now()->addDays($trialDays);
         }
 
+        // Determine program based on school's active learning package
+        $activePackage = $school->activeLearningPackages()->first();
+        $program = $request->program ?? 'mandiri';
+        if ($activePackage) {
+            $program = $activePackage->name;
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -50,7 +57,7 @@ class AuthController extends Controller
             'school_id' => $school->id,
             'school' => $school->name,
             'nisn' => $request->nisn,
-            'program' => $request->program ?? 'mandiri',
+            'program' => $program,
             'trial_ends_at' => $trialEndsAt,
         ]);
 
