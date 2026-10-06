@@ -19,8 +19,12 @@ export default function CbtPage() {
   const [activeTab, setActiveTab] = useState('available');
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [questionTimeLeft, setQuestionTimeLeft] = useState(90);
+  const [isFrozen, setIsFrozen] = useState(false);
+  const [graceTimeLeft, setGraceTimeLeft] = useState(60);
+  const [showFrozenModal, setShowFrozenModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAvailableExams());
@@ -46,6 +50,8 @@ export default function CbtPage() {
     if (startSession.rejected.match(res)) {
       if (res.payload?.limit_reached) {
         setShowLimitModal(true);
+      } else if (res.payload?.cooldown) {
+        toast.warning(res.payload?.message || 'Ujian dalam masa jeda waktu istirahat.');
       } else {
         toast.error(res.payload?.message || (typeof res.payload === 'string' ? res.payload : 'Gagal memulai ujian.'));
       }
@@ -68,6 +74,8 @@ export default function CbtPage() {
     if (startSession.rejected.match(res)) {
       if (res.payload?.limit_reached) {
         setShowLimitModal(true);
+      } else if (res.payload?.cooldown) {
+        toast.warning(res.payload?.message || 'Ujian dalam masa jeda waktu istirahat.');
       } else {
         toast.error(res.payload?.message || (typeof res.payload === 'string' ? res.payload : 'Gagal memulai ujian.'));
       }
@@ -87,9 +95,49 @@ export default function CbtPage() {
     return isNaN(parsed) ? Date.now() : parsed;
   };
 
-  const totalRemainingSeconds = currentSession
-    ? Math.max(0, (Number(currentSession.duration_seconds) || 5400) - Math.floor((Date.now() - parseTimestamp(currentSession.started_at)) / 1000))
+  const elapsedSeconds = currentSession?.started_at
+    ? Math.floor((Date.now() - parseTimestamp(currentSession.started_at)) / 1000)
     : 0;
+  const durationSeconds = Number(currentSession?.duration_seconds) || 5400;
+  const totalRemainingSeconds = currentSession
+    ? Math.max(0, durationSeconds - elapsedSeconds)
+    : 0;
+  const isTimeExpired = currentSession ? totalRemainingSeconds <= 0 : false;
+  const isExamFrozen = isFrozen || isTimeExpired;
+
+  // Grace Period countdown (60 detik) saat waktu ujian habis & lembar soal dibekukan
+  useEffect(() => {
+    if (!currentSession || !isExamFrozen) return;
+
+    const overtime = Math.max(0, elapsedSeconds - durationSeconds);
+    const initialGrace = Math.max(0, 60 - overtime);
+    setGraceTimeLeft(initialGrace);
+    setShowFrozenModal(true);
+
+    if (initialGrace <= 0) {
+      if (!submitting) {
+        toast.info('Waktu tenggang 60 detik telah habis. Sistem menyerahkan ujian Anda secara otomatis.', { autoClose: 5000 });
+        dispatch(submitSession(currentSession.id));
+      }
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setGraceTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          if (!submitting) {
+            toast.info('Waktu tenggang 60 detik telah habis. Sistem menyerahkan ujian Anda secara otomatis.', { autoClose: 5000 });
+            dispatch(submitSession(currentSession.id));
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentSession?.id, isExamFrozen]);
 
   // Per-Question Timer effect
   useEffect(() => {
@@ -99,7 +147,7 @@ export default function CbtPage() {
   }, [currentQuestion, question?.id, currentSession?.id]);
 
   useEffect(() => {
-    if (!currentSession || !question || questionTimeLeft <= 0) return;
+    if (!currentSession || !question || questionTimeLeft <= 0 || isExamFrozen) return;
     const timer = setTimeout(() => {
       setQuestionTimeLeft((prev) => {
         if (prev <= 1) {
@@ -115,9 +163,14 @@ export default function CbtPage() {
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [questionTimeLeft, currentSession, question?.id, currentQuestion, questions.length]);
+  }, [questionTimeLeft, currentSession, question?.id, currentQuestion, questions.length, isExamFrozen]);
 
   const handleSelect = (val) => {
+    if (isExamFrozen) {
+      toast.warning('Waktu pengerjaan telah habis! Lembar soal telah dibekukan.');
+      return;
+    }
+
     let newAnswer = val;
     const qType = question?.question_type || 'single_choice';
 
@@ -154,15 +207,24 @@ export default function CbtPage() {
     }
   };
 
-  const handleSubmit = async () => {
-    const unanswered = questions.length - answeredCount;
-    if (unanswered > 0) {
-      const confirmed = window.confirm(`Masih ada ${unanswered} soal yang belum dijawab. Lanjutkan submit?`);
-      if (!confirmed) return;
+  const handleOpenSubmitModal = () => {
+    if (currentAnswers?.selected_option !== undefined && currentSession?.id) {
+      dispatch(saveAnswer({
+        sessionId: currentSession.id,
+        question_number: currentQuestion,
+        selected_option: currentAnswers.selected_option,
+      }));
     }
+    setShowSubmitModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowSubmitModal(false);
     const result = await dispatch(submitSession(currentSession.id));
     if (submitSession.fulfilled.match(result)) {
       toast.success(`Ujian selesai! Skor Anda: ${result.payload.score} 🎉`);
+    } else {
+      toast.error(result.payload || 'Gagal menyelesaikan ujian.');
     }
   };
 
@@ -258,6 +320,10 @@ export default function CbtPage() {
                 <button
                   key={exam.id}
                   onClick={() => {
+                    if (exam.cooldown_info?.in_cooldown) {
+                      toast.warning(`Ujian ini dalam masa jeda istirahat (sisa ${exam.cooldown_info.remaining_minutes} menit). Anda dapat mengulang kembali pada pukul ${exam.cooldown_info.retry_at_time} WIB.`);
+                      return;
+                    }
                     if (exam.is_open === false) {
                       if (exam.schedule_status === 'upcoming') {
                         toast.info(`Ujian belum dibuka. Jadwal: ${exam.schedule_description}`);
@@ -280,8 +346,11 @@ export default function CbtPage() {
                       end_time: exam.end_time,
                     });
                   }}
-                  className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all ${exam.is_open === false ? 'opacity-70 cursor-not-allowed border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50' : 'cursor-pointer'}
-                    ${selectedType?.id === exam.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'}`}
+                  className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all ${
+                    exam.cooldown_info?.in_cooldown || exam.is_open === false
+                      ? 'opacity-80 cursor-not-allowed border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/50'
+                      : 'cursor-pointer border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                  } ${selectedType?.id === exam.id ? 'border-blue-500 bg-blue-500/10' : ''}`}
                 >
                   <span className="text-2xl mt-0.5">{exam.exam_type?.icon || '📝'}</span>
                   <div className="flex-1 min-w-0">
@@ -293,8 +362,13 @@ export default function CbtPage() {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <p className="text-xs text-slate-500 dark:text-slate-400">{exam.duration_minutes} menit · {exam.questions_count} soal</p>
+                      {exam.cooldown_info?.in_cooldown && (
+                        <Badge color="purple" className="text-[10px] font-bold">
+                          ⏱️ Jeda: Sisa {exam.cooldown_info.remaining_minutes}m ({exam.cooldown_info.retry_at_time})
+                        </Badge>
+                      )}
                       {exam.schedule_status === 'upcoming' && (
                         <Badge color="amber" className="text-[10px]">⏰ {exam.schedule_description}</Badge>
                       )}
@@ -552,21 +626,38 @@ export default function CbtPage() {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-            {/* Total Waktu Ujian - Visible High-Contrast Badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-2xs">
-              <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">⏱</span>
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Total Waktu:</span>
-                <CountdownTimer
-                  durationSeconds={totalRemainingSeconds}
-                  className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100"
-                  onExpire={() => {
-                    toast.error('Waktu habis! Ujian disubmit otomatis.');
-                    dispatch(submitSession(currentSession.id));
-                  }}
-                />
+            {/* Total Waktu Ujian / Status Beku */}
+            {isExamFrozen ? (
+              <div 
+                onClick={() => setShowFrozenModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700 shadow-2xs cursor-pointer animate-pulse"
+                title="Waktu ujian habis, lembar soal dibekukan. Klik untuk melihat konfirmasi serahkan ujian."
+              >
+                <span className="text-rose-600 dark:text-rose-400 font-bold text-sm">❄️</span>
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="text-[11px] sm:text-xs font-bold text-rose-700 dark:text-rose-300 whitespace-nowrap">Dibekukan:</span>
+                  <span className="text-xs sm:text-sm font-black text-rose-800 dark:text-rose-100 font-mono">
+                    Auto-Submit 00:{String(graceTimeLeft).padStart(2, '0')}
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-2xs">
+                <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">⏱</span>
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Total Waktu:</span>
+                  <CountdownTimer
+                    durationSeconds={totalRemainingSeconds}
+                    className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100"
+                    onExpire={() => {
+                      setIsFrozen(true);
+                      setShowFrozenModal(true);
+                      toast.warning('Waktu pengerjaan ujian telah berakhir! Lembar soal dibekukan.', { autoClose: 5000 });
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Answered indicator or Cancel button */}
             {answeredCount === 0 ? (
@@ -585,8 +676,8 @@ export default function CbtPage() {
               </div>
             )}
 
-            <Button variant="danger" size="sm" onClick={handleSubmit} loading={submitting}>
-              Submit Ujian
+            <Button variant="danger" size="sm" onClick={handleOpenSubmitModal} loading={submitting}>
+              Serahkan Ujian
             </Button>
           </div>
         </div>
@@ -595,6 +686,31 @@ export default function CbtPage() {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {question ? (
             <div className="max-w-2xl mx-auto flex flex-col gap-5">
+              {/* Exam Frozen Warning Banner */}
+              {isExamFrozen && (
+                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">❄️</span>
+                    <div>
+                      <p className="text-xs font-bold text-rose-900 dark:text-rose-200">
+                        Waktu Pengerjaan Habis — Lembar Soal Dibekukan
+                      </p>
+                      <p className="text-[11px] text-rose-700 dark:text-rose-300">
+                        Pilihan jawaban tidak dapat diubah lagi. Menyerahkan otomatis dalam{' '}
+                        <strong className="font-mono underline font-black">00:{String(graceTimeLeft).padStart(2, '0')}</strong> detik.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shrink-0 cursor-pointer shadow-xs"
+                    onClick={() => setShowFrozenModal(true)}
+                  >
+                    Serahkan Sekarang
+                  </Button>
+                </div>
+              )}
+
               {/* Question Header & Per-Question Timer */}
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -624,7 +740,9 @@ export default function CbtPage() {
                     {/* Per-Question Countdown Timer Badge */}
                     <div
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs ${
-                        questionTimeLeft <= 10
+                        isExamFrozen
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800'
+                          : questionTimeLeft <= 10
                           ? 'bg-rose-50 text-rose-600 border-rose-300 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800 animate-pulse'
                           : questionTimeLeft <= 30
                           ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
@@ -634,14 +752,16 @@ export default function CbtPage() {
                     >
                       <span className="text-xs">⏱ Sisa Waktu Soal:</span>
                       <span className="font-mono text-sm font-black">
-                        {String(Math.floor(questionTimeLeft / 60)).padStart(2, '0')}:
-                        {String(questionTimeLeft % 60).padStart(2, '0')}
+                        {isExamFrozen ? '00:00' : `${String(Math.floor(questionTimeLeft / 60)).padStart(2, '0')}:${String(questionTimeLeft % 60).padStart(2, '0')}`}
                       </span>
                     </div>
 
                     <button
-                      onClick={() => dispatch(toggleFlag(currentQuestion))}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      disabled={isExamFrozen}
+                      onClick={() => !isExamFrozen && dispatch(toggleFlag(currentQuestion))}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                        isExamFrozen ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                      } ${
                         currentAnswers?.is_flagged
                           ? 'bg-amber-500/20 text-amber-500 ring-1 ring-amber-500/40'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500'
@@ -656,14 +776,16 @@ export default function CbtPage() {
                 <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-1000 ${
-                      questionTimeLeft <= 10
+                      isExamFrozen
+                        ? 'bg-slate-300 dark:bg-slate-700'
+                        : questionTimeLeft <= 10
                         ? 'bg-rose-500'
                         : questionTimeLeft <= 30
                         ? 'bg-amber-500'
                         : 'bg-blue-500'
                     }`}
                     style={{
-                      width: `${Math.max(0, Math.min(100, (questionTimeLeft / (question.duration_seconds || 90)) * 100))}%`
+                      width: isExamFrozen ? '0%' : `${Math.max(0, Math.min(100, (questionTimeLeft / (question.duration_seconds || 90)) * 100))}%`
                     }}
                   />
                 </div>
@@ -688,14 +810,17 @@ export default function CbtPage() {
                     <label className="text-xs text-slate-500 font-medium">Jawaban Anda:</label>
                     <input
                       type="text"
-                      className="w-full px-4 py-3 text-lg font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                      placeholder="Ketikkan jawaban di sini..."
+                      disabled={isExamFrozen}
+                      className={`w-full px-4 py-3 text-lg font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition ${isExamFrozen ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
+                      placeholder={isExamFrozen ? 'Lembar soal telah dibekukan (read-only)' : 'Ketikkan jawaban di sini...'}
                       value={currentAnswers?.selected_option || ''}
                       onChange={(e) => {
+                        if (isExamFrozen) return;
                         const val = e.target.value;
                         dispatch(setLocalAnswer({ question_number: currentQuestion, selected_option: val }));
                       }}
                       onBlur={(e) => {
+                        if (isExamFrozen) return;
                         const val = e.target.value;
                         dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: val }));
                       }}
@@ -723,6 +848,7 @@ export default function CbtPage() {
                           letter={letter}
                           text={text}
                           selected={isSelected}
+                          disabled={isExamFrozen}
                           onClick={() => handleSelect(letter)}
                         />
                       );
@@ -742,6 +868,7 @@ export default function CbtPage() {
                         letter={letter}
                         text={text}
                         selected={currentAnswers?.selected_option === letter}
+                        disabled={isExamFrozen}
                         onClick={() => handleSelect(letter)}
                       />
                     ))}
@@ -756,7 +883,7 @@ export default function CbtPage() {
                   size="sm"
                   disabled={currentQuestion <= 1}
                   onClick={() => {
-                    if (currentAnswers?.selected_option !== undefined) {
+                    if (!isExamFrozen && currentAnswers?.selected_option !== undefined) {
                       dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: currentAnswers.selected_option }));
                     }
                     dispatch(setCurrentQuestion(currentQuestion - 1));
@@ -764,19 +891,31 @@ export default function CbtPage() {
                 >
                   ← Sebelumnya
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={currentQuestion >= questions.length}
-                  onClick={() => {
-                    if (currentAnswers?.selected_option !== undefined) {
-                      dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: currentAnswers.selected_option }));
-                    }
-                    dispatch(setCurrentQuestion(currentQuestion + 1));
-                  }}
-                >
-                  Berikutnya →
-                </Button>
+
+                {currentQuestion < questions.length ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (!isExamFrozen && currentAnswers?.selected_option !== undefined) {
+                        dispatch(saveAnswer({ sessionId: currentSession.id, question_number: currentQuestion, selected_option: currentAnswers.selected_option }));
+                      }
+                      dispatch(setCurrentQuestion(currentQuestion + 1));
+                    }}
+                  >
+                    Lanjut →
+                  </Button>
+                ) : (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                    onClick={handleOpenSubmitModal}
+                    loading={submitting}
+                  >
+                    <span>✓ Serahkan / Akhiri Ujian</span>
+                  </Button>
+                )}
               </div>
             </div>
           ) : (
@@ -820,6 +959,165 @@ export default function CbtPage() {
               >
                 Ya, Batalkan Ujian
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Submit / End Exam Confirmation Modal */}
+      {showSubmitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mx-auto shadow-xs">
+              📝
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
+                Konfirmasi Akhiri & Serahkan Ujian
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Apakah Anda yakin ingin menyelesaikan ujian ini? Pastikan Anda telah memeriksa kembali seluruh jawaban sebelum menyerahkan.
+              </p>
+            </div>
+
+            {/* Rekap Pengerjaan */}
+            <div className="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-center">
+              <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                <span className="text-[10px] text-slate-400 font-medium block">Total Soal</span>
+                <span className="text-base font-black text-slate-800 dark:text-slate-200">{questions.length}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-800/40">
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium block">Terjawab</span>
+                <span className="text-base font-black text-emerald-700 dark:text-emerald-300">{answeredCount}</span>
+              </div>
+              <div className={`p-2 rounded-lg border ${
+                questions.length - answeredCount > 0
+                  ? 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-200/50 dark:border-rose-800/40'
+                  : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800'
+              }`}>
+                <span className={`text-[10px] font-medium block ${questions.length - answeredCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+                  Belum Diisi
+                </span>
+                <span className={`text-base font-black ${questions.length - answeredCount > 0 ? 'text-rose-700 dark:text-rose-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                  {questions.length - answeredCount}
+                </span>
+              </div>
+            </div>
+
+            {/* Warning if any unanswered */}
+            {questions.length - answeredCount > 0 ? (
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2.5">
+                <span className="text-base shrink-0">⚠️</span>
+                <p className="leading-relaxed text-[11px]">
+                  <strong>Perhatian:</strong> Masih terdapat <strong>{questions.length - answeredCount} butir soal</strong> yang belum Anda jawab. Soal yang tidak dijawab tidak akan mendapatkan skor.
+                </p>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+                <span>🎉</span>
+                <p className="text-[11px] font-medium">Luar biasa! Anda telah menjawab seluruh butir soal.</p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 pt-1">
+              <Button
+                variant="ghost"
+                className="flex-1 text-xs"
+                onClick={() => setShowSubmitModal(false)}
+                disabled={submitting}
+              >
+                Periksa Kembali
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white font-bold"
+                loading={submitting}
+                onClick={handleConfirmSubmit}
+              >
+                Ya, Serahkan Ujian
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Frozen Exam Modal with 60-Second Grace Period Countdown */}
+      {showFrozenModal && isExamFrozen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-rose-200 dark:border-rose-900 shadow-2xl space-y-5">
+            <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center text-3xl mx-auto shadow-xs animate-pulse">
+              ⏳
+            </div>
+
+            <div className="text-center space-y-2">
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                Waktu Habis • Lembar Soal Dibekukan
+              </span>
+              <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">
+                Waktu Ujian Telah Selesai
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Seluruh lembar soal telah <strong>dibekukan</strong> dan jawaban tidak dapat diubah lagi. Silakan serahkan ujian sekarang sebelum sistem menyerahkan secara otomatis.
+              </p>
+            </div>
+
+            {/* Grace Period Countdown Display */}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-rose-50 to-amber-50 dark:from-rose-950/40 dark:to-amber-950/40 border border-rose-200 dark:border-rose-800 text-center space-y-2">
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block">
+                Penyerahan Otomatis Dalam:
+              </span>
+              <div className="text-4xl font-black font-mono tracking-widest text-rose-600 dark:text-rose-400">
+                00:{String(graceTimeLeft).padStart(2, '0')}
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                <div 
+                  className="bg-rose-500 h-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${Math.max(0, Math.min(100, (graceTimeLeft / 60) * 100))}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Rekap Jawaban */}
+            <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-center text-xs">
+              <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900">
+                <span className="text-[10px] text-slate-400 block">Total</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{questions.length}</span>
+              </div>
+              <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+                <span className="text-[10px] block">Terjawab</span>
+                <span className="font-bold">{answeredCount}</span>
+              </div>
+              <div className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300">
+                <span className="text-[10px] block">Kosong</span>
+                <span className="font-bold">{questions.length - answeredCount}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <Button
+                variant="danger"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white font-bold text-sm shadow-md rounded-xl cursor-pointer"
+                loading={submitting}
+                onClick={async () => {
+                  setShowFrozenModal(false);
+                  const result = await dispatch(submitSession(currentSession.id));
+                  if (submitSession.fulfilled.match(result)) {
+                    toast.success(`Ujian selesai! Skor Anda: ${result.payload.score} 🎉`);
+                  } else {
+                    toast.error(result.payload || 'Gagal menyelesaikan ujian.');
+                  }
+                }}
+              >
+                ✓ Serahkan Jawaban Sekarang
+              </Button>
+              <button
+                type="button"
+                onClick={() => setShowFrozenModal(false)}
+                className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-center py-1 cursor-pointer font-medium underline"
+              >
+                Lihat Lembar Jawaban (Mode Beku)
+              </button>
             </div>
           </div>
         </div>

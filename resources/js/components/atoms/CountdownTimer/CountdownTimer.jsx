@@ -9,13 +9,14 @@ export default function CountdownTimer({ durationSeconds = 0, onExpire, classNam
   }, [durationSeconds]);
 
   useEffect(() => {
-    if (remaining <= 0) {
+    if (parseSeconds(durationSeconds) > 0 && remaining <= 0) {
       onExpire?.();
       return;
     }
+    if (remaining <= 0) return;
     const id = setTimeout(() => setRemaining((r) => Math.max(0, r - 1)), 1000);
     return () => clearTimeout(id);
-  }, [remaining]);
+  }, [remaining, durationSeconds]);
 
   const h = Math.floor(remaining / 3600);
   const m = Math.floor((remaining % 3600) / 60);

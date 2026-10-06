@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
 import Badge from '../../../atoms/Badge';
@@ -18,7 +19,9 @@ export default function AdminExamQuestionsPage() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [excelDropdownOpen, setExcelDropdownOpen] = useState(false);
   const fileInputRef = useRef(null);
+  const excelDropdownRef = useRef(null);
 
   // Form states
   const OPTION_KEYS = ['A', 'B', 'C', 'D', 'E'];
@@ -58,6 +61,21 @@ export default function AdminExamQuestionsPage() {
   useEffect(() => {
     fetchData();
   }, [examId]);
+
+  // Close Excel dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (excelDropdownRef.current && !excelDropdownRef.current.contains(event.target)) {
+        setExcelDropdownOpen(false);
+      }
+    };
+    if (excelDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [excelDropdownOpen]);
 
   const openModal = (question = null) => {
     if (question) {
@@ -302,52 +320,138 @@ export default function AdminExamQuestionsPage() {
   return (
     <AppLayout title="Manajemen Soal Ujian">
       <div className="w-full pb-16 space-y-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Link to="/admin/cbt">
-            <Button variant="ghost" size="sm">← Kembali</Button>
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">
-                {exam ? exam.title : 'Memuat...'}
-              </h2>
-              {exam?.exam_type && (
-                <Badge color="blue" className="text-xs">
-                  {exam.exam_type.icon || '🎯'} {exam.exam_type.name}
-                </Badge>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3.5">
+            <Link to="/admin/cbt">
+              <Button variant="ghost" size="sm" className="h-9 px-3 gap-1.5 text-xs">
+                <FontAwesomeIcon icon={['fas', 'arrow-left']} />
+                <span>Kembali</span>
+              </Button>
+            </Link>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">
+                  {exam ? exam.title : 'Memuat...'}
+                </h2>
+                {exam?.exam_type && (
+                  <Badge color="blue" className="text-xs">
+                    {exam.exam_type.icon || '🎯'} {exam.exam_type.name}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Total Soal: <span className="font-bold text-slate-700 dark:text-slate-300">{questions.length}</span> · Durasi Ujian: <span className="font-bold text-slate-700 dark:text-slate-300">{exam?.duration_minutes || 0} menit</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2.5 shrink-0">
+            {/* Dropdown Menu Berkas Excel (Template, Import, Export) */}
+            <div className="relative" ref={excelDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setExcelDropdownOpen((prev) => !prev)}
+                className={`inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border text-sm font-semibold transition-all cursor-pointer shadow-2xs ${
+                  excelDropdownOpen
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
+                }`}
+                title="Aksi berkas Excel: Unduh Template, Import, dan Export Soal"
+              >
+                <FontAwesomeIcon icon={['fas', 'file-excel']} className="text-emerald-600 dark:text-emerald-400 text-base" />
+                <span>Kelola Excel</span>
+                <FontAwesomeIcon
+                  icon={['fas', 'chevron-down']}
+                  className={`text-xs text-slate-400 dark:text-slate-500 transition-transform duration-200 ${
+                    excelDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {excelDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-40 animate-in fade-in slide-in-from-top-1">
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Opsi Berkas Excel
+                  </div>
+
+                  {/* 1. Unduh Template Excel */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExcelDropdownOpen(false);
+                      handleDownloadTemplate();
+                    }}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-xl text-left hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-all cursor-pointer group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                      <FontAwesomeIcon icon={['fas', 'file-lines']} className="text-sm" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                        Template Excel
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                        Unduh format template untuk input soal
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* 2. Import Excel */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExcelDropdownOpen(false);
+                      setImportModalOpen(true);
+                    }}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-xl text-left hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-all cursor-pointer group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform shadow-2xs">
+                      <FontAwesomeIcon icon={['fas', 'upload']} className="text-xs" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 flex items-center gap-1.5">
+                        <span>Import Excel</span>
+                        <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold">
+                          Upload
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                        Unggah & impor banyak butir soal
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+
+                  {/* 3. Export Excel */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExcelDropdownOpen(false);
+                      handleExport();
+                    }}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-xl text-left hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-all cursor-pointer group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                      <FontAwesomeIcon icon={['fas', 'download']} className="text-xs" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        Export Excel
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                        Unduh seluruh butir soal paket ini
+                      </div>
+                    </div>
+                  </button>
+                </div>
               )}
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-              Total Soal: {questions.length} · Durasi Ujian: {exam?.duration_minutes || 0} menit
-            </p>
-          </div>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={handleDownloadTemplate}
-              className="hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 font-semibold"
-              title="Unduh contoh template file Excel untuk import soal"
-            >
-              📄 Template Excel
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleExport}
-              className="hover:border-blue-500 hover:text-blue-700 dark:hover:text-blue-400 font-semibold"
-              title="Export seluruh soal pada paket ujian ini ke file Excel"
-            >
-              📥 Export Excel
-            </Button>
-            <button
-              type="button"
-              onClick={() => setImportModalOpen(true)}
-              className="inline-flex items-center justify-center font-semibold text-sm h-10 px-4 rounded-md gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
-              title="Import banyak soal sekaligus dari file Excel"
-            >
-              📤 Import Excel
-            </button>
-            <Button onClick={() => openModal()} className="font-bold">
-              + Tambah Soal
+
+            {/* Tombol Utama Tambah Soal */}
+            <Button onClick={() => openModal()} className="font-bold h-10 px-4 text-sm inline-flex items-center gap-1.5 shadow-xs">
+              <FontAwesomeIcon icon={['fas', 'plus']} className="text-xs" />
+              <span>Tambah Soal</span>
             </Button>
           </div>
         </div>

@@ -262,4 +262,220 @@ class CbtRandomizationAndLeaderboardTest extends TestCase
         // Across retries or separate attempts, question sequence can differ
         $this->assertEqualsCanonicalizing($ids1, $ids2);
     }
+
+    public function test_cooldown_prevents_immediate_re_examination(): void
+    {
+        $student = User::factory()->create();
+        $student->assignRole('siswa');
+        $token = JWTAuth::fromUser($student);
+
+        $exam = Exam::create([
+            'title' => 'Ujian Dengan Jeda Waktu',
+            'slug' => 'ujian-dengan-jeda-waktu',
+            'duration_minutes' => 30,
+            'interval_hours' => 1, // 1 hour cooldown
+            'is_active' => true,
+        ]);
+
+        $q = Question::create([
+            'question_text' => 'Soal 1',
+            'duration_seconds' => 60,
+            'is_active' => true,
+        ]);
+        $q->options()->createMany([
+            ['option_key' => 'A', 'option_text' => 'Pilihan A', 'is_correct' => true],
+            ['option_key' => 'B', 'option_text' => 'Pilihan B', 'is_correct' => false],
+        ]);
+        $exam->questions()->attach($q->id);
+
+        // Start session 1
+        $startRes = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/cbt/sessions', ['exam_id' => $exam->id]);
+        $startRes->assertStatus(201);
+        $sessionId = $startRes->json('session.id');
+
+        // Answer question and submit
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson("/api/cbt/sessions/{$sessionId}/answer", [
+                'question_number' => 1,
+                'selected_option' => 'A',
+            ])->assertStatus(200);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson("/api/cbt/sessions/{$sessionId}/submit")
+            ->assertStatus(200);
+
+        // Immediately try to start the same exam again -> should be blocked by cooldown
+        $retryBlocked = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/cbt/sessions', ['exam_id' => $exam->id]);
+
+        $retryBlocked->assertStatus(422);
+        $this->assertTrue($retryBlocked->json('cooldown'));
+        $this->assertGreaterThan(0, $retryBlocked->json('remaining_minutes'));
+
+        // Fast forward 61 minutes
+        $this->travel(61)->minutes();
+
+        // Now student should be able to start the exam
+        $retryAllowed = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/cbt/sessions', ['exam_id' => $exam->id]);
+        $retryAllowed->assertStatus(201);
+    }
+
+    public function test_monitoring_excludes_sessions_with_zero_answers(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $token = JWTAuth::fromUser($admin);
+
+        $exam = Exam::create([
+            'title' => 'Monitoring Filter Zero Answers',
+            'slug' => 'monitoring-filter-zero-answers',
+            'duration_minutes' => 60,
+            'is_active' => true,
+        ]);
+
+        $studentInactive = User::factory()->create(['name' => 'Siswa Buka Doang']);
+        $studentActive = User::factory()->create(['name' => 'Siswa Mengerjakan Soal']);
+
+        // Session 1: Ongoing with 0 answers (ghost session)
+        CbtSession::create([
+            'user_id' => $studentInactive->id,
+            'exam_id' => $exam->id,
+            'exam_type' => 'TPS',
+            'exam_title' => $exam->title,
+            'score' => null,
+            'status' => 'ongoing',
+            'started_at' => now(),
+        ]);
+
+        // Session 2: Ongoing WITH at least 1 answer
+        $sessionActive = CbtSession::create([
+            'user_id' => $studentActive->id,
+            'exam_id' => $exam->id,
+            'exam_type' => 'TPS',
+            'exam_title' => $exam->title,
+            'score' => null,
+            'status' => 'ongoing',
+            'started_at' => now(),
+        ]);
+        $sessionActive->answers()->create([
+            'question_number' => 1,
+            'selected_option' => 'A',
+            'is_correct' => true,
+        ]);
+
+        $res = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/admin/cbt/monitoring-sessions');
+
+        $res->assertStatus(200);
+        $sessions = $res->json('sessions');
+
+        // Only the student with answers should appear in monitoring
+        $this->assertCount(1, $sessions);
+        $this->assertEquals('Siswa Mengerjakan Soal', $sessions[0]['user_name']);
+        $this->assertEquals(1, $res->json('total_active'));
+        $this->assertEquals(1, $res->json('total_sessions'));
+    }
+
+    public function test_auto_submit_expired_sessions_submits_answered_and_purges_empty(): void
+    {
+        $student1 = User::factory()->create(['name' => 'Siswa Ghost']);
+        $student2 = User::factory()->create(['name' => 'Siswa Lupa Submit']);
+
+        $exam = Exam::create([
+            'title' => 'Ujian Expired Auto Submit',
+            'slug' => 'ujian-expired-auto-submit',
+            'duration_minutes' => 10,
+            'is_active' => true,
+        ]);
+
+        $q = Question::create([
+            'question_text' => 'Soal Auto Submit',
+            'duration_seconds' => 60,
+            'is_active' => true,
+        ]);
+        $q->options()->createMany([
+            ['option_key' => 'A', 'option_text' => 'Benar', 'is_correct' => true],
+            ['option_key' => 'B', 'option_text' => 'Salah', 'is_correct' => false],
+        ]);
+        $exam->questions()->attach($q->id);
+
+        // Ghost session: started 20 minutes ago (duration 10 mins), 0 answers
+        $ghost = CbtSession::create([
+            'user_id' => $student1->id,
+            'exam_id' => $exam->id,
+            'exam_type' => 'TPS',
+            'exam_title' => $exam->title,
+            'duration_seconds' => 600, // 10 minutes
+            'status' => 'ongoing',
+            'started_at' => now()->subMinutes(20),
+        ]);
+
+        // Answered session: started 20 minutes ago, 1 answer answered
+        $answered = CbtSession::create([
+            'user_id' => $student2->id,
+            'exam_id' => $exam->id,
+            'exam_type' => 'TPS',
+            'exam_title' => $exam->title,
+            'duration_seconds' => 600, // 10 minutes
+            'status' => 'ongoing',
+            'started_at' => now()->subMinutes(20),
+        ]);
+        $answered->answers()->create([
+            'question_number' => 1,
+            'question_id' => $q->id,
+            'selected_option' => 'A',
+            'is_correct' => true,
+        ]);
+
+        // Run autoSubmitExpiredSessions
+        CbtSession::autoSubmitExpiredSessions();
+
+        // Ghost session should be deleted
+        $this->assertDatabaseMissing('cbt_sessions', ['id' => $ghost->id]);
+
+        // Answered session should be submitted and scored
+        $this->assertDatabaseHas('cbt_sessions', [
+            'id' => $answered->id,
+            'status' => 'submitted',
+        ]);
+        $refreshedAnswered = CbtSession::find($answered->id);
+        $this->assertNotNull($refreshedAnswered->score);
+        $this->assertEquals(100, $refreshedAnswered->score);
+    }
+
+    public function test_saving_answer_is_rejected_when_exam_duration_has_expired_due_to_freeze(): void
+    {
+        $student = User::factory()->create();
+        $student->assignRole('siswa');
+        $token = JWTAuth::fromUser($student);
+
+        $exam = Exam::create([
+            'title' => 'Ujian Pembekuan Soal',
+            'slug' => 'ujian-pembekuan-soal',
+            'duration_minutes' => 15,
+            'is_active' => true,
+        ]);
+
+        $session = CbtSession::create([
+            'user_id' => $student->id,
+            'exam_id' => $exam->id,
+            'exam_type' => 'TPS',
+            'exam_title' => $exam->title,
+            'duration_seconds' => 900, // 15 mins
+            'status' => 'ongoing',
+            'started_at' => now()->subMinutes(16), // 16 mins ago -> expired and frozen
+        ]);
+
+        $res = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson("/api/cbt/sessions/{$session->id}/answer", [
+                'question_number' => 1,
+                'selected_option' => 'A',
+            ]);
+
+        $res->assertStatus(422);
+        $this->assertTrue($res->json('is_frozen'));
+        $this->assertStringContainsString('dibekukan', $res->json('message'));
+    }
 }

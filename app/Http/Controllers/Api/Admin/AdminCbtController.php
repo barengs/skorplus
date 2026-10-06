@@ -120,9 +120,25 @@ class AdminCbtController extends Controller
     {
         $exam = Exam::findOrFail($examId);
 
+        // Auto-submit/expire ongoing sessions reaching duration limit & purge abandoned 0-answer sessions
+        CbtSession::autoSubmitExpiredSessions();
+
         $query = CbtSession::with(['user:id,name,email', 'exam' => fn ($q) => $q->withCount('questions')])
             ->withCount('answers')
-            ->where('exam_id', $examId);
+            ->where('exam_id', $examId)
+            // Jangan catat ujian monitoring bila tidak dikerjakan sama sekali:
+            ->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('status', 'submitted')
+                        ->where(function ($s2) {
+                            $s2->whereNotNull('score')
+                                ->orWhereHas('answers', fn ($a) => $a->whereNotNull('selected_option'));
+                        });
+                })->orWhere(function ($sub) {
+                    $sub->where('status', 'ongoing')
+                        ->whereHas('answers', fn ($a) => $a->whereNotNull('selected_option'));
+                });
+            });
 
         if ($request->filled('date')) {
             $query->whereDate('started_at', $request->date);
@@ -178,8 +194,24 @@ class AdminCbtController extends Controller
 
     public function monitoringSessions(Request $request)
     {
+        // Auto-submit/expire ongoing sessions reaching duration limit & purge abandoned 0-answer sessions
+        CbtSession::autoSubmitExpiredSessions();
+
         $query = CbtSession::with(['user:id,name,email', 'exam' => fn ($q) => $q->withCount('questions')])
-            ->withCount('answers');
+            ->withCount('answers')
+            // Jangan catat ujian monitoring bila tidak dikerjakan sama sekali:
+            ->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('status', 'submitted')
+                        ->where(function ($s2) {
+                            $s2->whereNotNull('score')
+                                ->orWhereHas('answers', fn ($a) => $a->whereNotNull('selected_option'));
+                        });
+                })->orWhere(function ($sub) {
+                    $sub->where('status', 'ongoing')
+                        ->whereHas('answers', fn ($a) => $a->whereNotNull('selected_option'));
+                });
+            });
 
         if ($request->filled('exam_id') && $request->exam_id !== 'all') {
             $query->where('exam_id', $request->exam_id);

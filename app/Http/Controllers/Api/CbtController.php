@@ -34,19 +34,52 @@ class CbtController extends Controller
      */
     public function availableExams(): JsonResponse
     {
+        $user = auth('api')->user();
+
+        // Auto-submit any expired sessions first so they don't linger
+        CbtSession::autoSubmitExpiredSessions();
+
+        $userSubmittedSessions = $user ? CbtSession::where('user_id', $user->id)
+            ->where('status', 'submitted')
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->get()
+            ->keyBy('exam_id') : collect();
+
         $exams = Exam::where('is_active', true)
             ->has('questions')
             ->with(['examType', 'questions.examType'])
             ->withCount('questions')
             ->latest()
             ->get()
-            ->map(function ($exam) {
+            ->map(function ($exam) use ($userSubmittedSessions) {
                 $subtests = $exam->questions
                     ->map(fn ($q) => $q->examType?->name ?? $q->subtest)
                     ->filter()
                     ->unique()
                     ->values();
                 $exam->subtests_list = $subtests;
+
+                $lastSession = $userSubmittedSessions->get($exam->id);
+                if ($lastSession && $lastSession->submitted_at) {
+                    $cooldownMinutes = ($exam->interval_hours !== null && $exam->interval_hours > 0)
+                        ? ($exam->interval_hours * 60)
+                        : 30;
+
+                    if ($cooldownMinutes > 0) {
+                        $allowedAt = $lastSession->submitted_at->copy()->addMinutes($cooldownMinutes);
+                        if (now()->lt($allowedAt)) {
+                            $diffSeconds = now()->diffInSeconds($allowedAt);
+                            $exam->cooldown_info = [
+                                'in_cooldown' => true,
+                                'cooldown_minutes' => $cooldownMinutes,
+                                'remaining_minutes' => (int) ceil($diffSeconds / 60),
+                                'retry_at' => $allowedAt->format('Y-m-d H:i:s'),
+                                'retry_at_time' => $allowedAt->format('H:i'),
+                            ];
+                        }
+                    }
+                }
 
                 return $exam;
             });
@@ -85,6 +118,8 @@ class CbtController extends Controller
      */
     public function sessions(): JsonResponse
     {
+        CbtSession::autoSubmitExpiredSessions();
+
         $sessions = CbtSession::where('user_id', auth('api')->id())
             ->where('status', '!=', 'cancelled')
             ->latest()
@@ -172,6 +207,48 @@ class CbtController extends Controller
             $questions = $this->getDummyQuestions($request->exam_type);
         }
 
+        $userId = auth('api')->id();
+
+        // 1. Auto-submit any expired ongoing sessions so they don't linger
+        CbtSession::autoSubmitExpiredSessions();
+
+        // 2. Cooldown check: cegah siswa mengulang ujian secara beruntun (estafet) tanpa jeda waktu
+        $lastSubmitted = CbtSession::where('user_id', $userId)
+            ->where('status', 'submitted')
+            ->whereNotNull('submitted_at')
+            ->where(function ($q) use ($request, $exam) {
+                if ($exam) {
+                    $q->where('exam_id', $exam->id);
+                } else {
+                    $q->where('exam_type', $request->exam_type);
+                }
+            })
+            ->latest('submitted_at')
+            ->first();
+
+        if ($lastSubmitted && $lastSubmitted->submitted_at) {
+            $cooldownMinutes = ($exam && $exam->interval_hours !== null && $exam->interval_hours > 0)
+                ? ($exam->interval_hours * 60)
+                : 30;
+
+            if ($cooldownMinutes > 0) {
+                $allowedAt = $lastSubmitted->submitted_at->copy()->addMinutes($cooldownMinutes);
+                if (now()->lt($allowedAt)) {
+                    $diffSeconds = now()->diffInSeconds($allowedAt);
+                    $remainingMinutes = (int) ceil($diffSeconds / 60);
+                    $allowedAtTime = $allowedAt->format('H:i');
+
+                    return response()->json([
+                        'message' => "Terdapat pembatasan jeda waktu ujian selama {$cooldownMinutes} menit agar Anda dapat beristirahat dan tidak mengulang ujian secara beruntun (estafet). Anda dapat mengulang kembali ujian ini pada pukul {$allowedAtTime} WIB (sisa waktu: {$remainingMinutes} menit).",
+                        'cooldown' => true,
+                        'cooldown_minutes' => $cooldownMinutes,
+                        'remaining_minutes' => $remainingMinutes,
+                        'retry_at' => $allowedAt->format('Y-m-d H:i:s'),
+                    ], 422);
+                }
+            }
+        }
+
         $session = CbtSession::create([
             'user_id' => auth('api')->id(),
             'exam_id' => $exam?->id,
@@ -238,6 +315,15 @@ class CbtController extends Controller
         }
         if ($session->status !== 'ongoing') {
             return response()->json(['message' => 'Sesi sudah selesai.'], 422);
+        }
+
+        // Cek jika durasi ujian telah habis -> lembar soal dibekukan (read-only)
+        $durationSeconds = (int) ($session->duration_seconds ?: 5400);
+        if ($session->started_at && $session->started_at->copy()->addSeconds($durationSeconds)->isPast()) {
+            return response()->json([
+                'message' => 'Waktu pengerjaan ujian telah habis. Lembar soal telah dibekukan dan jawaban tidak dapat diubah lagi.',
+                'is_frozen' => true,
+            ], 422);
         }
 
         $validator = Validator::make($request->all(), [
