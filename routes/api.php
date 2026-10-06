@@ -138,6 +138,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('cbt/exams/{exam}/import', [AdminCbtImportController::class, 'import']);
         Route::get('cbt/exams/{exam}/export', [AdminCbtImportController::class, 'export']);
         Route::get('cbt/template-excel', [AdminCbtImportController::class, 'downloadTemplate']);
+        Route::get('cbt/monitoring-sessions', [AdminCbtController::class, 'monitoringSessions']);
         Route::get('cbt/exams/{exam}/active-sessions', [AdminCbtController::class, 'activeSessions']);
 
         Route::get('landing-hero', [LandingHeroController::class, 'show']);

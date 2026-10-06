@@ -116,26 +116,45 @@ class AdminCbtController extends Controller
         return response()->json(['message' => 'Paket ujian berhasil dihapus'], 200);
     }
 
-    public function activeSessions($examId)
+    public function activeSessions(Request $request, $examId)
     {
         $exam = Exam::findOrFail($examId);
 
-        $sessions = CbtSession::with(['user'])
-            ->where('exam_id', $examId)
-            ->where('status', 'ongoing')
-            ->orderBy('started_at', 'desc')
-            ->get()
+        $query = CbtSession::with(['user:id,name,email', 'exam' => fn ($q) => $q->withCount('questions')])
+            ->withCount('answers')
+            ->where('exam_id', $examId);
+
+        if ($request->filled('date')) {
+            $query->whereDate('started_at', $request->date);
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->status === 'submitted') {
+            $query->orderByDesc('score')->orderByDesc('submitted_at');
+        } else {
+            $query->orderBy('started_at', 'desc');
+        }
+
+        $sessions = $query->get()
             ->map(function ($session) {
-                $answeredCount = $session->answers()->count();
-                $totalQuestions = $session->exam ? $session->exam->questions()->count() : 0;
+                $answeredCount = $session->answers_count ?? 0;
+                $totalQuestions = $session->exam?->questions_count ?? 0;
 
                 return [
                     'id' => $session->id,
                     'user_id' => $session->user_id,
                     'user_name' => $session->user?->name ?? 'N/A',
                     'user_email' => $session->user?->email ?? 'N/A',
+                    'exam_id' => $session->exam_id,
+                    'exam_title' => $session->exam_title ?: ($session->exam?->title ?? 'Ujian CBT'),
                     'started_at' => $session->started_at?->format('Y-m-d H:i:s'),
+                    'submitted_at' => $session->submitted_at?->format('Y-m-d H:i:s'),
                     'duration_seconds' => $session->duration_seconds,
+                    'score' => $session->score,
+                    'status' => $session->status,
                     'answered_count' => $answeredCount,
                     'total_questions' => $totalQuestions,
                     'progress_percent' => $totalQuestions > 0 ? round(($answeredCount / $totalQuestions) * 100) : 0,
@@ -149,8 +168,66 @@ class AdminCbtController extends Controller
                 'title' => $exam->title,
                 'duration_minutes' => $exam->duration_minutes,
             ],
+            'sessions' => $sessions,
             'active_sessions' => $sessions,
-            'total_active' => $sessions->count(),
+            'total_active' => $sessions->where('status', 'ongoing')->count(),
+            'total_completed' => $sessions->where('status', 'submitted')->count(),
+            'total_sessions' => $sessions->count(),
+        ]);
+    }
+
+    public function monitoringSessions(Request $request)
+    {
+        $query = CbtSession::with(['user:id,name,email', 'exam' => fn ($q) => $q->withCount('questions')])
+            ->withCount('answers');
+
+        if ($request->filled('exam_id') && $request->exam_id !== 'all') {
+            $query->where('exam_id', $request->exam_id);
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('started_at', $request->date);
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->status === 'submitted') {
+            $query->orderByDesc('score')->orderByDesc('submitted_at');
+        } else {
+            $query->orderBy('started_at', 'desc');
+        }
+
+        $sessions = $query->get()
+            ->map(function ($session) {
+                $answeredCount = $session->answers_count ?? 0;
+                $totalQuestions = $session->exam?->questions_count ?? 0;
+
+                return [
+                    'id' => $session->id,
+                    'user_id' => $session->user_id,
+                    'user_name' => $session->user?->name ?? 'N/A',
+                    'user_email' => $session->user?->email ?? 'N/A',
+                    'exam_id' => $session->exam_id,
+                    'exam_title' => $session->exam_title ?: ($session->exam?->title ?? 'Ujian CBT'),
+                    'started_at' => $session->started_at?->format('Y-m-d H:i:s'),
+                    'submitted_at' => $session->submitted_at?->format('Y-m-d H:i:s'),
+                    'duration_seconds' => $session->duration_seconds,
+                    'score' => $session->score,
+                    'status' => $session->status,
+                    'answered_count' => $answeredCount,
+                    'total_questions' => $totalQuestions,
+                    'progress_percent' => $totalQuestions > 0 ? round(($answeredCount / $totalQuestions) * 100) : 0,
+                    'elapsed_seconds' => $session->started_at ? now()->diffInSeconds($session->started_at) : 0,
+                ];
+            });
+
+        return response()->json([
+            'sessions' => $sessions,
+            'total_active' => $sessions->where('status', 'ongoing')->count(),
+            'total_completed' => $sessions->where('status', 'submitted')->count(),
+            'total_sessions' => $sessions->count(),
         ]);
     }
 }

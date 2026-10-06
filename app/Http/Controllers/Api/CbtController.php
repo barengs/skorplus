@@ -180,6 +180,7 @@ class CbtController extends Controller
             'duration_seconds' => $request->duration_seconds ?? ($exam?->duration_minutes ?? 90) * 60,
             'started_at' => now(),
             'status' => 'ongoing',
+            'question_order' => $questions,
         ]);
 
         // Strip correct_option before sending questions to frontend
@@ -276,10 +277,15 @@ class CbtController extends Controller
             return response()->json(['message' => 'Sesi sudah disubmit.'], 422);
         }
 
-        // Get questions from exam if available
-        $questions = $session->exam_id
-            ? $this->getQuestionsFromExam(Exam::find($session->exam_id))
-            : [];
+        // Get questions from stored session question layout if available, or fallback
+        $questions = $session->question_order;
+        if (empty($questions) && $session->exam_id) {
+            $exam = Exam::find($session->exam_id);
+            $questions = $exam ? $this->getQuestionsFromExam($exam) : [];
+        }
+        if (empty($questions)) {
+            $questions = [];
+        }
 
         $answers = CbtAnswer::where('cbt_session_id', $session->id)
             ->whereNotNull('selected_option')
@@ -379,34 +385,57 @@ class CbtController extends Controller
     }
 
     /**
-     * Get questions from an exam with correct answers.
+     * Get questions from an exam with randomized question order and randomized options (> 2 choices).
      */
     private function getQuestionsFromExam(Exam $exam): array
     {
         $questions = $exam->questions()
             ->where('is_active', true)
             ->with(['options', 'examType'])
-            ->orderBy('id')
             ->get();
 
-        $totalQuestions = $questions->count();
+        // Acak urutan butir soal agar tiap kali siswa mengerjakan/mengulang ujian mendapatkan urutan beda
+        $shuffledQuestions = $questions->shuffle()->values();
+
+        $totalQuestions = $shuffledQuestions->count();
         $proportionalDuration = $exam->duration_minutes
             ? (int) round(($exam->duration_minutes * 60) / max(1, $totalQuestions))
             : 90;
 
-        return $questions->map(function ($question, $index) use ($proportionalDuration) {
+        return $shuffledQuestions->map(function ($question, $index) use ($proportionalDuration) {
             $qType = $question->question_type ?? 'single_choice';
-            $correctOption = null;
+            $optionsCollection = $question->options;
+            $optionsCount = $optionsCollection->count();
 
+            // Acak posisi pilihan jika memiliki lebih dari 2 pilihan, jangan acak jika <= 2 (misal Benar/Salah)
+            if ($optionsCount > 2) {
+                $orderedOptions = $optionsCollection->shuffle()->values();
+            } else {
+                $orderedOptions = $optionsCollection->sortBy('option_key')->values();
+            }
+
+            $letters = range('A', 'Z');
+            $mappedOptions = [];
+            $correctOptionKeys = [];
+
+            foreach ($orderedOptions as $optIndex => $opt) {
+                $newKey = $letters[$optIndex] ?? (string) ($optIndex + 1);
+                $mappedOptions[$newKey] = $opt->option_text;
+
+                if ($opt->is_correct) {
+                    $correctOptionKeys[] = $newKey;
+                }
+            }
+
+            $correctOption = null;
             if ($qType === 'multiple_choice' || $qType === 'complex_choice') {
-                $correctOptions = $question->options->where('is_correct', true)->pluck('option_key')->toArray();
-                sort($correctOptions);
-                $correctOption = implode(',', $correctOptions);
+                sort($correctOptionKeys);
+                $correctOption = implode(',', $correctOptionKeys);
             } elseif ($qType === 'short_answer') {
                 $correctOpt = $question->options->firstWhere('is_correct', true);
                 $correctOption = $correctOpt ? trim($correctOpt->option_text ?? $correctOpt->option_key) : null;
             } else {
-                $correctOption = $question->options->firstWhere('is_correct', true)?->option_key;
+                $correctOption = $correctOptionKeys[0] ?? null;
             }
 
             return [
@@ -414,6 +443,7 @@ class CbtController extends Controller
                 'id' => $question->id,
                 'subject' => $question->subject,
                 'subtest' => $question->examType?->name ?? $question->subtest,
+                'question_type' => $qType,
                 'exam_type' => $question->examType ? [
                     'id' => $question->examType->id,
                     'code' => $question->examType->code,
@@ -421,9 +451,9 @@ class CbtController extends Controller
                     'icon' => $question->examType->icon,
                 ] : null,
                 'text' => $question->question_text,
-                'options' => $question->options->pluck('option_text', 'option_key')->toArray(),
+                'options' => $mappedOptions,
                 'correct_option' => $correctOption, // Hidden from frontend, used for scoring
-                'points' => $question->points,
+                'points' => $question->points ?? 1,
                 'duration_seconds' => $question->duration_seconds ?? $proportionalDuration,
             ];
         })->toArray();
@@ -435,20 +465,36 @@ class CbtController extends Controller
     private function getDummyQuestions(string $type): array
     {
         $questions = [];
+        $letters = range('A', 'E');
         for ($i = 1; $i <= 20; $i++) {
+            $baseOptions = [
+                'Pilihan A — Jawaban pertama yang memungkinkan',
+                'Pilihan B — Jawaban kedua yang memungkinkan',
+                'Pilihan C — Jawaban ketiga yang memungkinkan',
+                'Pilihan D — Jawaban keempat yang memungkinkan',
+                'Pilihan E — Jawaban kelima yang memungkinkan',
+            ];
+            shuffle($baseOptions);
+            $options = [];
+            foreach ($baseOptions as $idx => $optText) {
+                $options[$letters[$idx]] = $optText;
+            }
+
             $questions[] = [
                 'number' => $i,
                 'subject' => $type,
+                'question_type' => 'single_choice',
                 'text' => "Pertanyaan No. {$i} — {$type}: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pilih jawaban yang paling tepat.",
                 'duration_seconds' => 90,
-                'options' => [
-                    'A' => 'Pilihan A — Jawaban pertama yang memungkinkan',
-                    'B' => 'Pilihan B — Jawaban kedua yang memungkinkan',
-                    'C' => 'Pilihan C — Jawaban ketiga yang memungkinkan',
-                    'D' => 'Pilihan D — Jawaban keempat yang memungkinkan',
-                    'E' => 'Pilihan E — Jawaban kelima yang memungkinkan',
-                ],
+                'options' => $options,
+                'correct_option' => 'A',
+                'points' => 1,
             ];
+        }
+
+        shuffle($questions);
+        foreach ($questions as $idx => &$q) {
+            $q['number'] = $idx + 1;
         }
 
         return $questions;

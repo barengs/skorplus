@@ -58,6 +58,7 @@ export default function CbtPage() {
       return;
     }
     const sessionData = {
+      exam_id: currentSession?.exam_id,
       exam_type: currentSession?.exam_type,
       exam_title: currentSession?.exam_title,
       duration_seconds: currentSession?.duration_seconds

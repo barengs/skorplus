@@ -23,6 +23,7 @@ class CbtSession extends Model
         'status', // ongoing, submitted, expired
         'total_score',
         'subtest_scores',
+        'question_order',
         'strengths',
         'weaknesses',
         'predicted_score',
@@ -34,6 +35,7 @@ class CbtSession extends Model
             'started_at' => 'datetime',
             'submitted_at' => 'datetime',
             'subtest_scores' => 'array',
+            'question_order' => 'array',
             'strengths' => 'array',
             'weaknesses' => 'array',
         ];

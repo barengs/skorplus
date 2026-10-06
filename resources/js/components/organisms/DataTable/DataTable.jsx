@@ -88,7 +88,7 @@ export default function DataTable({ columns, data, loading, onSearch, onRowClick
                   onClick={(e) => {
                     if (onRowClick) onRowClick(row.original, e);
                   }}
-                  className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group ${onRowClick ? 'cursor-pointer' : ''}`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-6 py-4 text-slate-700 dark:text-slate-300">
