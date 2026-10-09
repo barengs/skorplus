@@ -116,7 +116,7 @@ class LearningPackageController extends Controller
     {
         $exams = Exam::with('examType:id,name,code')
             ->withCount('questions')
-            ->select('id', 'title', 'slug', 'exam_type_id', 'duration_minutes', 'is_active', 'start_time', 'end_time', 'schedule_type')
+            ->select('id', 'title', 'exam_type_id', 'duration_minutes', 'is_active', 'start_time', 'end_time', 'schedule_type')
             ->orderBy('id', 'desc')
             ->get();
 

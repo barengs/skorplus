@@ -562,9 +562,6 @@ export default function AdminLearningPackageDetailPage() {
                             <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
                               {exam.title}
                             </h4>
-                            <div className="text-[11px] text-slate-500 mt-0.5 truncate">
-                              Slug: {exam.slug}
-                            </div>
                           </div>
                         </div>
                       </div>
