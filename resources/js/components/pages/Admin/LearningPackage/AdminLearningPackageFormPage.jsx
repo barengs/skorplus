@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
@@ -23,6 +23,8 @@ export default function AdminLearningPackageFormPage() {
   const [courseSearch, setCourseSearch] = useState('');
   const [exams, setExams] = useState([]);
   const [examSearch, setExamSearch] = useState('');
+  const [examDropdownOpen, setExamDropdownOpen] = useState(false);
+  const examDropdownRef = useRef(null);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [newFeature, setNewFeature] = useState('');
 
@@ -40,6 +42,17 @@ export default function AdminLearningPackageFormPage() {
   });
 
   const [cbtMode, setCbtMode] = useState('unlimited'); // 'unlimited', '2', '5', '10', 'custom'
+
+  // Close exam dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (examDropdownRef.current && !examDropdownRef.current.contains(event.target)) {
+        setExamDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchCourses();
@@ -404,7 +417,7 @@ export default function AdminLearningPackageFormPage() {
                   <span className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 text-sm">
                     <FontAwesomeIcon icon={['fas', 'file-signature']} />
                   </span>
-                  <span>Fitur Simulasi CBT & Batas Penggunaan</span>
+                  <span>Fitur Simulasi CBT, Kuota & Paket Ujian</span>
                 </h2>
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 border border-blue-200 dark:border-blue-800">
                   Integrasi CBT
@@ -412,7 +425,7 @@ export default function AdminLearningPackageFormPage() {
               </div>
 
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Tentukan berapa kali siswa yang mengambil paket ini diizinkan untuk mengerjakan ujian CBT (Computer Based Test).
+                Tentukan berapa kali siswa yang mengambil paket ini diizinkan untuk mengerjakan ujian CBT (Computer Based Test) serta paket ujian mana saja yang dapat mereka akses.
                 Bila kuota tercapai, sistem akan otomatis menampilkan status batas dan memunculkan modal peringatan.
               </p>
 
@@ -478,6 +491,160 @@ export default function AdminLearningPackageFormPage() {
                     </span>
                   )}
                 </div>
+              </div>
+
+              {/* 2B. Pilihan Paket Ujian CBT (Dropdown Checkbox) */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <span>Pilihan Paket Ujian CBT yang Diizinkan</span>
+                    </label>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Pilih ujian CBT yang dapat diakses melalui dropdown di bawah.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative" ref={examDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setExamDropdownOpen(prev => !prev)}
+                    className="w-full min-h-[42px] px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 hover:border-purple-500 dark:hover:border-purple-500 text-left flex items-center justify-between gap-3 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-6 h-6 rounded bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                        <FontAwesomeIcon icon={['fas', 'clipboard-list']} className="text-xs" />
+                      </div>
+                      {form.exam_ids.length === 0 ? (
+                        <span className="text-xs text-slate-400 truncate">
+                          Pilih ujian CBT... (0 terpilih)
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          {form.exam_ids.length} Ujian Dipilih
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {form.exam_ids.length > 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                          {form.exam_ids.length}
+                        </span>
+                      )}
+                      <FontAwesomeIcon
+                        icon={['fas', examDropdownOpen ? 'chevron-up' : 'chevron-down']}
+                        className="text-slate-400 text-[10px] transition-transform"
+                      />
+                    </div>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {examDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-30 overflow-hidden flex flex-col">
+                      <div className="p-2 border-b border-slate-100 dark:border-slate-800">
+                        <div className="relative">
+                          <FontAwesomeIcon icon={['fas', 'magnifying-glass']} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                          <input
+                            type="text"
+                            value={examSearch}
+                            onChange={(e) => setExamSearch(e.target.value)}
+                            placeholder="Cari judul ujian CBT..."
+                            className="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between mt-2 px-1">
+                          <button type="button" onClick={selectAllExams} className="text-[11px] font-bold text-blue-600 hover:text-blue-700">
+                            Pilih Semua
+                          </button>
+                          <button type="button" onClick={unselectAllExams} className="text-[11px] font-bold text-slate-500 hover:text-slate-700">
+                            Batal Semua
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="max-h-60 overflow-y-auto p-1">
+                        {exams.length === 0 ? (
+                          <div className="p-4 text-center text-xs text-slate-400">Belum ada ujian di sistem.</div>
+                        ) : filteredExams.length === 0 ? (
+                          <div className="p-4 text-center text-xs text-slate-400">Tidak ada ujian yang cocok.</div>
+                        ) : (
+                          filteredExams.map((exam) => {
+                            const isChecked = form.exam_ids.includes(exam.id);
+                            return (
+                              <label
+                                key={exam.id}
+                                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                                  isChecked ? 'bg-purple-50 dark:bg-purple-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleExam(exam.id)}
+                                  className="w-3.5 h-3.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className={`text-xs font-semibold truncate ${isChecked ? 'text-purple-700 dark:text-purple-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    {exam.title}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+                                    <span className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 leading-none">
+                                      {exam.exam_type?.name || 'CBT'}
+                                    </span>
+                                    <span>{exam.questions_count || 0} Soal</span>
+                                  </div>
+                                </div>
+                              </label>
+                            );
+                          })
+                        )}
+                      </div>
+                      
+                      <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-between items-center">
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {filteredExams.length} ditemukan • {form.exam_ids.length} dipilih
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExamDropdownOpen(false)}
+                          className="px-3 py-1 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          Selesai
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected Exams Chips preview */}
+                {form.exam_ids.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {exams.filter(e => form.exam_ids.includes(e.id)).map(exam => (
+                      <span
+                        key={exam.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200/50 dark:border-purple-800/50 group"
+                      >
+                        <span className="max-w-[150px] truncate">{exam.title}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleExam(exam.id)}
+                          className="text-purple-400 hover:text-red-500 transition-colors"
+                          title="Hapus"
+                        >
+                          <FontAwesomeIcon icon={['fas', 'xmark']} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[10px] text-amber-600 dark:text-amber-500 flex items-start gap-1.5 mt-2 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-100 dark:border-amber-900/30">
+                  <FontAwesomeIcon icon={['fas', 'triangle-exclamation']} className="mt-0.5 shrink-0" />
+                  <span>
+                    <strong>Penting:</strong> Jika dibiarkan kosong, siswa di paket ini tidak akan bisa mengakses ujian CBT apapun.
+                  </span>
+                </p>
               </div>
             </div>
 
@@ -557,98 +724,6 @@ export default function AdminLearningPackageFormPage() {
 
                         {isChecked && (
                           <span className="text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0 ml-2">
-                            ✓ Terpilih
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 4. Paket Ujian CBT Dalam Paket */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-600" />
-                    <span>Paket Ujian CBT ({form.exam_ids.length} Terpilih)</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Pilih ujian yang dapat diakses siswa. <strong className="text-red-500 dark:text-red-400">Penting:</strong> Jika dibiarkan kosong, siswa tidak akan bisa mengakses ujian apapun.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={selectAllExams}
-                    className="text-xs font-semibold text-blue-600 hover:underline"
-                  >
-                    Pilih Semua
-                  </button>
-                  <span className="text-slate-300 dark:text-slate-700">•</span>
-                  <button
-                    type="button"
-                    onClick={unselectAllExams}
-                    className="text-xs font-semibold text-slate-500 hover:underline"
-                  >
-                    Batal Semua
-                  </button>
-                </div>
-              </div>
-
-              {/* Search filter for exams */}
-              <div className="relative">
-                <Input
-                  value={examSearch}
-                  onChange={(e) => setExamSearch(e.target.value)}
-                  placeholder="Cari ujian berdasarkan judul..."
-                  className="text-xs"
-                />
-              </div>
-
-              {exams.length === 0 ? (
-                <p className="text-xs text-slate-400 py-4 text-center">Belum ada ujian CBT di sistem.</p>
-              ) : (
-                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                  {filteredExams.map((exam) => {
-                    const isChecked = form.exam_ids.includes(exam.id);
-                    return (
-                      <label
-                        key={exam.id}
-                        className={`flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer select-none ${
-                          isChecked
-                            ? 'border-purple-500 bg-purple-50/60 dark:bg-purple-950/30'
-                            : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleExam(exam.id)}
-                            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                          />
-                          <div className="min-w-0">
-                            <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 block truncate">
-                              {exam.title}
-                            </span>
-                            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2">
-                              <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
-                                {exam.exam_type?.name || 'CBT'}
-                              </span>
-                              <span>•</span>
-                              <span>{exam.questions_count || 0} Soal</span>
-                              <span>•</span>
-                              <span>{exam.duration_minutes || 0} Menit</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {isChecked && (
-                          <span className="text-xs font-bold text-purple-600 dark:text-purple-400 shrink-0 ml-2">
                             ✓ Terpilih
                           </span>
                         )}
