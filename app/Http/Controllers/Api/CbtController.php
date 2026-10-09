@@ -8,6 +8,7 @@ use App\Models\CbtAnswer;
 use App\Models\CbtSession;
 use App\Models\Exam;
 use App\Models\ExamType;
+use App\Models\LearningPackage;
 use App\Models\Program;
 use App\Models\Question;
 use Illuminate\Http\JsonResponse;
@@ -46,12 +47,57 @@ class CbtController extends Controller
             ->get()
             ->keyBy('exam_id') : collect();
 
-        $exams = Exam::where('is_active', true)
+        $user = auth('api')->user();
+        $quotaInfo = null;
+        $learningPackage = null;
+
+        if ($user && $user->program) {
+            $learningPackage = LearningPackage::where('is_published', true)
+                ->where(function ($q) use ($user) {
+                    $q->where('slug', $user->program)
+                        ->orWhereRaw('LOWER(name) = ?', [strtolower($user->program)])
+                        ->orWhereRaw('LOWER(slug) = ?', [strtolower($user->program)]);
+                })
+                ->first();
+
+            if ($learningPackage) {
+                $quotaInfo = $learningPackage->getCbtUsageForUser($user);
+                $quotaInfo['program_name'] = $learningPackage->name;
+            } else {
+                // Legacy fallback
+                $program = Program::where('is_active', true)
+                    ->where(function ($q) use ($user) {
+                        $q->where('slug', $user->program)
+                            ->orWhereRaw('LOWER(name) = ?', [strtolower($user->program)])
+                            ->orWhereRaw('LOWER(slug) = ?', [strtolower($user->program)]);
+                    })
+                    ->first();
+
+                if ($program) {
+                    $quotaInfo = $program->getCbtUsageForUser($user);
+                    $quotaInfo['program_name'] = $program->name;
+                }
+            }
+        }
+
+        $examQuery = Exam::where('is_active', true)
             ->has('questions')
             ->with(['examType', 'questions.examType'])
             ->withCount('questions')
-            ->latest()
-            ->get()
+            ->latest();
+
+        // Apply package restriction
+        if ($learningPackage) {
+            $packageExamIds = $learningPackage->exams()->pluck('exams.id');
+            if ($packageExamIds->isNotEmpty()) {
+                $examQuery->whereIn('id', $packageExamIds);
+            } else {
+                // If package has no exams selected, student sees nothing
+                $examQuery->whereRaw('1 = 0');
+            }
+        }
+
+        $exams = $examQuery->get()
             ->map(function ($exam) use ($userSubmittedSessions) {
                 $subtests = $exam->questions
                     ->map(fn ($q) => $q->examType?->name ?? $q->subtest)
@@ -89,23 +135,6 @@ class CbtController extends Controller
             ->orderBy('id')
             ->get();
 
-        $user = auth('api')->user();
-        $quotaInfo = null;
-        if ($user && $user->program) {
-            $program = Program::where('is_active', true)
-                ->where(function ($q) use ($user) {
-                    $q->where('slug', $user->program)
-                        ->orWhereRaw('LOWER(name) = ?', [strtolower($user->program)])
-                        ->orWhereRaw('LOWER(slug) = ?', [strtolower($user->program)]);
-                })
-                ->first();
-
-            if ($program) {
-                $quotaInfo = $program->getCbtUsageForUser($user);
-                $quotaInfo['program_name'] = $program->name;
-            }
-        }
-
         return response()->json([
             'exams' => $exams,
             'exam_types' => $examTypes,
@@ -134,9 +163,34 @@ class CbtController extends Controller
     public function startSession(Request $request): JsonResponse
     {
         $user = auth('api')->user();
+        $learningPackage = null;
 
-        // Enforce CBT quota limit if program has limit
+        // Resolve the student's learning package (new scheme first, legacy program as fallback)
         if ($user && $user->program) {
+            $learningPackage = LearningPackage::where('is_published', true)
+                ->where(function ($q) use ($user) {
+                    $q->where('slug', $user->program)
+                        ->orWhereRaw('LOWER(name) = ?', [strtolower($user->program)])
+                        ->orWhereRaw('LOWER(slug) = ?', [strtolower($user->program)]);
+                })
+                ->first();
+        }
+
+        // Enforce CBT quota limit if package/program has a limit
+        if ($learningPackage && $learningPackage->cbt_quota !== null && $learningPackage->cbt_quota > 0) {
+            $used = CbtSession::where('user_id', $user->id)
+                ->where('status', '!=', 'cancelled')
+                ->count();
+            if ($used >= $learningPackage->cbt_quota) {
+                return response()->json([
+                    'message' => "Batas kuota pengerjaan CBT untuk paket {$learningPackage->name} telah tercapai ({$learningPackage->cbt_quota}x).",
+                    'limit_reached' => true,
+                    'quota' => $learningPackage->cbt_quota,
+                    'used' => $used,
+                    'program_name' => $learningPackage->name,
+                ], 403);
+            }
+        } elseif (! $learningPackage && $user && $user->program) {
             $program = Program::where('is_active', true)
                 ->where(function ($q) use ($user) {
                     $q->where('slug', $user->program)
@@ -178,6 +232,17 @@ class CbtController extends Controller
         // If exam_id provided, use exam from database
         if ($request->exam_id) {
             $exam = Exam::findOrFail($request->exam_id);
+
+            // Block exams outside the student's learning package selection
+            if ($learningPackage) {
+                $allowedExamIds = $learningPackage->exams()->pluck('exams.id');
+                if (! $allowedExamIds->contains($exam->id)) {
+                    return response()->json([
+                        'message' => 'Ujian ini tidak termasuk dalam paket belajar Anda. Silakan hubungi admin untuk info akses.',
+                        'not_in_package' => true,
+                    ], 403);
+                }
+            }
 
             if (! $exam->isAvailableNow()) {
                 $status = $exam->schedule_status;

@@ -21,6 +21,8 @@ export default function AdminLearningPackageFormPage() {
   const [saving, setSaving] = useState(false);
   const [courses, setCourses] = useState([]);
   const [courseSearch, setCourseSearch] = useState('');
+  const [exams, setExams] = useState([]);
+  const [examSearch, setExamSearch] = useState('');
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [newFeature, setNewFeature] = useState('');
 
@@ -33,13 +35,15 @@ export default function AdminLearningPackageFormPage() {
     features: [],
     is_published: false,
     cbt_quota: null, // null = unlimited
-    course_ids: []
+    course_ids: [],
+    exam_ids: []
   });
 
   const [cbtMode, setCbtMode] = useState('unlimited'); // 'unlimited', '2', '5', '10', 'custom'
 
   useEffect(() => {
     fetchCourses();
+    fetchExams();
     if (isEdit) {
       fetchPackage();
     }
@@ -51,6 +55,15 @@ export default function AdminLearningPackageFormPage() {
       setCourses(res.data || []);
     } catch (err) {
       console.error('Gagal memuat daftar kursus', err);
+    }
+  };
+
+  const fetchExams = async () => {
+    try {
+      const res = await api.get('/admin/learning-packages/exams');
+      setExams(res.data || []);
+    } catch (err) {
+      console.error('Gagal memuat daftar ujian', err);
     }
   };
 
@@ -82,7 +95,8 @@ export default function AdminLearningPackageFormPage() {
         features: pkg.features || [],
         is_published: !!pkg.is_published,
         cbt_quota: quota,
-        course_ids: pkg.courses?.map(c => c.id) || []
+        course_ids: pkg.courses?.map(c => c.id) || [],
+        exam_ids: pkg.exams?.map(ex => ex.id) || []
       });
     } catch (err) {
       toast.error('Gagal memuat data paket belajar');
@@ -154,6 +168,34 @@ export default function AdminLearningPackageFormPage() {
     }));
   };
 
+  const toggleExam = (examId) => {
+    setForm(prev => {
+      const exists = prev.exam_ids.includes(examId);
+      return {
+        ...prev,
+        exam_ids: exists
+          ? prev.exam_ids.filter(eid => eid !== examId)
+          : [...prev.exam_ids, examId]
+      };
+    });
+  };
+
+  const selectAllExams = () => {
+    const allIds = filteredExams.map(ex => ex.id);
+    setForm(prev => ({
+      ...prev,
+      exam_ids: Array.from(new Set([...prev.exam_ids, ...allIds]))
+    }));
+  };
+
+  const unselectAllExams = () => {
+    const filteredIds = new Set(filteredExams.map(ex => ex.id));
+    setForm(prev => ({
+      ...prev,
+      exam_ids: prev.exam_ids.filter(id => !filteredIds.has(id))
+    }));
+  };
+
   const handleCbtModeChange = (mode) => {
     setCbtMode(mode);
     if (mode === 'unlimited') {
@@ -202,6 +244,10 @@ export default function AdminLearningPackageFormPage() {
 
   const filteredCourses = courses.filter(c =>
     c.title.toLowerCase().includes(courseSearch.toLowerCase())
+  );
+
+  const filteredExams = exams.filter(ex =>
+    (ex.title || '').toLowerCase().includes(examSearch.toLowerCase())
   );
 
   if (loading) {
@@ -511,6 +557,98 @@ export default function AdminLearningPackageFormPage() {
 
                         {isChecked && (
                           <span className="text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0 ml-2">
+                            ✓ Terpilih
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 4. Paket Ujian CBT Dalam Paket */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-600" />
+                    <span>Paket Ujian CBT ({form.exam_ids.length} Terpilih)</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Pilih ujian yang dapat diakses siswa. <strong className="text-red-500 dark:text-red-400">Penting:</strong> Jika dibiarkan kosong, siswa tidak akan bisa mengakses ujian apapun.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={selectAllExams}
+                    className="text-xs font-semibold text-blue-600 hover:underline"
+                  >
+                    Pilih Semua
+                  </button>
+                  <span className="text-slate-300 dark:text-slate-700">•</span>
+                  <button
+                    type="button"
+                    onClick={unselectAllExams}
+                    className="text-xs font-semibold text-slate-500 hover:underline"
+                  >
+                    Batal Semua
+                  </button>
+                </div>
+              </div>
+
+              {/* Search filter for exams */}
+              <div className="relative">
+                <Input
+                  value={examSearch}
+                  onChange={(e) => setExamSearch(e.target.value)}
+                  placeholder="Cari ujian berdasarkan judul..."
+                  className="text-xs"
+                />
+              </div>
+
+              {exams.length === 0 ? (
+                <p className="text-xs text-slate-400 py-4 text-center">Belum ada ujian CBT di sistem.</p>
+              ) : (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {filteredExams.map((exam) => {
+                    const isChecked = form.exam_ids.includes(exam.id);
+                    return (
+                      <label
+                        key={exam.id}
+                        className={`flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer select-none ${
+                          isChecked
+                            ? 'border-purple-500 bg-purple-50/60 dark:bg-purple-950/30'
+                            : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleExam(exam.id)}
+                            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                          />
+                          <div className="min-w-0">
+                            <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 block truncate">
+                              {exam.title}
+                            </span>
+                            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2">
+                              <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
+                                {exam.exam_type?.name || 'CBT'}
+                              </span>
+                              <span>•</span>
+                              <span>{exam.questions_count || 0} Soal</span>
+                              <span>•</span>
+                              <span>{exam.duration_minutes || 0} Menit</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isChecked && (
+                          <span className="text-xs font-bold text-purple-600 dark:text-purple-400 shrink-0 ml-2">
                             ✓ Terpilih
                           </span>
                         )}

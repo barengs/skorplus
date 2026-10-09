@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\Exam;
 use App\Models\LearningPackage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -12,7 +13,7 @@ class LearningPackageController extends Controller
 {
     public function index()
     {
-        $packages = LearningPackage::with('courses')->paginate(15);
+        $packages = LearningPackage::with(['courses', 'exams'])->paginate(15);
 
         return response()->json($packages);
     }
@@ -29,6 +30,7 @@ class LearningPackageController extends Controller
             'is_published' => 'boolean',
             'cbt_quota' => 'nullable|integer|min:0',
             'course_ids' => 'nullable|array',
+            'exam_ids' => 'nullable|array',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -39,7 +41,11 @@ class LearningPackageController extends Controller
             $package->courses()->sync($validated['course_ids']);
         }
 
-        return response()->json($package->load('courses'), 201);
+        if (! empty($validated['exam_ids'])) {
+            $package->exams()->sync($validated['exam_ids']);
+        }
+
+        return response()->json($package->load(['courses', 'exams']), 201);
     }
 
     public function show($id)
@@ -48,6 +54,9 @@ class LearningPackageController extends Controller
             'courses' => function ($query) {
                 $query->withCount(['modules', 'enrollments'])
                     ->with(['instructor', 'modules.lessons']);
+            },
+            'exams' => function ($query) {
+                $query->with('examType:id,name,code')->withCount('questions');
             },
         ])->findOrFail($id);
 
@@ -68,6 +77,7 @@ class LearningPackageController extends Controller
             'is_published' => 'boolean',
             'cbt_quota' => 'nullable|integer|min:0',
             'course_ids' => 'nullable|array',
+            'exam_ids' => 'nullable|array',
         ]);
 
         if ($validated['name'] !== $package->name) {
@@ -80,7 +90,11 @@ class LearningPackageController extends Controller
             $package->courses()->sync($validated['course_ids']);
         }
 
-        return response()->json($package->load('courses'));
+        if (isset($validated['exam_ids'])) {
+            $package->exams()->sync($validated['exam_ids']);
+        }
+
+        return response()->json($package->load(['courses', 'exams']));
     }
 
     public function destroy($id)
@@ -96,5 +110,16 @@ class LearningPackageController extends Controller
         $courses = Course::select('id', 'title', 'slug', 'thumbnail')->get();
 
         return response()->json($courses);
+    }
+
+    public function getExams()
+    {
+        $exams = Exam::with('examType:id,name,code')
+            ->withCount('questions')
+            ->select('id', 'title', 'slug', 'exam_type_id', 'duration_minutes', 'is_active', 'start_time', 'end_time', 'schedule_type')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json($exams);
     }
 }

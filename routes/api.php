@@ -149,6 +149,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Learning Packages
         Route::get('learning-packages/courses', [App\Http\Controllers\Admin\LearningPackageController::class, 'getCourses']);
+        Route::get('learning-packages/exams', [App\Http\Controllers\Admin\LearningPackageController::class, 'getExams']);
         Route::apiResource('learning-packages', App\Http\Controllers\Admin\LearningPackageController::class);
 
         // School Management

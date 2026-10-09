@@ -59,6 +59,7 @@ export default function AdminLearningPackageDetailPage() {
 
   // Helper stats
   const totalCourses = packageData?.courses?.length || 0;
+  const totalExams = packageData?.exams?.length || 0;
   const totalModules = packageData?.courses?.reduce((acc, c) => acc + (c.modules?.length || 0), 0) || 0;
   const totalLessons = packageData?.courses?.reduce((acc, c) => {
     return acc + (c.modules?.reduce((mAcc, m) => mAcc + (m.lessons?.length || 0), 0) || 0);
@@ -255,6 +256,16 @@ export default function AdminLearningPackageDetailPage() {
                 <div>
                   <div className="text-xl font-black text-slate-900 dark:text-slate-100">{totalCourses}</div>
                   <div className="text-[11px] text-slate-500 font-medium">Program / Kursus</div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3 shadow-xs">
+                <div className="w-11 h-11 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg shrink-0">
+                  <FontAwesomeIcon icon={['fas', 'clipboard-list']} />
+                </div>
+                <div>
+                  <div className="text-xl font-black text-slate-900 dark:text-slate-100">{totalExams}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Paket Ujian CBT</div>
                 </div>
               </div>
 
@@ -495,6 +506,85 @@ export default function AdminLearningPackageDetailPage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+
+            {/* Exams / CBT Breakdown Section */}
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
+                    Paket Ujian CBT di Dalam Paket ({totalExams})
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Siswa hanya dapat mengakses ujian-ujian yang terdaftar di bawah ini pada paket belajar ini.
+                  </p>
+                </div>
+                {totalExams > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/learning-packages/${id}/edit`)}>
+                    <FontAwesomeIcon icon={['fas', 'pen-to-square']} className="mr-1" /> Kelola Ujian
+                  </Button>
+                )}
+              </div>
+
+              {totalExams === 0 ? (
+                <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-10 text-center space-y-3">
+                  <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-2xl">
+                    <FontAwesomeIcon icon={['fas', 'file-circle-xmark']} />
+                  </div>
+                  <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                    Belum Ada Ujian Terhubung
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Anda belum memilih ujian CBT untuk paket belajar ini. Siswa di paket ini tidak akan bisa mengakses CBT apapun.
+                  </p>
+                  <Button
+                    onClick={() => navigate(`/admin/learning-packages/${id}/edit`)}
+                    className="h-9 px-4 rounded-lg !bg-blue-600 hover:!bg-blue-700 text-white text-xs font-bold shadow-sm mx-auto"
+                  >
+                    <FontAwesomeIcon icon={['fas', 'plus']} className="mr-1.5" /> Pilih Ujian CBT
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {packageData.exams.map((exam) => (
+                    <div
+                      key={exam.id}
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col justify-between hover:border-blue-300 dark:hover:border-blue-800/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 border border-indigo-100 dark:border-indigo-800/50">
+                            <FontAwesomeIcon icon={['fas', 'file-signature']} className="text-lg" />
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                              {exam.title}
+                            </h4>
+                            <div className="text-[11px] text-slate-500 mt-0.5 truncate">
+                              Slug: {exam.slug}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 mt-auto pt-3 border-t border-slate-100 dark:border-slate-800/80 text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                        <span className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50 dark:bg-slate-800/50">
+                          <FontAwesomeIcon icon={['fas', 'tag']} className="text-slate-400" />
+                          {exam.exam_type?.name || 'CBT Umum'}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <FontAwesomeIcon icon={['fas', 'list-ol']} className="text-slate-400" />
+                          {exam.questions_count || 0} Soal
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <FontAwesomeIcon icon={['fas', 'clock']} className="text-slate-400" />
+                          {exam.duration_minutes || 0} Menit
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

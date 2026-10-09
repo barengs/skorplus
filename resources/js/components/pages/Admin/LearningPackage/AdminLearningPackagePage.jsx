@@ -140,11 +140,16 @@ export default function AdminLearningPackagePage() {
                     {pkg.description ? pkg.description.replace(/<[^>]*>?/gm, '') : 'Tidak ada deskripsi untuk paket ini.'}
                   </p>
 
-                  {/* Metadata Chips: Kursus & CBT Quota */}
+                  {/* Metadata Chips: Kursus, Paket Ujian & CBT Quota */}
                   <div className="flex flex-wrap items-center gap-2 mb-4 text-[11px]">
                     <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
                       <FontAwesomeIcon icon={['fas', 'book-open']} className="text-blue-500 text-[10px]" />
                       <span>{pkg.courses?.length || 0} Kursus</span>
+                    </span>
+
+                    <span className="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 font-semibold text-indigo-700 dark:text-indigo-300 flex items-center gap-1 border border-indigo-200/50 dark:border-indigo-800/50">
+                      <FontAwesomeIcon icon={['fas', 'clipboard-list']} className="text-indigo-500 text-[10px]" />
+                      <span>{pkg.exams?.length || 0} Ujian</span>
                     </span>
 
                     {pkg.cbt_quota ? (

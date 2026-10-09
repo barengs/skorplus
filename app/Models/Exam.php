@@ -217,4 +217,9 @@ class Exam extends Model
     {
         return $this->hasMany(CbtSession::class);
     }
+
+    public function learningPackages()
+    {
+        return $this->belongsToMany(LearningPackage::class, 'learning_package_exam');
+    }
 }

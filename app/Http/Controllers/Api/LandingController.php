@@ -80,7 +80,7 @@ class LandingController extends Controller
 
         $learningPackages = LearningPackage::with(['courses' => function ($q) {
             $q->where('is_active', true)->orderBy('sort_order');
-        }])
+        }, 'exams'])
             ->where('is_published', true)
             ->get();
 
@@ -125,7 +125,7 @@ class LandingController extends Controller
 
         // If not found in Program, search in LearningPackage (Manajemen Paket)
         if (! $program) {
-            $pkg = LearningPackage::with(['courses' => $courseEagerLoad])
+            $pkg = LearningPackage::with(['courses' => $courseEagerLoad, 'exams'])
                 ->where('slug', $slug)
                 ->orWhere('slug', $cleanSlug)
                 ->orWhere('id', is_numeric($slug) ? $slug : 0)
@@ -161,6 +161,7 @@ class LandingController extends Controller
                     'ring_color' => 'ring-blue-400',
                     'is_popular' => true,
                     'courses' => $pkg->courses,
+                    'exams' => $pkg->exams,
                     'cbt_quota' => $pkg->cbt_quota,
                 ];
 
