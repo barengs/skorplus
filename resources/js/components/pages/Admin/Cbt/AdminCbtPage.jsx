@@ -210,7 +210,7 @@ export default function AdminCbtPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs px-2.5 h-8 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/80 hover:bg-blue-50 dark:hover:bg-blue-900/30 inline-flex items-center gap-1.5 font-medium shadow-2xs"
+                className="text-xs px-3 h-8 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/80 hover:bg-blue-50 dark:hover:bg-blue-900/30 inline-flex items-center gap-1.5 font-medium shadow-2xs whitespace-nowrap"
                 title="Kelola Butir Soal"
               >
                 <FontAwesomeIcon icon={['fas', 'list-check']} className="text-xs" />
