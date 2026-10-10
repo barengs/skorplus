@@ -575,7 +575,7 @@ export default function AdminReportPage() {
                                 </span>
                              </div>
                              <p className="text-xs text-slate-500 mt-1">
-                                Klik salah satu baris siswa di bawah untuk langsung membuka <span className="font-semibold text-blue-600 dark:text-blue-400">Rapor Siswa Akademik</span>.
+                                Klik salah satu baris siswa di bawah untuk membuka <span className="font-semibold text-blue-600 dark:text-blue-400">Detil Data Siswa</span> pada laman baru.
                              </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -643,14 +643,16 @@ export default function AdminReportPage() {
                                       filteredSchoolStudents.map((student) => (
                                          <tr
                                             key={student.id}
-                                            onClick={() => setReportStudentId(student.id)}
+                                            onClick={() => window.open(`/admin/users/${student.id}`, '_blank')}
                                             className="hover:bg-blue-50/60 dark:hover:bg-blue-900/20 cursor-pointer transition-colors group"
-                                            title="Klik untuk membuka Rapor Siswa"
+                                            title="Klik untuk membuka detil data siswa di laman baru"
                                          >
                                             <td className="p-3">
                                                <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center gap-2">
                                                   <span>{student.name}</span>
-                                                  <span className="text-xs opacity-0 group-hover:opacity-100 text-blue-500 transition-opacity">📋</span>
+                                                  <span className="text-xs opacity-0 group-hover:opacity-100 text-blue-500 transition-opacity">
+                                                     <FontAwesomeIcon icon={['fas', 'arrow-up-right-from-square']} />
+                                                  </span>
                                                </div>
                                                <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
                                                   <span>NISN: {student.nisn || '-'}</span>
@@ -702,12 +704,12 @@ export default function AdminReportPage() {
                                                   variant="outline"
                                                   onClick={(e) => {
                                                      e.stopPropagation();
-                                                     setReportStudentId(student.id);
+                                                     window.open(`/admin/users/${student.id}`, '_blank');
                                                   }}
                                                   className="group-hover:border-blue-500 group-hover:text-blue-600 text-xs"
                                                >
-                                                  <FontAwesomeIcon icon={['fas', 'id-card']} className="mr-1.5 text-blue-500" />
-                                                  Buka Rapor
+                                                  <FontAwesomeIcon icon={['fas', 'arrow-up-right-from-square']} className="mr-1.5 text-blue-500" />
+                                                  Detil Siswa
                                                </Button>
                                             </td>
                                          </tr>
