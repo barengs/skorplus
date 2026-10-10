@@ -28,6 +28,7 @@ import AdminSchoolsPage from './components/pages/Admin/Schools';
 import AdminSchoolDetailPage from './components/pages/Admin/Schools/Detail';
 import AdminUserDetailPage from './components/pages/Admin/Users/Detail';
 import AdminAuditPage from './components/pages/Admin/Audit/AdminAuditPage';
+import AdminReportPage from './components/pages/Admin/Reports/AdminReportPage';
 import AdminGuidePage from './components/pages/Admin/Guide/AdminGuidePage';
 import SchoolAdminStudentsPage from './components/pages/SchoolAdmin/Students';
 import SchoolAdminProfilePage from './components/pages/SchoolAdmin/Profile';
@@ -116,6 +117,7 @@ export default function App() {
       <Route path="/admin/schools" element={<PrivateRoute><AdminSchoolsPage /></PrivateRoute>} />
       <Route path="/admin/schools/:id" element={<PrivateRoute><AdminSchoolDetailPage /></PrivateRoute>} />
       <Route path="/admin/audit" element={<PrivateRoute><AdminAuditPage /></PrivateRoute>} />
+      <Route path="/admin/reports" element={<PrivateRoute><AdminReportPage /></PrivateRoute>} />
       <Route path="/admin/guide" element={<PrivateRoute><AdminGuidePage /></PrivateRoute>} />
 
       {/* School Admin routes */}

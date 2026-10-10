@@ -10,10 +10,10 @@ import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export default function AdminAuditPage() {
-  const [activeTab, setActiveTab] = useState('audit'); // 'audit', 'learning', 'exams'
+  const [activeTab, setActiveTab] = useState('audit'); // 'audit'
 
   // ==========================================
-  // TAB 1: AUDIT LOGS STATE
+  // AUDIT LOGS STATE
   // ==========================================
   const [logs, setLogs] = useState([]);
   const [auditStats, setAuditStats] = useState(null);
@@ -27,24 +27,6 @@ export default function AdminAuditPage() {
   // Log Detail Modal
   const [selectedLog, setSelectedLog] = useState(null);
 
-  // ==========================================
-  // TAB 2: LEARNING REPORTS STATE
-  // ==========================================
-  const [learningReports, setLearningReports] = useState([]);
-  const [learningMetrics, setLearningMetrics] = useState(null);
-  const [learningLoading, setLearningLoading] = useState(false);
-  const [searchLearning, setSearchLearning] = useState('');
-  const [statusLearning, setStatusLearning] = useState('');
-
-  // ==========================================
-  // TAB 3: EXAM REPORTS STATE
-  // ==========================================
-  const [examReports, setExamReports] = useState([]);
-  const [examMetrics, setExamMetrics] = useState(null);
-  const [examLoading, setExamLoading] = useState(false);
-  const [searchExam, setSearchExam] = useState('');
-  const [schoolExamFilter, setSchoolExamFilter] = useState('');
-  const [schools, setSchools] = useState([]);
 
   // Fetch Audit Logs
   const fetchAuditLogs = async () => {
@@ -71,68 +53,9 @@ export default function AdminAuditPage() {
     }
   };
 
-  // Fetch Learning Reports
-  const fetchLearningReports = async () => {
-    setLearningLoading(true);
-    try {
-      const params = {};
-      if (searchLearning) params.search = searchLearning;
-      if (statusLearning) params.status = statusLearning;
-
-      const res = await api.get('/admin/reports/learning', { params });
-      setLearningReports(res.data.reports?.data || []);
-      setLearningMetrics(res.data.metrics);
-    } catch {
-      toast.error('Gagal memuat laporan pembelajaran');
-    } finally {
-      setLearningLoading(false);
-    }
-  };
-
-  // Fetch Exam Reports
-  const fetchExamReports = async (overrideParams = {}) => {
-    setExamLoading(true);
-    try {
-      const params = {};
-      const search = overrideParams.search !== undefined ? overrideParams.search : searchExam;
-      const school = overrideParams.school !== undefined ? overrideParams.school : schoolExamFilter;
-
-      if (search) params.search = search;
-      if (school) params.school = school;
-
-      const res = await api.get('/admin/reports/exams', { params });
-      setExamReports(res.data.reports?.data || []);
-      setExamMetrics(res.data.metrics);
-      if (res.data.schools && Array.isArray(res.data.schools) && res.data.schools.length > 0) {
-        setSchools(res.data.schools);
-      }
-    } catch {
-      toast.error('Gagal memuat laporan ujian');
-    } finally {
-      setExamLoading(false);
-    }
-  };
-
-  // Fetch schools list for filter dropdown (fallback)
-  const fetchSchools = async () => {
-    try {
-      const res = await api.get('/admin/schools');
-      if (Array.isArray(res.data)) {
-        setSchools(prev => (prev.length > 0 ? prev : res.data));
-      }
-    } catch {
-      // silent: dropdown akan tetap kosong jika gagal
-    }
-  };
-
   useEffect(() => {
-    if (activeTab === 'audit') fetchAuditLogs();
-    if (activeTab === 'learning') fetchLearningReports();
-    if (activeTab === 'exams') {
-      fetchExamReports();
-      if (schools.length === 0) fetchSchools();
-    }
-  }, [activeTab]);
+    fetchAuditLogs();
+  }, []);
 
   // Tab 1 Columns (Audit Logs)
   const auditColumns = useMemo(() => [
@@ -213,109 +136,6 @@ export default function AdminAuditPage() {
     },
   ], []);
 
-  // Tab 2 Columns (Learning Reports)
-  const learningColumns = useMemo(() => [
-    {
-      accessorKey: 'user.name',
-      header: 'Nama Siswa',
-      cell: (info) => (
-        <div>
-          <div className="font-bold text-slate-900 dark:text-slate-100">{info.getValue() || 'Siswa'}</div>
-          <div className="text-xs text-slate-400">{info.row.original.user?.school || 'Umum'}</div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'course.title',
-      header: 'Kursus / Modul',
-      cell: (info) => (
-        <div>
-          <div className="font-semibold text-slate-800 dark:text-slate-200">{info.getValue() || 'Kursus'}</div>
-          <div className="text-xs text-slate-400">{info.row.original.course?.category || 'Umum'}</div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'progress_percentage',
-      header: 'Progres Belajar',
-      cell: (info) => {
-        const val = info.getValue() || 0;
-        return (
-          <div className="w-36">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="font-bold">{val}%</span>
-              <span className="text-slate-400">{val >= 100 ? 'Selesai' : 'Belajar'}</span>
-            </div>
-            <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${val >= 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
-                style={{ width: `${Math.min(val, 100)}%` }}
-              />
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: 'updated_at',
-      header: 'Aktivitas Terakhir',
-      cell: (info) => (
-        <div className="text-xs text-slate-500">
-          {new Date(info.getValue()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </div>
-      ),
-    },
-  ], []);
-
-  // Tab 3 Columns (Exam Reports)
-  const examColumns = useMemo(() => [
-    {
-      accessorKey: 'user.name',
-      header: 'Peserta Ujian',
-      cell: (info) => (
-        <div>
-          <div className="font-bold text-slate-900 dark:text-slate-100">{info.getValue() || 'Peserta'}</div>
-          <div className="text-xs text-slate-400">{info.row.original.user?.school || 'Umum'}</div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'exam_title',
-      header: 'Paket Ujian CBT',
-      cell: (info) => (
-        <div className="font-semibold text-slate-800 dark:text-slate-200">
-          {info.getValue() || info.row.original.exam?.title || 'Ujian CBT'}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'score',
-      header: 'Perolehan Skor',
-      cell: (info) => {
-        const score = info.getValue() !== null ? Number(info.getValue()) : 0;
-        const passing = Number(info.row.original.exam?.passing_score ?? 70);
-        const pass = score >= passing;
-        return (
-          <div className="flex items-center gap-2">
-            <span className={`text-base font-black ${pass ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-              {score} pts
-            </span>
-            <Badge color={pass ? 'emerald' : 'amber'}>{pass ? 'Lulus' : 'Remedial'}</Badge>
-            <span className="text-[10px] text-slate-400 font-medium">KKM {passing}</span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: 'submitted_at',
-      header: 'Waktu Submit',
-      cell: (info) => (
-        <div className="text-xs text-slate-500">
-          {info.getValue() ? new Date(info.getValue()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
-        </div>
-      ),
-    },
-  ], []);
 
   return (
     <AppLayout title="Audit & Laporan Sistem">
@@ -327,12 +147,17 @@ export default function AdminAuditPage() {
               <span className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base shadow-md shadow-blue-500/20">
                 <FontAwesomeIcon icon={['fas', 'shield-halved']} />
               </span>
-              Audit & Laporan Sistem
+              Audit & Log Aktivitas Sistem
             </h2>
             <p className="text-slate-500 text-sm mt-1">
-              Pantau rekam jejak aktivitas pengguna, evaluasi tren belajar, dan analisis performa ujian sebagai dasar pengambilan keputusan.
+              Pantau rekam jejak aktivitas pengguna & log keamanan sistem.
             </p>
           </div>
+          <a href="/admin/reports">
+            <Button variant="outline" className="text-purple-600 border-purple-500 hover:bg-purple-50 dark:text-purple-400">
+              <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1.5" /> Buka Dashboard Laporan & Statistik
+            </Button>
+          </a>
         </div>
 
         {/* Tab Navigation */}
@@ -348,31 +173,9 @@ export default function AdminAuditPage() {
             <FontAwesomeIcon icon={['fas', 'list-check']} />
             Log Aktivitas (Audit)
           </button>
-          <button
-            onClick={() => setActiveTab('learning')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 ${
-              activeTab === 'learning'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <FontAwesomeIcon icon={['fas', 'graduation-cap']} />
-            Laporan Pembelajaran
-          </button>
-          <button
-            onClick={() => setActiveTab('exams')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 ${
-              activeTab === 'exams'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <FontAwesomeIcon icon={['fas', 'file-waveform']} />
-            Laporan Ujian CBT
-          </button>
         </div>
 
-        {/* TAB 1: AUDIT LOGS */}
+        {/* AUDIT LOGS */}
         {activeTab === 'audit' && (
           <div className="space-y-6">
             {/* KPI Cards */}
@@ -442,141 +245,6 @@ export default function AdminAuditPage() {
             {/* Logs Table */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
               <DataTable columns={auditColumns} data={logs} loading={logsLoading} />
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: LEARNING REPORTS */}
-        {activeTab === 'learning' && (
-          <div className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard
-                label="Total Siswa Belajar"
-                value={learningMetrics?.total_enrollments ?? 0}
-                icon={<FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-blue-500" />}
-                color="blue"
-              />
-              <StatCard
-                label="Tuntas 100% (Lulus)"
-                value={learningMetrics?.completed_enrollments ?? 0}
-                icon={<FontAwesomeIcon icon={['fas', 'award']} className="text-emerald-500" />}
-                color="emerald"
-              />
-              <StatCard
-                label="Rata-rata Progres"
-                value={`${learningMetrics?.avg_progress ?? 0}%`}
-                icon={<FontAwesomeIcon icon={['fas', 'chart-line']} className="text-purple-500" />}
-                color="purple"
-              />
-            </div>
-
-            {/* Filters */}
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <Input
-                  placeholder="Cari siswa, sekolah, kursus..."
-                  value={searchLearning}
-                  onChange={e => setSearchLearning(e.target.value)}
-                />
-              </div>
-              <select
-                value={statusLearning}
-                onChange={e => setStatusLearning(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm"
-              >
-                <option value="">Semua Status</option>
-                <option value="ongoing">Sedang Belajar (&lt;100%)</option>
-                <option value="completed">Selesai (100%)</option>
-              </select>
-              <Button onClick={fetchLearningReports}>
-                <FontAwesomeIcon icon={['fas', 'magnifying-glass']} className="mr-1.5" /> Cari
-              </Button>
-            </div>
-
-            {/* Learning Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
-              <DataTable columns={learningColumns} data={learningReports} loading={learningLoading} />
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: EXAM REPORTS */}
-        {activeTab === 'exams' && (
-          <div className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard
-                label="Total Sesi Ujian Disubmit"
-                value={examMetrics?.total_sessions ?? 0}
-                icon={<FontAwesomeIcon icon={['fas', 'file-signature']} className="text-blue-500" />}
-                color="blue"
-              />
-              <StatCard
-                label="Rata-rata Nilai CBT"
-                value={`${examMetrics?.avg_score ?? 0} pts`}
-                icon={<FontAwesomeIcon icon={['fas', 'gauge-high']} className="text-amber-500" />}
-                color="gold"
-              />
-              <StatCard
-                label="Skor Tertinggi"
-                value={`${examMetrics?.highest_score ?? 0} pts`}
-                icon={<FontAwesomeIcon icon={['fas', 'trophy']} className="text-emerald-500" />}
-                color="emerald"
-              />
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <Input
-                  placeholder="Cari peserta, paket ujian, sekolah..."
-                  value={searchExam}
-                  onChange={e => setSearchExam(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && fetchExamReports()}
-                />
-              </div>
-              <select
-                value={schoolExamFilter}
-                onChange={e => {
-                  const val = e.target.value;
-                  setSchoolExamFilter(val);
-                  fetchExamReports({ school: val });
-                }}
-                className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none min-w-[200px]"
-              >
-                <option value="">Semua Sekolah</option>
-                {schools.map((sch, idx) => {
-                  const name = typeof sch === 'object' && sch !== null ? sch.name : sch;
-                  const key = typeof sch === 'object' && sch !== null ? (sch.id || idx) : idx;
-                  return (
-                    <option key={key} value={name}>
-                      {name}
-                    </option>
-                  );
-                })}
-              </select>
-              <Button onClick={() => fetchExamReports()}>
-                <FontAwesomeIcon icon={['fas', 'magnifying-glass']} className="mr-1.5" /> Cari
-              </Button>
-              {(searchExam || schoolExamFilter) && (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setSearchExam('');
-                    setSchoolExamFilter('');
-                    fetchExamReports({ search: '', school: '' });
-                  }}
-                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400"
-                >
-                  <FontAwesomeIcon icon={['fas', 'xmark']} className="mr-1.5" /> Reset
-                </Button>
-              )}
-            </div>
-
-            {/* Exam Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
-              <DataTable columns={examColumns} data={examReports} loading={examLoading} />
             </div>
           </div>
         )}

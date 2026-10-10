@@ -6,6 +6,7 @@ import Badge from '../../../../atoms/Badge';
 import Avatar from '../../../../atoms/Avatar';
 import api from '../../../../../services/api';
 import { toast } from 'react-toastify';
+import StudentReportModal from '../../Reports/StudentReportModal';
 
 export default function AdminUserDetailPage() {
   const { id } = useParams();
@@ -13,6 +14,7 @@ export default function AdminUserDetailPage() {
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showReport, setShowReport] = useState(false);
 
   const fetchUserDetail = async () => {
     setLoading(true);
@@ -95,6 +97,11 @@ export default function AdminUserDetailPage() {
             <Link to="/admin/users">
               <Button variant="ghost" size="sm">Kelola di Tabel</Button>
             </Link>
+            {isSiswa && (
+              <Button size="sm" onClick={() => setShowReport(true)} className="flex items-center gap-1.5">
+                📋 Rapor Siswa
+              </Button>
+            )}
           </div>
         </div>
 
@@ -247,6 +254,10 @@ export default function AdminUserDetailPage() {
             </div>
           )}
         </div>
+
+        {showReport && isSiswa && (
+          <StudentReportModal userId={user.id} onClose={() => setShowReport(false)} />
+        )}
       </div>
     </AppLayout>
   );

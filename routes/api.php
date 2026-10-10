@@ -9,8 +9,10 @@ use App\Http\Controllers\Api\Admin\AdminExamQuestionController;
 use App\Http\Controllers\Api\Admin\AdminExamTypeController;
 use App\Http\Controllers\Api\Admin\AdminModuleLessonController;
 use App\Http\Controllers\Api\Admin\AdminReportController;
+use App\Http\Controllers\Api\Admin\AdminReportDashboardController;
 use App\Http\Controllers\Api\Admin\AdminRoleController;
 use App\Http\Controllers\Api\Admin\AdminSchoolController;
+use App\Http\Controllers\Api\Admin\AdminStudentReportController;
 use App\Http\Controllers\Api\Admin\FeatureController;
 use App\Http\Controllers\Api\Admin\LandingHeroController;
 use App\Http\Controllers\Api\Admin\LandingPromoController;
@@ -173,8 +175,11 @@ Route::middleware('auth:api')->group(function () {
         Route::get('audit-logs', [AdminAuditLogController::class, 'index']);
         Route::get('audit-logs/stats', [AdminAuditLogController::class, 'stats']);
         Route::get('audit-logs/{auditLog}', [AdminAuditLogController::class, 'show']);
+        Route::get('reports/dashboard', [AdminReportDashboardController::class, 'index']);
         Route::get('reports/learning', [AdminReportController::class, 'learningReports']);
         Route::get('reports/exams', [AdminReportController::class, 'examReports']);
+        Route::get('users/{user}/report', [AdminStudentReportController::class, 'show']);
+        Route::get('cbt/sessions/{session}/detail', [AdminStudentReportController::class, 'sessionDetail']);
     });
 
     // School Admin Routes
