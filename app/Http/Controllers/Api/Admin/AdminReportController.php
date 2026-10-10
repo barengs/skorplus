@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CbtSession;
 use App\Models\CourseEnrollment;
+use App\Models\School;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -68,13 +70,15 @@ class AdminReportController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('school', 'like', "%{$search}%");
-            })->orWhereHas('exam', function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%");
-            })->orWhere('exam_title', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($u) use ($search) {
+                    $u->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('school', 'like', "%{$search}%");
+                })->orWhereHas('exam', function ($e) use ($search) {
+                    $e->where('title', 'like', "%{$search}%");
+                })->orWhere('exam_title', 'like', "%{$search}%");
+            });
         }
 
         if ($request->filled('exam_id')) {
@@ -82,14 +86,15 @@ class AdminReportController extends Controller
         }
 
         if ($request->filled('school')) {
-            $school = $request->school;
-            $query->whereHas('user', function ($q) use ($school) {
-                $q->where(function ($sq) use ($school) {
+            $school = trim($request->school);
+            $schoolLower = strtolower($school);
+            $query->whereHas('user', function ($q) use ($school, $schoolLower) {
+                $q->where(function ($sq) use ($school, $schoolLower) {
                     $sq->where('school', $school)
-                        ->orWhere('school', 'like', "%{$school}%")
-                        ->orWhereHas('schoolEntity', function ($rel) use ($school) {
+                        ->orWhereRaw('LOWER(school) LIKE ?', ['%'.$schoolLower.'%'])
+                        ->orWhereHas('schoolEntity', function ($rel) use ($school, $schoolLower) {
                             $rel->where('name', $school)
-                                ->orWhere('name', 'like', "%{$school}%");
+                                ->orWhereRaw('LOWER(name) LIKE ?', ['%'.$schoolLower.'%']);
                         });
                 });
             });
@@ -102,6 +107,8 @@ class AdminReportController extends Controller
 
         $reports = $query->latest('submitted_at')->paginate($request->input('per_page', 20));
 
+        $schools = $this->availableSchools();
+
         return response()->json([
             'metrics' => [
                 'total_sessions' => $totalSessions,
@@ -109,6 +116,28 @@ class AdminReportController extends Controller
                 'highest_score' => round($highestScore, 2),
             ],
             'reports' => $reports,
+            'schools' => $schools,
         ]);
+    }
+
+    /**
+     * Merged list of school names for report filters:
+     * from the schools table plus any distinct school strings present on users.
+     */
+    protected function availableSchools(): array
+    {
+        $fromSchools = School::pluck('name');
+        $fromUsers = User::whereNotNull('school')
+            ->where('school', '!=', '')
+            ->distinct()
+            ->pluck('school');
+
+        return $fromSchools
+            ->merge($fromUsers)
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 }

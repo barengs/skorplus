@@ -90,16 +90,22 @@ export default function AdminAuditPage() {
   };
 
   // Fetch Exam Reports
-  const fetchExamReports = async () => {
+  const fetchExamReports = async (overrideParams = {}) => {
     setExamLoading(true);
     try {
       const params = {};
-      if (searchExam) params.search = searchExam;
-      if (schoolExamFilter) params.school = schoolExamFilter;
+      const search = overrideParams.search !== undefined ? overrideParams.search : searchExam;
+      const school = overrideParams.school !== undefined ? overrideParams.school : schoolExamFilter;
+
+      if (search) params.search = search;
+      if (school) params.school = school;
 
       const res = await api.get('/admin/reports/exams', { params });
       setExamReports(res.data.reports?.data || []);
       setExamMetrics(res.data.metrics);
+      if (res.data.schools && Array.isArray(res.data.schools) && res.data.schools.length > 0) {
+        setSchools(res.data.schools);
+      }
     } catch {
       toast.error('Gagal memuat laporan ujian');
     } finally {
@@ -107,11 +113,13 @@ export default function AdminAuditPage() {
     }
   };
 
-  // Fetch schools list for filter dropdown
+  // Fetch schools list for filter dropdown (fallback)
   const fetchSchools = async () => {
     try {
       const res = await api.get('/admin/schools');
-      setSchools(Array.isArray(res.data) ? res.data : []);
+      if (Array.isArray(res.data)) {
+        setSchools(prev => (prev.length > 0 ? prev : res.data));
+      }
     } catch {
       // silent: dropdown akan tetap kosong jika gagal
     }
@@ -525,23 +533,45 @@ export default function AdminAuditPage() {
                   placeholder="Cari peserta, paket ujian, sekolah..."
                   value={searchExam}
                   onChange={e => setSearchExam(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && fetchExamReports()}
                 />
               </div>
               <select
                 value={schoolExamFilter}
-                onChange={e => setSchoolExamFilter(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  setSchoolExamFilter(val);
+                  fetchExamReports({ school: val });
+                }}
                 className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none min-w-[200px]"
               >
                 <option value="">Semua Sekolah</option>
-                {schools.map(sch => (
-                  <option key={sch.id} value={sch.name}>
-                    {sch.name}
-                  </option>
-                ))}
+                {schools.map((sch, idx) => {
+                  const name = typeof sch === 'object' && sch !== null ? sch.name : sch;
+                  const key = typeof sch === 'object' && sch !== null ? (sch.id || idx) : idx;
+                  return (
+                    <option key={key} value={name}>
+                      {name}
+                    </option>
+                  );
+                })}
               </select>
-              <Button onClick={fetchExamReports}>
+              <Button onClick={() => fetchExamReports()}>
                 <FontAwesomeIcon icon={['fas', 'magnifying-glass']} className="mr-1.5" /> Cari
               </Button>
+              {(searchExam || schoolExamFilter) && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchExam('');
+                    setSchoolExamFilter('');
+                    fetchExamReports({ search: '', school: '' });
+                  }}
+                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                >
+                  <FontAwesomeIcon icon={['fas', 'xmark']} className="mr-1.5" /> Reset
+                </Button>
+              )}
             </div>
 
             {/* Exam Table */}
