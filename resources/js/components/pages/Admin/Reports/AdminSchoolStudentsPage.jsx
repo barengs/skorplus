@@ -7,6 +7,7 @@ import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { exportToCsv } from '../../../../utils/exportCsv';
+import StudentReportModal from './StudentReportModal';
 
 export default function AdminSchoolStudentsPage() {
   const { id } = useParams();
@@ -20,6 +21,8 @@ export default function AdminSchoolStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const searchRef = useRef(null);
+  // Modal Rapor Siswa (per individu)
+  const [reportStudentId, setReportStudentId] = useState(null);
 
   const fetchStudents = async (query = '') => {
     setLoading(true);
@@ -45,8 +48,8 @@ export default function AdminSchoolStudentsPage() {
     fetchStudents(search.trim());
   };
 
-  const handleOpenStudent = (studentId) => {
-    window.open(`/admin/users/${studentId}`, '_blank');
+  const handleOpenRapor = (studentId) => {
+    setReportStudentId(studentId);
   };
 
   const totalWithScore = students.filter(
@@ -183,7 +186,7 @@ export default function AdminSchoolStudentsPage() {
               </span>
             </h3>
             <span className="text-xs text-slate-400 hidden md:block">
-              Klik baris siswa untuk membuka detil data siswa pada laman baru
+              Klik baris siswa untuk membuka Rapor Siswa
             </span>
           </div>
 
@@ -206,9 +209,9 @@ export default function AdminSchoolStudentsPage() {
                 {students.map((student) => (
                   <tr
                     key={student.id}
-                    onClick={() => handleOpenStudent(student.id)}
+                    onClick={() => handleOpenRapor(student.id)}
                     className="hover:bg-blue-50/60 dark:hover:bg-blue-900/20 cursor-pointer transition-colors group"
-                    title="Klik untuk membuka detil data siswa di laman baru"
+                    title="Klik untuk membuka Rapor Siswa"
                   >
                     <td className="p-3">
                       <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center gap-2">
@@ -270,12 +273,12 @@ export default function AdminSchoolStudentsPage() {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleOpenStudent(student.id);
+                          handleOpenRapor(student.id);
                         }}
                         className="group-hover:border-blue-500 group-hover:text-blue-600 text-xs"
                       >
-                        <FontAwesomeIcon icon={['fas', 'arrow-up-right-from-square']} className="mr-1.5 text-blue-500" />
-                        Detil Siswa
+                        <FontAwesomeIcon icon={['fas', 'id-card']} className="mr-1.5 text-blue-500" />
+                        Rapor Siswa
                       </Button>
                     </td>
                   </tr>
@@ -292,6 +295,10 @@ export default function AdminSchoolStudentsPage() {
           )}
         </div>
       </div>
+
+      {reportStudentId && (
+        <StudentReportModal userId={reportStudentId} onClose={() => setReportStudentId(null)} />
+      )}
     </AppLayout>
   );
 }
