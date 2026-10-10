@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
 import Badge from '../../../atoms/Badge';
@@ -95,40 +96,9 @@ export default function AdminReportPage() {
   };
 
   // Fetch data siswa untuk sekolah tertentu saat baris diklik
-  const handleSelectSchool = async (school) => {
-    if (selectedSchool?.id === school.id) {
-      // Toggle tutup jika sekolah yang sama diklik kembali
-      setSelectedSchool(null);
-      setSchoolStudents([]);
-      return;
-    }
-
-    setSelectedSchool(school);
-    setSearchSchoolStudent('');
-    setSchoolStudentsLoading(true);
-    try {
-      const res = await api.get(`/admin/reports/schools/${school.id}/students`);
-      setSchoolStudents(res.data.students || []);
-    } catch {
-      toast.error(`Gagal memuat data siswa untuk ${school.name}`);
-      setSchoolStudents([]);
-    } finally {
-      setSchoolStudentsLoading(false);
-    }
+  const handleSelectSchool = (school) => {
+    navigate(`/admin/reports/schools/${school.id}`, { state: { school } });
   };
-
-  // Filter siswa berdasarkan input pencarian
-  const filteredSchoolStudents = useMemo(() => {
-    if (!searchSchoolStudent) return schoolStudents;
-    const q = searchSchoolStudent.toLowerCase();
-    return schoolStudents.filter(
-      (s) =>
-        s.name?.toLowerCase().includes(q) ||
-        s.email?.toLowerCase().includes(q) ||
-        s.nisn?.toLowerCase().includes(q) ||
-        s.last_cbt_title?.toLowerCase().includes(q)
-    );
-  }, [schoolStudents, searchSchoolStudent]);
 
   useEffect(() => {
     fetchDashboardStats();
