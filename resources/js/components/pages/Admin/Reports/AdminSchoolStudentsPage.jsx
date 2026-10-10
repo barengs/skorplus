@@ -270,15 +270,15 @@ export default function AdminSchoolStudentsPage() {
                     <td className="p-3 text-right no-print">
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenRapor(student.id);
                         }}
-                        className="group-hover:border-blue-500 group-hover:text-blue-600 text-xs"
+                        className="group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 text-xs px-3 font-bold flex items-center justify-center whitespace-nowrap w-fit ml-auto"
                       >
-                        <FontAwesomeIcon icon={['fas', 'id-card']} className="mr-1.5 text-blue-500" />
-                        Rapor Siswa
+                        <FontAwesomeIcon icon={['fas', 'id-card']} className="mr-2 text-blue-600 dark:text-blue-400 text-sm" />
+                        Rapor
                       </Button>
                     </td>
                   </tr>
