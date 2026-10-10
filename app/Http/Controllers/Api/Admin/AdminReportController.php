@@ -84,7 +84,14 @@ class AdminReportController extends Controller
         if ($request->filled('school')) {
             $school = $request->school;
             $query->whereHas('user', function ($q) use ($school) {
-                $q->where('school', $school);
+                $q->where(function ($sq) use ($school) {
+                    $sq->where('school', $school)
+                        ->orWhere('school', 'like', "%{$school}%")
+                        ->orWhereHas('schoolEntity', function ($rel) use ($school) {
+                            $rel->where('name', $school)
+                                ->orWhere('name', 'like', "%{$school}%");
+                        });
+                });
             });
         }
 

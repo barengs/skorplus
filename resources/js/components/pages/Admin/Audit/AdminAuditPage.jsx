@@ -43,6 +43,8 @@ export default function AdminAuditPage() {
   const [examMetrics, setExamMetrics] = useState(null);
   const [examLoading, setExamLoading] = useState(false);
   const [searchExam, setSearchExam] = useState('');
+  const [schoolExamFilter, setSchoolExamFilter] = useState('');
+  const [schools, setSchools] = useState([]);
 
   // Fetch Audit Logs
   const fetchAuditLogs = async () => {
@@ -93,6 +95,7 @@ export default function AdminAuditPage() {
     try {
       const params = {};
       if (searchExam) params.search = searchExam;
+      if (schoolExamFilter) params.school = schoolExamFilter;
 
       const res = await api.get('/admin/reports/exams', { params });
       setExamReports(res.data.reports?.data || []);
@@ -104,10 +107,23 @@ export default function AdminAuditPage() {
     }
   };
 
+  // Fetch schools list for filter dropdown
+  const fetchSchools = async () => {
+    try {
+      const res = await api.get('/admin/schools');
+      setSchools(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      // silent: dropdown akan tetap kosong jika gagal
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'audit') fetchAuditLogs();
     if (activeTab === 'learning') fetchLearningReports();
-    if (activeTab === 'exams') fetchExamReports();
+    if (activeTab === 'exams') {
+      fetchExamReports();
+      if (schools.length === 0) fetchSchools();
+    }
   }, [activeTab]);
 
   // Tab 1 Columns (Audit Logs)
@@ -503,7 +519,7 @@ export default function AdminAuditPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <Input
                   placeholder="Cari peserta, paket ujian, sekolah..."
@@ -511,6 +527,18 @@ export default function AdminAuditPage() {
                   onChange={e => setSearchExam(e.target.value)}
                 />
               </div>
+              <select
+                value={schoolExamFilter}
+                onChange={e => setSchoolExamFilter(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none min-w-[200px]"
+              >
+                <option value="">Semua Sekolah</option>
+                {schools.map(sch => (
+                  <option key={sch.id} value={sch.name}>
+                    {sch.name}
+                  </option>
+                ))}
+              </select>
               <Button onClick={fetchExamReports}>
                 <FontAwesomeIcon icon={['fas', 'magnifying-glass']} className="mr-1.5" /> Cari
               </Button>
