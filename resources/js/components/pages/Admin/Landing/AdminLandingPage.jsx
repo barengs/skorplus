@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppLayout from '../../../templates/AppLayout';
 import Button from '../../../atoms/Button';
-import Badge from '../../../atoms/Badge';
 import Input from '../../../atoms/Input';
 import FormField from '../../../molecules/FormField';
 import api from '../../../../services/api';
@@ -31,29 +30,26 @@ export default function AdminLandingPage() {
   });
 
   const [features, setFeatures] = useState([]);
-  const [testimonials, setTestimonials] = useState([]);
   const [stats, setStats] = useState([]);
 
   // Modal states
-  const [modalType, setModalType] = useState(null); // 'feature' | 'testimonial' | 'stat'
+  const [modalType, setModalType] = useState(null); // 'feature' | 'stat'
   const [editingItem, setEditingItem] = useState(null);
 
   // Fetch all CMS data
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [hRes, pRes, fRes, tRes, sRes] = await Promise.all([
+      const [hRes, pRes, fRes, sRes] = await Promise.all([
         api.get('/admin/landing-hero'),
         api.get('/admin/landing-promo'),
         api.get('/admin/features'),
-        api.get('/admin/testimonials'),
         api.get('/admin/stats'),
       ]);
 
       if (hRes.data) setHero(hRes.data);
       if (pRes.data) setPromo(pRes.data);
       setFeatures(fRes.data || []);
-      setTestimonials(tRes.data || []);
       setStats(sRes.data || []);
     } catch (err) {
       console.error(err);
@@ -111,12 +107,6 @@ export default function AdminLandingPage() {
         } else {
           await api.post('/admin/features', editingItem);
         }
-      } else if (modalType === 'testimonial') {
-        if (editingItem.id) {
-          await api.put(`/admin/testimonials/${editingItem.id}`, editingItem);
-        } else {
-          await api.post('/admin/testimonials', editingItem);
-        }
       } else if (modalType === 'stat') {
         if (editingItem.id) {
           await api.put(`/admin/stats/${editingItem.id}`, editingItem);
@@ -156,7 +146,6 @@ export default function AdminLandingPage() {
             { id: 'hero', label: '🎯 Hero Section' },
             { id: 'promo', label: '📢 Promo Banner' },
             { id: 'features', label: '⚡ Fitur' },
-            { id: 'testimonials', label: '💬 Testimoni' },
             { id: 'stats', label: '📊 Statistik' },
           ].map((tab) => (
             <button
@@ -347,68 +336,6 @@ export default function AdminLandingPage() {
           </div>
         )}
 
-        {/* Tab 5: Testimonials */}
-        {activeTab === 'testimonials' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Daftar Testimoni Siswa</h3>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditingItem({
-                    name: '',
-                    school: '',
-                    university: '',
-                    score: 720,
-                    avatar_text: 'AB',
-                    avatar_color: 'from-blue-500 to-violet-600',
-                    is_active: true,
-                    sort_order: testimonials.length + 1,
-                  });
-                  setModalType('testimonial');
-                }}
-              >
-                + Tambah Testimoni
-              </Button>
-            </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {testimonials.map((t) => (
-                <div key={t.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-6 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.avatar_color} flex items-center justify-center font-bold text-white text-sm`}>
-                        {t.avatar_text}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t.name}</p>
-                        <p className="text-xs text-slate-500">{t.school}</p>
-                      </div>
-                    </div>
-                    <Badge color="emerald" className="mb-2 text-xs">✓ {t.university}</Badge>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Skor UTBK: <strong className="text-blue-500">{t.score}</strong></p>
-                  </div>
-                  <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingItem(t);
-                        setModalType('testimonial');
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDelete('testimonial', t.id)}>
-                      Hapus
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Tab 6: Stats */}
         {activeTab === 'stats' && (
           <div className="space-y-6">
@@ -492,54 +419,6 @@ export default function AdminLandingPage() {
                         required
                       />
                     </FormField>
-                  </>
-                )}
-
-                {modalType === 'testimonial' && (
-                  <>
-                    <FormField label="Nama Siswa">
-                      <Input
-                        value={editingItem.name || ''}
-                        onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                        required
-                      />
-                    </FormField>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField label="Asal Sekolah">
-                        <Input
-                          value={editingItem.school || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, school: e.target.value })}
-                        />
-                      </FormField>
-                      <FormField label="Universitas Diterima">
-                        <Input
-                          value={editingItem.university || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, university: e.target.value })}
-                        />
-                      </FormField>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <FormField label="Skor UTBK">
-                        <Input
-                          type="number"
-                          value={editingItem.score || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, score: parseInt(e.target.value) || 0 })}
-                        />
-                      </FormField>
-                      <FormField label="Inisial Avatar">
-                        <Input
-                          value={editingItem.avatar_text || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, avatar_text: e.target.value })}
-                        />
-                      </FormField>
-                      <FormField label="Gradien Warna">
-                        <Input
-                          value={editingItem.avatar_color || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, avatar_color: e.target.value })}
-                          placeholder="from-blue-500 to-violet-600"
-                        />
-                      </FormField>
-                    </div>
                   </>
                 )}
 
