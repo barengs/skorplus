@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import AppLayout from '../../../templates/AppLayout';
@@ -22,6 +22,108 @@ export default function AdminExamQuestionsPage() {
   const [excelDropdownOpen, setExcelDropdownOpen] = useState(false);
   const fileInputRef = useRef(null);
   const excelDropdownRef = useRef(null);
+
+  // Quill Image Handler & Configuration
+  const questionQuillRef = useRef(null);
+  const explanationQuillRef = useRef(null);
+
+  const uploadAndInsertImage = async (file, quill, customSuccessMsg = 'Gambar berhasil disisipkan! 🖼️') => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('File harus berupa gambar (JPG, PNG, WebP, GIF).');
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Ukuran gambar maksimal 20MB.');
+      return;
+    }
+
+    const toastId = toast.loading('Mengunggah gambar...');
+    try {
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+
+      const res = await api.post('/admin/upload/thumbnail', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (res.data && res.data.url) {
+        const range = quill.getSelection(true) || { index: quill.getLength() };
+        quill.insertEmbed(range.index, 'image', res.data.url);
+        quill.setSelection(range.index + 1);
+        toast.update(toastId, {
+          render: customSuccessMsg,
+          type: 'success',
+          isLoading: false,
+          autoClose: 2000,
+        });
+      } else {
+        throw new Error('URL gambar tidak ditemukan');
+      }
+    } catch (err) {
+      toast.update(toastId, {
+        render: err.response?.data?.message || 'Gagal mengunggah gambar',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleImageUpload = (getQuill) => {
+    return function () {
+      const quill = this?.quill || (typeof getQuill === 'function' ? getQuill() : getQuill?.current?.getEditor());
+      if (!quill) {
+        toast.error('Editor tidak ditemukan.');
+        return;
+      }
+      const input = document.createElement('input');
+      input.setAttribute('type', 'file');
+      input.setAttribute('accept', 'image/*');
+      input.click();
+
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (file) {
+          uploadAndInsertImage(file, quill);
+        }
+      };
+    };
+  };
+
+  const quillModulesQuestion = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ header: [1, 2, 3, 4, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ script: 'sub' }, { script: 'super' }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link', 'image'],
+        ['clean'],
+      ],
+      handlers: {
+        image: handleImageUpload(() => questionQuillRef.current?.getEditor()),
+      },
+    },
+  }), []);
+
+  const quillModulesExplanation = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ header: [1, 2, 3, 4, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ script: 'sub' }, { script: 'super' }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link', 'image'],
+        ['clean'],
+      ],
+      handlers: {
+        image: handleImageUpload(() => explanationQuillRef.current?.getEditor()),
+      },
+    },
+  }), []);
 
   // Form states
   const OPTION_KEYS = ['A', 'B', 'C', 'D', 'E'];
@@ -76,6 +178,59 @@ export default function AdminExamQuestionsPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [excelDropdownOpen]);
+
+  // Handle clipboard paste and drag & drop for images directly in editors
+  useEffect(() => {
+    if (!modalOpen) return;
+
+    const cleanups = [];
+    const timer = setTimeout(() => {
+      [questionQuillRef, explanationQuillRef].forEach((ref) => {
+        const editor = ref.current?.getEditor();
+        if (!editor || !editor.root) return;
+
+        const handlePaste = (e) => {
+          const clipboardData = e.clipboardData || window.clipboardData;
+          if (!clipboardData || !clipboardData.items) return;
+
+          for (let i = 0; i < clipboardData.items.length; i++) {
+            const item = clipboardData.items[i];
+            if (item.type.indexOf('image') !== -1) {
+              e.preventDefault();
+              const file = item.getAsFile();
+              if (file) {
+                uploadAndInsertImage(file, editor, 'Gambar dari clipboard disisipkan! 📋🖼️');
+              }
+              break;
+            }
+          }
+        };
+
+        const handleDrop = (e) => {
+          if (e.dataTransfer?.files?.length > 0) {
+            const file = e.dataTransfer.files[0];
+            if (file.type.startsWith('image/')) {
+              e.preventDefault();
+              uploadAndInsertImage(file, editor, 'Gambar berhasil disisipkan! 🖼️');
+            }
+          }
+        };
+
+        editor.root.addEventListener('paste', handlePaste);
+        editor.root.addEventListener('drop', handleDrop);
+
+        cleanups.push(() => {
+          editor.root.removeEventListener('paste', handlePaste);
+          editor.root.removeEventListener('drop', handleDrop);
+        });
+      });
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      cleanups.forEach((cleanup) => cleanup());
+    };
+  }, [modalOpen]);
 
   const openModal = (question = null) => {
     if (question) {
@@ -777,15 +932,27 @@ export default function AdminExamQuestionsPage() {
                         <span>📝 Isi Pertanyaan Soal</span>
                         <span className="text-rose-500">*</span>
                       </label>
-                      <span className="text-xs text-slate-400">Dukungan format teks kaya, gambar & formula</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleImageUpload(() => questionQuillRef.current?.getEditor())()}
+                          className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800/60 transition"
+                          title="Unggah dan sisipkan gambar ke dalam pertanyaan"
+                        >
+                          <span>🖼️ Sisipkan Gambar</span>
+                        </button>
+                        <span className="hidden sm:inline text-xs text-slate-400">Dukungan format teks kaya & gambar</span>
+                      </div>
                     </div>
                     <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-500">
                       <ReactQuill
+                        ref={questionQuillRef}
                         theme="snow"
                         value={formData.question_text}
                         onChange={(content) => setFormData({...formData, question_text: content})}
                         className="h-44 sm:h-52 mb-11"
                         placeholder="Ketikkan teks pertanyaan di sini..."
+                        modules={quillModulesQuestion}
                       />
                     </div>
                   </div>
@@ -796,15 +963,27 @@ export default function AdminExamQuestionsPage() {
                       <label className="text-sm font-bold text-slate-900 dark:text-slate-100">
                         💡 Penjelasan & Kunci Pembahasan
                       </label>
-                      <span className="text-xs text-slate-400">Muncul pada hasil evaluasi setelah submit</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleImageUpload(() => explanationQuillRef.current?.getEditor())()}
+                          className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800/60 transition"
+                          title="Unggah dan sisipkan gambar ke pembahasan"
+                        >
+                          <span>🖼️ Sisipkan Gambar</span>
+                        </button>
+                        <span className="hidden sm:inline text-xs text-slate-400">Muncul setelah evaluasi selesai</span>
+                      </div>
                     </div>
                     <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-500">
                       <ReactQuill
+                        ref={explanationQuillRef}
                         theme="snow"
                         value={formData.explanation_text}
                         onChange={(content) => setFormData({...formData, explanation_text: content})}
                         className="h-32 mb-11"
                         placeholder="Tuliskan langkah-langkah penyelesaian atau pembahasan..."
+                        modules={quillModulesExplanation}
                       />
                     </div>
                   </div>
