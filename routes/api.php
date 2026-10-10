@@ -176,6 +176,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('audit-logs/stats', [AdminAuditLogController::class, 'stats']);
         Route::get('audit-logs/{auditLog}', [AdminAuditLogController::class, 'show']);
         Route::get('reports/dashboard', [AdminReportDashboardController::class, 'index']);
+        Route::get('reports/schools/{school}/students', [AdminReportDashboardController::class, 'schoolStudents']);
         Route::get('reports/learning', [AdminReportController::class, 'learningReports']);
         Route::get('reports/exams', [AdminReportController::class, 'examReports']);
         Route::get('users/{user}/report', [AdminStudentReportController::class, 'show']);

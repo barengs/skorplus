@@ -33,6 +33,12 @@ export default function AdminReportPage() {
   // Modal Rapor Siswa (per individu)
   const [reportStudentId, setReportStudentId] = useState(null);
 
+  // States for Drill-down Siswa per Sekolah di tab "Analitik Sekolah"
+  const [selectedSchool, setSelectedSchool] = useState(null);
+  const [schoolStudents, setSchoolStudents] = useState([]);
+  const [schoolStudentsLoading, setSchoolStudentsLoading] = useState(false);
+  const [searchSchoolStudent, setSearchSchoolStudent] = useState('');
+
   // Fetch Dashboard aggregate stats
   const fetchDashboardStats = async () => {
     setLoading(true);
@@ -87,6 +93,42 @@ export default function AdminReportPage() {
       setExamLoading(false);
     }
   };
+
+  // Fetch data siswa untuk sekolah tertentu saat baris diklik
+  const handleSelectSchool = async (school) => {
+    if (selectedSchool?.id === school.id) {
+      // Toggle tutup jika sekolah yang sama diklik kembali
+      setSelectedSchool(null);
+      setSchoolStudents([]);
+      return;
+    }
+
+    setSelectedSchool(school);
+    setSearchSchoolStudent('');
+    setSchoolStudentsLoading(true);
+    try {
+      const res = await api.get(`/admin/reports/schools/${school.id}/students`);
+      setSchoolStudents(res.data.students || []);
+    } catch {
+      toast.error(`Gagal memuat data siswa untuk ${school.name}`);
+      setSchoolStudents([]);
+    } finally {
+      setSchoolStudentsLoading(false);
+    }
+  };
+
+  // Filter siswa berdasarkan input pencarian
+  const filteredSchoolStudents = useMemo(() => {
+    if (!searchSchoolStudent) return schoolStudents;
+    const q = searchSchoolStudent.toLowerCase();
+    return schoolStudents.filter(
+      (s) =>
+        s.name?.toLowerCase().includes(q) ||
+        s.email?.toLowerCase().includes(q) ||
+        s.nisn?.toLowerCase().includes(q) ||
+        s.last_cbt_title?.toLowerCase().includes(q)
+    );
+  }, [schoolStudents, searchSchoolStudent]);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -440,7 +482,7 @@ export default function AdminReportPage() {
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr className="border-b-2 border-slate-200 dark:border-slate-800">
-                                <th className="p-3 text-sm font-bold text-slate-600 dark:text-slate-300">Mitra Sekolah</th>
+                                <th className="p-3 text-sm font-bold text-slate-600 dark:text-slate-300">Mitra Sekolah (Klik untuk Siswa)</th>
                                 <th className="p-3 text-sm font-bold text-slate-600 dark:text-slate-300">Jml Siswa</th>
                                 <th className="p-3 text-sm font-bold text-slate-600 dark:text-slate-300 text-center bg-blue-50/50 dark:bg-blue-900/10">Avg. Skor CBT</th>
                                 <th className="p-3 text-sm font-bold text-slate-600 dark:text-slate-300 text-center bg-blue-50/50 dark:bg-blue-900/10">Lulus CBT (%)</th>
@@ -449,34 +491,64 @@ export default function AdminReportPage() {
                         </thead>
                         <tbody>
                             {schoolsData.schools_list?.length > 0 ? (
-                                schoolsData.schools_list.map(school => (
-                                    <tr key={school.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="p-3">
-                                            <div className="font-bold text-slate-900 dark:text-slate-100">{school.name}</div>
-                                            <div className="text-[10px] text-slate-500 uppercase">Paket: {school.package_name}</div>
-                                        </td>
-                                        <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">
-                                            {school.students_count} <FontAwesomeIcon icon={['fas', 'user']} className="text-slate-400 text-xs ml-1" />
-                                        </td>
-                                        <td className="p-3 text-center bg-blue-50/30 dark:bg-blue-900/5">
-                                            <div className="font-black text-blue-600 dark:text-blue-400">{school.avg_cbt_score} pts</div>
-                                            <div className="text-[10px] text-slate-400">{school.cbt_sessions_count} sesi</div>
-                                        </td>
-                                        <td className="p-3 text-center bg-blue-50/30 dark:bg-blue-900/5">
-                                            <span className={`px-2 py-1 rounded text-xs font-bold ${school.cbt_pass_rate >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400'}`}>
-                                                {school.cbt_pass_rate}%
-                                            </span>
-                                        </td>
-                                        <td className="p-3 bg-emerald-50/30 dark:bg-emerald-900/5">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                                                    <div className="bg-emerald-500 h-full rounded-full" style={{width: `${Math.min(school.avg_progress, 100)}%`}}></div>
+                                schoolsData.schools_list.map(school => {
+                                    const isSelected = selectedSchool?.id === school.id;
+                                    return (
+                                        <tr
+                                            key={school.id}
+                                            onClick={() => handleSelectSchool(school)}
+                                            className={`border-b border-slate-100 dark:border-slate-800 transition-all cursor-pointer group ${
+                                                isSelected
+                                                    ? 'bg-blue-50/90 dark:bg-blue-950/40 ring-1 ring-blue-500/40'
+                                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                            }`}
+                                            title="Klik untuk melihat data siswa sekolah ini"
+                                        >
+                                            <td className="p-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs transition-colors ${
+                                                        isSelected
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600 dark:group-hover:bg-blue-900/40 dark:group-hover:text-blue-400'
+                                                    }`}>
+                                                        <FontAwesomeIcon icon={['fas', isSelected ? 'chevron-down' : 'chevron-right']} />
+                                                    </span>
+                                                    <div>
+                                                        <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-2">
+                                                            {school.name}
+                                                            {isSelected && (
+                                                                <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-semibold">
+                                                                    Terpilih
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-500 uppercase">Paket: {school.package_name}</div>
+                                                    </div>
                                                 </div>
-                                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 w-8">{school.avg_progress}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                            <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">
+                                                {school.students_count} <FontAwesomeIcon icon={['fas', 'user']} className="text-slate-400 text-xs ml-1" />
+                                            </td>
+                                            <td className="p-3 text-center bg-blue-50/30 dark:bg-blue-900/5">
+                                                <div className="font-black text-blue-600 dark:text-blue-400">{school.avg_cbt_score} pts</div>
+                                                <div className="text-[10px] text-slate-400">{school.cbt_sessions_count} sesi</div>
+                                            </td>
+                                            <td className="p-3 text-center bg-blue-50/30 dark:bg-blue-900/5">
+                                                <span className={`px-2 py-1 rounded text-xs font-bold ${school.cbt_pass_rate >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400'}`}>
+                                                    {school.cbt_pass_rate}%
+                                                </span>
+                                            </td>
+                                            <td className="p-3 bg-emerald-50/30 dark:bg-emerald-900/5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                                        <div className="bg-emerald-500 h-full rounded-full" style={{width: `${Math.min(school.avg_progress, 100)}%`}}></div>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 w-8">{school.avg_progress}%</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
                                     <td colSpan="5" className="p-6 text-center text-slate-500 text-sm">Tidak ada data mitra sekolah ditemukan.</td>
@@ -485,6 +557,176 @@ export default function AdminReportPage() {
                         </tbody>
                     </table>
                  </div>
+
+                 {/* SECTION DATA SISWA SEKOLAH YANG DIKLIK */}
+                 {selectedSchool && (
+                    <div className="bg-white dark:bg-slate-900 border-2 border-blue-500/30 dark:border-blue-500/20 rounded-2xl p-6 shadow-md animate-fade-in-up space-y-4">
+                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                          <div>
+                             <div className="flex items-center gap-2">
+                                <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs">
+                                   <FontAwesomeIcon icon={['fas', 'user-graduate']} />
+                                </span>
+                                <h4 className="font-black text-lg text-slate-900 dark:text-slate-100">
+                                   Data Siswa Mitra: <span className="text-blue-600 dark:text-blue-400">{selectedSchool.name}</span>
+                                </h4>
+                                <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2.5 py-0.5 rounded-full">
+                                   {filteredSchoolStudents.length} Siswa
+                                </span>
+                             </div>
+                             <p className="text-xs text-slate-500 mt-1">
+                                Klik salah satu baris siswa di bawah untuk langsung membuka <span className="font-semibold text-blue-600 dark:text-blue-400">Rapor Siswa Akademik</span>.
+                             </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <Input
+                                placeholder="Cari nama atau NISN..."
+                                value={searchSchoolStudent}
+                                onChange={(e) => setSearchSchoolStudent(e.target.value)}
+                                className="w-56 text-sm"
+                             />
+                             <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                   const cols = [
+                                      { key: 'name', label: 'Nama Siswa' },
+                                      { key: 'nisn', label: 'NISN' },
+                                      { key: 'email', label: 'Email' },
+                                      { key: 'program', label: 'Program' },
+                                      { key: 'last_cbt_score', label: 'Skor CBT Terakhir' },
+                                      { key: 'last_cbt_title', label: 'Ujian CBT Terakhir' },
+                                      { key: 'last_activity', label: 'Aktivitas Terakhir' },
+                                   ];
+                                   exportToCsv(
+                                      filteredSchoolStudents,
+                                      cols,
+                                      `data-siswa-${selectedSchool.name.toLowerCase().replace(/\s+/g, '-')}`
+                                   );
+                                }}
+                                disabled={filteredSchoolStudents.length === 0}
+                             >
+                                <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5" /> CSV
+                             </Button>
+                             <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                   setSelectedSchool(null);
+                                   setSchoolStudents([]);
+                                }}
+                                title="Tutup daftar siswa"
+                             >
+                                <FontAwesomeIcon icon={['fas', 'xmark']} />
+                             </Button>
+                          </div>
+                       </div>
+
+                       {schoolStudentsLoading ? (
+                          <div className="py-12 flex flex-col items-center justify-center text-slate-400">
+                             <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mb-3" />
+                             <p className="text-sm font-semibold">Memuat data siswa {selectedSchool.name}...</p>
+                          </div>
+                       ) : (
+                          <div className="overflow-x-auto">
+                             <table className="w-full text-left border-collapse min-w-[700px]">
+                                <thead>
+                                   <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                                      <th className="p-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Siswa</th>
+                                      <th className="p-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Skor CBT Terakhir</th>
+                                      <th className="p-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Aktivitas Terakhir</th>
+                                      <th className="p-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right no-print">Rapor</th>
+                                   </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                   {filteredSchoolStudents.length > 0 ? (
+                                      filteredSchoolStudents.map((student) => (
+                                         <tr
+                                            key={student.id}
+                                            onClick={() => setReportStudentId(student.id)}
+                                            className="hover:bg-blue-50/60 dark:hover:bg-blue-900/20 cursor-pointer transition-colors group"
+                                            title="Klik untuk membuka Rapor Siswa"
+                                         >
+                                            <td className="p-3">
+                                               <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center gap-2">
+                                                  <span>{student.name}</span>
+                                                  <span className="text-xs opacity-0 group-hover:opacity-100 text-blue-500 transition-opacity">📋</span>
+                                               </div>
+                                               <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                                                  <span>NISN: {student.nisn || '-'}</span>
+                                                  {student.program && (
+                                                     <>
+                                                        <span>•</span>
+                                                        <span className="uppercase text-[11px] font-semibold text-slate-500">{student.program}</span>
+                                                     </>
+                                                  )}
+                                               </div>
+                                            </td>
+                                            <td className="p-3 text-center">
+                                               {student.last_cbt_score !== null && student.last_cbt_score !== undefined ? (
+                                                  <div>
+                                                     <div className={`font-black text-base ${
+                                                        Number(student.last_cbt_score) >= 70
+                                                           ? 'text-emerald-600 dark:text-emerald-400'
+                                                           : 'text-amber-600 dark:text-amber-400'
+                                                     }`}>
+                                                        {student.last_cbt_score} pts
+                                                     </div>
+                                                     <div className="text-[11px] text-slate-400 truncate max-w-[200px] mx-auto" title={student.last_cbt_title}>
+                                                        {student.last_cbt_title || 'Ujian CBT'}
+                                                     </div>
+                                                  </div>
+                                               ) : (
+                                                  <span className="text-xs text-slate-400 italic">Belum ada ujian</span>
+                                               )}
+                                            </td>
+                                            <td className="p-3">
+                                               <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                  {student.last_activity}
+                                               </div>
+                                               <div className="text-xs text-slate-400 mt-0.5">
+                                                  {student.last_activity_at
+                                                     ? new Date(student.last_activity_at).toLocaleDateString('id-ID', {
+                                                          day: 'numeric',
+                                                          month: 'short',
+                                                          year: 'numeric',
+                                                          hour: '2-digit',
+                                                          minute: '2-digit',
+                                                       })
+                                                     : '-'}
+                                               </div>
+                                            </td>
+                                            <td className="p-3 text-right no-print">
+                                               <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={(e) => {
+                                                     e.stopPropagation();
+                                                     setReportStudentId(student.id);
+                                                  }}
+                                                  className="group-hover:border-blue-500 group-hover:text-blue-600 text-xs"
+                                               >
+                                                  <FontAwesomeIcon icon={['fas', 'id-card']} className="mr-1.5 text-blue-500" />
+                                                  Buka Rapor
+                                               </Button>
+                                            </td>
+                                         </tr>
+                                      ))
+                                   ) : (
+                                      <tr>
+                                         <td colSpan="4" className="p-8 text-center text-slate-400 text-sm">
+                                            {searchSchoolStudent
+                                               ? 'Tidak ada siswa yang cocok dengan pencarian.'
+                                               : 'Belum ada data siswa terdaftar pada sekolah ini.'}
+                                         </td>
+                                      </tr>
+                                   )}
+                                </tbody>
+                             </table>
+                          </div>
+                       )}
+                    </div>
+                 )}
               </div>
             )}
 

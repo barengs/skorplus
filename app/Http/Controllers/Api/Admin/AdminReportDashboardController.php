@@ -370,4 +370,90 @@ class AdminReportDashboardController extends Controller
             'materials_stats' => $materialStats,
         ]);
     }
+
+    /**
+     * Daftar siswa milik sebuah mitra sekolah beserta skor CBT terakhir
+     * dan aktivitas terakhirnya. Dipakai ketika baris sekolah diklik
+     * pada tab Analitik Sekolah.
+     */
+    public function schoolStudents(Request $request, School $school): JsonResponse
+    {
+        $studentQuery = User::role('siswa', 'api')
+            ->where(function ($q) use ($school) {
+                $q->where('school_id', $school->id)
+                    ->orWhere('school', $school->name)
+                    ->orWhereRaw('LOWER(school) = ?', [strtolower($school->name)]);
+            });
+
+        $search = $request->query('search');
+        if ($search) {
+            $studentQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('nisn', 'like', "%{$search}%");
+            });
+        }
+
+        $students = $studentQuery
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'nisn', 'program', 'school', 'is_active', 'updated_at']);
+
+        $studentIds = $students->pluck('id');
+
+        // Skor CBT terakhir per siswa (batch, bukan query N+1)
+        $lastCbt = CbtSession::whereIn('user_id', $studentIds)
+            ->where('status', 'submitted')
+            ->orderByDesc('submitted_at')
+            ->get(['id', 'user_id', 'exam_id', 'exam_title', 'score', 'submitted_at'])
+            ->groupBy('user_id')
+            ->map(fn ($sessions) => $sessions->first());
+
+        // Aktivitas belajar E-Learning terakhir per siswa (batch)
+        $lastEnrollment = CourseEnrollment::with('course:id,title')
+            ->whereIn('user_id', $studentIds)
+            ->orderByDesc('updated_at')
+            ->get(['id', 'user_id', 'course_id', 'progress_percentage', 'updated_at'])
+            ->groupBy('user_id')
+            ->map(fn ($enrollments) => $enrollments->first());
+
+        $data = $students->map(function ($student) use ($lastCbt, $lastEnrollment) {
+            $cbt = $lastCbt->get($student->id);
+            $enrollment = $lastEnrollment->get($student->id);
+
+            $cbtDate = $cbt?->submitted_at;
+            $enrollDate = $enrollment?->updated_at;
+
+            // Aktivitas terakhir = antara pengerjaan CBT, belajar E-Learning, atau update profil
+            $candidates = collect([
+                ['date' => $cbtDate, 'label' => $cbt ? "Ujian CBT: {$cbt->exam_title}" : null],
+                ['date' => $enrollDate, 'label' => $enrollment ? 'Belajar E-Learning' : null],
+                ['date' => $student->updated_at, 'label' => 'Aktivitas Akun'],
+            ])->filter(fn ($c) => $c['date'] !== null && $c['label'] !== null);
+
+            $lastActivity = $candidates->sortByDesc(fn ($c) => $c['date'])->first();
+
+            return [
+                'id' => $student->id,
+                'name' => $student->name,
+                'email' => $student->email,
+                'nisn' => $student->nisn,
+                'program' => $student->program,
+                'is_active' => (bool) $student->is_active,
+                'last_cbt_score' => $cbt?->score,
+                'last_cbt_title' => $cbt?->exam_title,
+                'last_cbt_date' => $cbtDate?->toIso8601String(),
+                'last_activity' => $lastActivity['label'] ?? 'Belum ada aktivitas',
+                'last_activity_at' => $lastActivity['date']?->toIso8601String(),
+            ];
+        })->values();
+
+        return response()->json([
+            'school' => [
+                'id' => $school->id,
+                'name' => $school->name,
+            ],
+            'total_students' => $data->count(),
+            'students' => $data,
+        ]);
+    }
 }
