@@ -63,7 +63,7 @@ class AdminReportController extends Controller
      */
     public function examReports(Request $request): JsonResponse
     {
-        $query = CbtSession::with(['user:id,name,email,school,program', 'exam:id,title,pass_score'])
+        $query = CbtSession::with(['user:id,name,email,school,program', 'exam:id,title,passing_score'])
             ->where('status', 'submitted');
 
         if ($request->filled('search')) {

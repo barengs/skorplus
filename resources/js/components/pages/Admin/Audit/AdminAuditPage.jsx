@@ -269,13 +269,15 @@ export default function AdminAuditPage() {
       header: 'Perolehan Skor',
       cell: (info) => {
         const score = info.getValue() !== null ? Number(info.getValue()) : 0;
-        const pass = score >= 70;
+        const passing = Number(info.row.original.exam?.passing_score ?? 70);
+        const pass = score >= passing;
         return (
           <div className="flex items-center gap-2">
             <span className={`text-base font-black ${pass ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
               {score} pts
             </span>
             <Badge color={pass ? 'emerald' : 'amber'}>{pass ? 'Lulus' : 'Remedial'}</Badge>
+            <span className="text-[10px] text-slate-400 font-medium">KKM {passing}</span>
           </div>
         );
       },
