@@ -13,6 +13,7 @@ import { exportToCsv } from '../../../../utils/exportCsv';
 import StudentReportModal from './StudentReportModal';
 
 export default function AdminReportPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'schools', 'cbt', 'elearning', 'logs'
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
