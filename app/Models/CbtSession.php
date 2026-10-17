@@ -21,6 +21,10 @@ class CbtSession extends Model
         'score',
         'duration_seconds',
         'status', // ongoing, submitted, expired
+        'violation_count',
+        'last_violation_at',
+        'is_violation_submitted',
+        'violation_logs',
         'total_score',
         'subtest_scores',
         'question_order',
@@ -34,6 +38,9 @@ class CbtSession extends Model
         return [
             'started_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'last_violation_at' => 'datetime',
+            'is_violation_submitted' => 'boolean',
+            'violation_logs' => 'array',
             'subtest_scores' => 'array',
             'question_order' => 'array',
             'strengths' => 'array',

@@ -17,8 +17,18 @@ export default function DashboardPage() {
   const { data, loading } = useSelector((s) => s.dashboard);
   const user = useSelector((s) => s.auth.user);
 
+  const [activeCbtSession, setActiveCbtSession] = useState(null);
+
   useEffect(() => {
     dispatch(fetchDashboard());
+    // Cek jika siswa memiliki sesi ujian CBT yang sedang berjalan
+    api.get('/cbt/active-session')
+      .then((res) => {
+        if (res.data?.active_session) {
+          setActiveCbtSession(res.data.active_session);
+        }
+      })
+      .catch(() => {});
   }, [dispatch]);
 
   const stats = data?.stats;
@@ -799,6 +809,39 @@ export default function DashboardPage() {
   return (
     <AppLayout title="Dashboard">
       <div className="flex flex-col gap-8 max-w-6xl">
+        {/* Banner Sesi Ujian Sedang Berlangsung */}
+        {activeCbtSession && (
+          <div className="bg-gradient-to-r from-amber-500 via-rose-500 to-rose-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-2xl shrink-0">
+                ⏱️
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider bg-white/25 px-2.5 py-0.5 rounded-full">
+                    Ujian Sedang Berlangsung
+                  </span>
+                  <span className="text-xs font-bold text-amber-100">
+                    Sisa Waktu: {Math.max(1, Math.round(activeCbtSession.remaining_seconds / 60))} Menit
+                  </span>
+                </div>
+                <h4 className="text-lg font-black mt-1">
+                  {activeCbtSession.session?.exam_title || 'Ujian CBT'}
+                </h4>
+                <p className="text-xs text-amber-100">
+                  Ujian Anda belum selesai. Seluruh jawaban Anda tersimpan aman di server.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/cbt"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black bg-white text-rose-600 hover:bg-amber-50 shadow-md transition-all shrink-0 active:scale-95"
+            >
+              <span>Lanjutkan Ujian Sekarang →</span>
+            </Link>
+          </div>
+        )}
+
         {/* Greeting */}
         <div className="bg-gradient-to-r from-blue-600/20 via-indigo-600/15 to-violet-600/20 border border-blue-500/20 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

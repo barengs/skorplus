@@ -13,6 +13,7 @@ use App\Models\Program;
 use App\Models\Question;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 
 class CbtController extends Controller
@@ -155,6 +156,71 @@ class CbtController extends Controller
             ->get();
 
         return response()->json(['sessions' => $sessions]);
+    }
+
+    /**
+     * Get current ongoing CBT session for the authenticated user, if any.
+     */
+    public function getActiveSession(): JsonResponse
+    {
+        $userId = auth('api')->id();
+        CbtSession::autoSubmitExpiredSessions();
+
+        $session = CbtSession::where('user_id', $userId)
+            ->where('status', 'ongoing')
+            ->latest('started_at')
+            ->first();
+
+        if (! $session) {
+            return response()->json(['active_session' => null]);
+        }
+
+        $durationSeconds = (int) ($session->duration_seconds ?: 5400);
+        $elapsedSeconds = $session->started_at ? (int) $session->started_at->diffInSeconds(now()) : 0;
+        $remainingSeconds = max(0, $durationSeconds - $elapsedSeconds);
+
+        // Auto-submit if session is well past duration + grace period
+        if ($session->started_at && $session->started_at->copy()->addSeconds($durationSeconds + 75)->isPast()) {
+            CbtSession::gradeAndSubmitSession($session);
+
+            return response()->json([
+                'active_session' => null,
+                'message' => 'Sesi ujian Anda telah berakhir dan otomatis dikumpulkan.',
+            ]);
+        }
+
+        $questions = $session->question_order ?? [];
+        if (empty($questions) && $session->exam_id) {
+            $exam = Exam::find($session->exam_id);
+            if ($exam) {
+                $questions = $this->getQuestionsFromExam($exam);
+            }
+        }
+
+        $clientQuestions = array_map(function ($q) {
+            unset($q['correct_option']);
+
+            return $q;
+        }, $questions);
+
+        $answers = CbtAnswer::where('cbt_session_id', $session->id)
+            ->get()
+            ->mapWithKeys(function ($ans) {
+                return [$ans->question_number => [
+                    'selected_option' => $ans->selected_option,
+                    'is_flagged' => (bool) $ans->is_flagged,
+                ]];
+            });
+
+        return response()->json([
+            'active_session' => [
+                'session' => $session,
+                'questions' => $clientQuestions,
+                'answers' => $answers,
+                'remaining_seconds' => $remainingSeconds,
+                'server_time' => now()->toIso8601String(),
+            ],
+        ]);
     }
 
     /**
@@ -313,6 +379,55 @@ class CbtController extends Controller
                 }
             }
         }
+        // 3. Resume existing ongoing session if explicitly requested with resume flag
+        if ($request->boolean('resume')) {
+            $existingSession = CbtSession::where('user_id', $userId)
+                ->where('status', 'ongoing')
+                ->where(function ($q) use ($exam, $request) {
+                    if ($exam) {
+                        $q->where('exam_id', $exam->id);
+                    } else {
+                        $q->where('exam_type', $request->exam_type);
+                    }
+                })
+                ->latest('started_at')
+                ->first();
+
+            if ($existingSession) {
+                $durationSeconds = (int) ($existingSession->duration_seconds ?: 5400);
+                $elapsedSeconds = $existingSession->started_at ? (int) $existingSession->started_at->diffInSeconds(now()) : 0;
+                $remainingSeconds = max(0, $durationSeconds - $elapsedSeconds);
+
+                if ($remainingSeconds > 0) {
+                    $questions = $existingSession->question_order ?? [];
+                    $clientQuestions = array_map(function ($q) {
+                        unset($q['correct_option']);
+
+                        return $q;
+                    }, $questions);
+
+                    $answers = CbtAnswer::where('cbt_session_id', $existingSession->id)
+                        ->get()
+                        ->mapWithKeys(function ($ans) {
+                            return [$ans->question_number => [
+                                'selected_option' => $ans->selected_option,
+                                'is_flagged' => (bool) $ans->is_flagged,
+                            ]];
+                        });
+
+                    return response()->json([
+                        'session' => $existingSession,
+                        'questions' => $clientQuestions,
+                        'answers' => $answers,
+                        'remaining_seconds' => $remainingSeconds,
+                        'is_resumed' => true,
+                        'message' => 'Melanjutkan sesi ujian Anda yang sedang berlangsung.',
+                    ], 200);
+                } else {
+                    CbtSession::gradeAndSubmitSession($existingSession);
+                }
+            }
+        }
 
         $session = CbtSession::create([
             'user_id' => auth('api')->id(),
@@ -367,6 +482,72 @@ class CbtController extends Controller
 
         return response()->json([
             'message' => 'Ujian berhasil dibatalkan. Kuota pengerjaan Anda tidak terpotong.',
+        ]);
+    }
+
+    /**
+     * Record an exam integrity violation (e.g. exiting fullscreen, switching tab, or losing focus).
+     */
+    public function recordViolation(Request $request, CbtSession $session): JsonResponse
+    {
+        if ($session->user_id !== auth('api')->id()) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        if ($session->status !== 'ongoing') {
+            return response()->json(['message' => 'Sesi sudah tidak aktif.'], 422);
+        }
+
+        $type = $request->input('type', 'focus_loss'); // fullscreen_exit, tab_switch, focus_loss, window_blur
+        $description = $request->input('description', 'Meninggalkan layar ujian / membuka aplikasi lain');
+
+        $violationCount = ((int) $session->violation_count) + 1;
+        $logs = $session->violation_logs ?? [];
+        $logs[] = [
+            'type' => $type,
+            'description' => $description,
+            'time' => now()->toIso8601String(),
+            'violation_number' => $violationCount,
+        ];
+
+        $session->violation_count = $violationCount;
+        $session->last_violation_at = Carbon::now();
+        $session->violation_logs = $logs;
+
+        AuditLog::record(
+            'CBT_EXAM_VIOLATION',
+            "Siswa {$session->user?->name} terdeteksi melakukan pelanggaran ujian CBT (#{$violationCount}): {$description}",
+            'cbt',
+            $session->exam,
+            ['session_id' => $session->id, 'violation_count' => $violationCount, 'type' => $type]
+        );
+
+        $maxViolations = 3;
+        $forceSubmitted = false;
+
+        // Jika mencapai atau melebihi batas toleransi pelanggaran, kunci & auto-submit
+        if ($violationCount >= $maxViolations) {
+            $session->is_violation_submitted = true;
+            $session->save();
+
+            CbtSession::gradeAndSubmitSession($session);
+            $forceSubmitted = true;
+
+            return response()->json([
+                'message' => "Batas maksimal toleransi pelanggaran ({$maxViolations}x) telah tercapai. Ujian Anda otomatis diserahkan oleh sistem karena terdeteksi meninggalkan layar ujian.",
+                'violation_count' => $violationCount,
+                'force_submitted' => true,
+                'session' => $session->fresh(),
+            ]);
+        }
+
+        $session->save();
+
+        return response()->json([
+            'message' => "Peringatan pelanggaran #{$violationCount} tercatat.",
+            'violation_count' => $violationCount,
+            'remaining_strikes' => max(0, $maxViolations - $violationCount),
+            'force_submitted' => false,
         ]);
     }
 

@@ -76,11 +76,13 @@ Route::middleware('auth:api')->group(function () {
 
     // CBT
     Route::prefix('cbt')->group(function () {
+        Route::get('active-session', [CbtController::class, 'getActiveSession']);
         Route::get('sessions', [CbtController::class, 'sessions']);
         Route::get('available-exams', [CbtController::class, 'availableExams']);
         Route::get('exam-types', [CbtController::class, 'examTypes']);
         Route::post('sessions', [CbtController::class, 'startSession']);
         Route::post('sessions/{session}/answer', [CbtController::class, 'saveAnswer']);
+        Route::post('sessions/{session}/record-violation', [CbtController::class, 'recordViolation']);
         Route::post('sessions/{session}/submit', [CbtController::class, 'submit']);
         Route::post('sessions/{session}/cancel', [CbtController::class, 'cancel']);
     });

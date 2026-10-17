@@ -55,6 +55,24 @@ export const cancelSession = createAsyncThunk('cbt/cancel', async (sessionId, { 
   }
 });
 
+export const fetchActiveSession = createAsyncThunk('cbt/fetchActiveSession', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get('/cbt/active-session');
+    return data.active_session;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message);
+  }
+});
+
+export const recordViolation = createAsyncThunk('cbt/recordViolation', async ({ sessionId, type, description }, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post(`/cbt/sessions/${sessionId}/record-violation`, { type, description });
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data || { message: 'Gagal mencatat pelanggaran.' });
+  }
+});
+
 export const fetchSessions = createAsyncThunk('cbt/fetchSessions', async (_, { rejectWithValue }) => {
   try {
     const { data } = await api.get('/cbt/sessions');
@@ -79,6 +97,11 @@ const cbtSlice = createSlice({
     result: null,
     error: null,
     quotaInfo: null,
+    activeSessionChecked: false,
+    violationCount: 0,
+    isViolationForceSubmitted: false,
+    lastViolationMessage: null,
+    resumedRemainingSeconds: null,
   },
   reducers: {
     setCurrentQuestion(state, action) { state.currentQuestion = action.payload; },
@@ -92,7 +115,18 @@ const cbtSlice = createSlice({
       else state.answers[n] = { selected_option: null, is_flagged: true };
     },
     clearSession(state) {
-      state.currentSession = null; state.questions = []; state.answers = {}; state.currentQuestion = 1; state.result = null;
+      state.currentSession = null;
+      state.questions = [];
+      state.answers = {};
+      state.currentQuestion = 1;
+      state.result = null;
+      state.violationCount = 0;
+      state.isViolationForceSubmitted = false;
+      state.lastViolationMessage = null;
+      state.resumedRemainingSeconds = null;
+    },
+    setResumedRemainingSeconds(state, action) {
+      state.resumedRemainingSeconds = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -107,19 +141,59 @@ const cbtSlice = createSlice({
       .addCase(fetchExamTypes.fulfilled, (state, action) => {
         state.examTypes = action.payload || [];
       })
+      .addCase(fetchActiveSession.pending, (state) => {
+        state.activeSessionChecked = false;
+      })
+      .addCase(fetchActiveSession.fulfilled, (state, action) => {
+        state.activeSessionChecked = true;
+        if (action.payload) {
+          state.currentSession = action.payload.session;
+          state.questions = action.payload.questions || [];
+          state.answers = action.payload.answers || {};
+          state.violationCount = action.payload.session?.violation_count || 0;
+          state.resumedRemainingSeconds = action.payload.remaining_seconds;
+        }
+      })
+      .addCase(fetchActiveSession.rejected, (state) => {
+        state.activeSessionChecked = true;
+      })
       .addCase(startSession.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(startSession.fulfilled, (state, action) => {
         state.loading = false;
         state.currentSession = action.payload.session;
         state.questions = action.payload.questions;
-        state.answers = {};
+        state.answers = action.payload.answers || {};
         state.currentQuestion = 1;
+        state.violationCount = action.payload.session?.violation_count || 0;
+        state.isViolationForceSubmitted = false;
+        state.lastViolationMessage = null;
+        if (action.payload.remaining_seconds !== undefined) {
+          state.resumedRemainingSeconds = action.payload.remaining_seconds;
+        }
       })
       .addCase(startSession.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || (typeof action.payload === 'string' ? action.payload : 'Gagal memulai sesi.');
         if (action.payload?.quota_info) {
           state.quotaInfo = action.payload.quota_info;
+        }
+      })
+      .addCase(saveAnswer.rejected, (state, action) => {
+        // Answer error handling
+      })
+      .addCase(recordViolation.fulfilled, (state, action) => {
+        state.violationCount = action.payload.violation_count ?? state.violationCount + 1;
+        state.lastViolationMessage = action.payload.message;
+        if (action.payload.force_submitted) {
+          state.isViolationForceSubmitted = true;
+          state.result = {
+            score: action.payload.session?.score ?? 0,
+            force_submitted: true,
+            reason: action.payload.message,
+          };
+          if (action.payload.session) {
+            state.currentSession = action.payload.session;
+          }
         }
       })
       .addCase(submitSession.pending, (state) => { state.submitting = true; })
@@ -133,6 +207,9 @@ const cbtSlice = createSlice({
         state.answers = {};
         state.currentQuestion = 1;
         state.result = null;
+        state.violationCount = 0;
+        state.isViolationForceSubmitted = false;
+        state.resumedRemainingSeconds = null;
       })
       .addCase(cancelSession.rejected, (state, action) => {
         state.loading = false;
@@ -142,5 +219,5 @@ const cbtSlice = createSlice({
   },
 });
 
-export const { setCurrentQuestion, setLocalAnswer, toggleFlag, clearSession } = cbtSlice.actions;
+export const { setCurrentQuestion, setLocalAnswer, toggleFlag, clearSession, setResumedRemainingSeconds } = cbtSlice.actions;
 export default cbtSlice.reducer;

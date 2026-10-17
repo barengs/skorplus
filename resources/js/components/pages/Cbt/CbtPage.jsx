@@ -8,12 +8,40 @@ import CbtAnswerOption from '../../molecules/CbtAnswerOption';
 import CbtNavigator from '../../organisms/CbtNavigator';
 import CountdownTimer from '../../atoms/CountdownTimer';
 import CbtLimitModal from '../../molecules/CbtLimitModal';
-import { fetchAvailableExams, fetchExamTypes, fetchSessions, startSession, submitSession, cancelSession, setCurrentQuestion, setLocalAnswer, toggleFlag, clearSession } from '../../../features/cbt/cbtSlice';
-import { saveAnswer } from '../../../features/cbt/cbtSlice';
+import { 
+  fetchAvailableExams, 
+  fetchExamTypes, 
+  fetchSessions, 
+  fetchActiveSession,
+  recordViolation,
+  startSession, 
+  submitSession, 
+  cancelSession, 
+  setCurrentQuestion, 
+  setLocalAnswer, 
+  toggleFlag, 
+  clearSession,
+  saveAnswer 
+} from '../../../features/cbt/cbtSlice';
 
 export default function CbtPage() {
   const dispatch = useDispatch();
-  const { availableExams, examTypes = [], sessions, currentSession, questions, answers, currentQuestion, loading, submitting, result, quotaInfo } = useSelector((s) => s.cbt);
+  const { 
+    availableExams, 
+    examTypes = [], 
+    sessions, 
+    currentSession, 
+    questions, 
+    answers, 
+    currentQuestion, 
+    loading, 
+    submitting, 
+    result, 
+    quotaInfo,
+    violationCount = 0,
+    isViolationForceSubmitted = false,
+    lastViolationMessage = null,
+  } = useSelector((s) => s.cbt);
 
   const [selectedType, setSelectedType] = useState(null);
   const [activeTab, setActiveTab] = useState('available');
@@ -26,11 +54,146 @@ export default function CbtPage() {
   const [graceTimeLeft, setGraceTimeLeft] = useState(60);
   const [showFrozenModal, setShowFrozenModal] = useState(false);
 
+  // Full Screen & Anti-Cheat States
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showViolationWarning, setShowViolationWarning] = useState(false);
+  const [violationReason, setViolationReason] = useState('');
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+
+  const enterFullscreen = () => {
+    try {
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+      setIsFullscreen(true);
+    } catch (e) {}
+  };
+
+  const exitFullscreen = () => {
+    try {
+      if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+      setIsFullscreen(false);
+    } catch (e) {}
+  };
+
+  // 1. Initial Load: Auto-Restore Active Session if user refreshed or navigated back
   useEffect(() => {
+    dispatch(fetchActiveSession()).then((res) => {
+      if (res.payload) {
+        toast.info('Sesi ujian aktif Anda telah dipulihkan. Silakan masuk ke mode layar penuh untuk melanjutkan.', { autoClose: 4000 });
+        setShowFullscreenPrompt(true);
+      }
+    });
     dispatch(fetchAvailableExams());
     dispatch(fetchExamTypes());
     dispatch(fetchSessions());
   }, [dispatch]);
+
+  // 2. Prevent accidental refresh / back / tab close (BeforeUnload & Keyboard Trap)
+  useEffect(() => {
+    if (!currentSession || isFrozen || result) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'Ujian CBT Anda sedang berlangsung. Jika Anda meninggalkan halaman ini, Anda harus masuk kembali dan waktu pengerjaan tetap berjalan di server.';
+      return e.returnValue;
+    };
+
+    const handleKeyDown = (e) => {
+      // Cegah F5 dan Ctrl+R / Cmd+R
+      if (
+        e.key === 'F5' ||
+        ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))
+      ) {
+        e.preventDefault();
+        toast.warning('Aksi refresh dinonaktifkan selama ujian untuk mencegah gangguan. Ujian Anda tetap aman.', { autoClose: 3000 });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentSession?.id, isFrozen, result]);
+
+  // 3. Monitor Fullscreen & Detect Opening Other Screens / Apps / Tabs
+  useEffect(() => {
+    if (!currentSession || isFrozen || result || !currentSession.id) return;
+
+    // A. Deteksi keluar dari Fullscreen
+    const handleFullscreenChange = () => {
+      const isNowFullscreen = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+
+      setIsFullscreen(isNowFullscreen);
+
+      if (!isNowFullscreen && !submitting && !result && !isFrozen) {
+        setViolationReason('Anda keluar dari mode Layar Penuh. Seluruh lembar soal ditutup demi integritas ujian.');
+        setShowViolationWarning(true);
+        dispatch(recordViolation({
+          sessionId: currentSession.id,
+          type: 'fullscreen_exit',
+          description: 'Keluar dari mode layar penuh (Fullscreen Exit / Escape)'
+        }));
+      }
+    };
+
+    // B. Deteksi pindah tab / browser minimize (Visibility Change)
+    const handleVisibilityChange = () => {
+      if (document.hidden && !submitting && !result && !isFrozen) {
+        setViolationReason('Anda terdeteksi beralih ke tab atau aplikasi lain. Seluruh lembar soal ditutup demi integritas ujian.');
+        setShowViolationWarning(true);
+        dispatch(recordViolation({
+          sessionId: currentSession.id,
+          type: 'tab_switch',
+          description: 'Membuka tab lain atau me-minimize jendela ujian'
+        }));
+      }
+    };
+
+    // C. Deteksi fokus kursor/layar hilang (Window Blur / Alt+Tab / Klik Screen Lain)
+    const handleWindowBlur = () => {
+      if (!submitting && !result && !isFrozen) {
+        setViolationReason('Kursor atau fokus berpindah ke aplikasi lain / screen lain. Lembar soal ditutup demi integritas ujian.');
+        setShowViolationWarning(true);
+        dispatch(recordViolation({
+          sessionId: currentSession.id,
+          type: 'window_blur',
+          description: 'Fokus berpindah ke layar atau aplikasi lain (Window Blur / Alt+Tab)'
+        }));
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [currentSession?.id, isFrozen, result, submitting, dispatch]);
 
   const handleStartExam = async () => {
     if (!selectedType) return;
@@ -40,6 +203,9 @@ export default function CbtPage() {
       return;
     }
 
+    // Masuk ke fullscreen sesaat sebelum atau saat mulai ujian
+    enterFullscreen();
+
     const res = await dispatch(startSession({
       exam_id: selectedType.is_real ? selectedType.id : undefined,
       exam_type: selectedType.is_real ? 'REAL' : selectedType.id,
@@ -48,6 +214,7 @@ export default function CbtPage() {
     }));
 
     if (startSession.rejected.match(res)) {
+      exitFullscreen();
       if (res.payload?.limit_reached) {
         setShowLimitModal(true);
       } else if (res.payload?.cooldown) {
@@ -55,6 +222,8 @@ export default function CbtPage() {
       } else {
         toast.error(res.payload?.message || (typeof res.payload === 'string' ? res.payload : 'Gagal memulai ujian.'));
       }
+    } else {
+      enterFullscreen();
     }
   };
 
@@ -191,6 +360,7 @@ export default function CbtPage() {
   const handleConfirmCancel = async () => {
     try {
       setCancelling(true);
+      exitFullscreen();
       const res = await dispatch(cancelSession(currentSession.id));
       if (cancelSession.fulfilled.match(res)) {
         toast.info(res.payload?.message || 'Ujian berhasil dibatalkan. Kuota pengerjaan Anda tidak terpotong.');
@@ -220,6 +390,7 @@ export default function CbtPage() {
 
   const handleConfirmSubmit = async () => {
     setShowSubmitModal(false);
+    exitFullscreen();
     const result = await dispatch(submitSession(currentSession.id));
     if (submitSession.fulfilled.match(result)) {
       toast.success(`Ujian selesai! Skor Anda: ${result.payload.score} 🎉`);
@@ -1119,6 +1290,74 @@ export default function CbtPage() {
                 Lihat Lembar Jawaban (Mode Beku)
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt: Resume Session & Enter Fullscreen After Reload */}
+      {showFullscreenPrompt && currentSession && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-3xl">
+              ⏳
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">Ujian Sedang Berlangsung!</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Sesi ujian Anda <strong>"{currentSession.exam_title}"</strong> berhasil dipulihkan dari pemutusan/refresh. Waktu terus berjalan di server.
+                Silakan masuk ke Mode Layar Penuh untuk melanjutkan pengerjaan dengan aman dan nyaman.
+              </p>
+            </div>
+            <Button
+              size="lg"
+              className="w-full font-bold"
+              onClick={() => {
+                enterFullscreen();
+                setShowFullscreenPrompt(false);
+              }}
+            >
+              ⛶ Masuk Layar Penuh & Lanjutkan Ujian
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Blackout Violation Overlay: Hides exam when student opens another screen/app */}
+      {showViolationWarning && currentSession && !isViolationForceSubmitted && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-2xl p-4 text-center">
+          <div className="max-w-md w-full space-y-5">
+            <div className="w-20 h-20 mx-auto rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-4xl animate-pulse">
+              🚨
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-white">PERINGATAN! Anda Menggantung / Membuka Aplikasi Lain</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Lembar soal telah disembunyikan karena Anda terdeteksi meninggalkan layar ujian. Anda wajib kembali ke mode layar penuh untuk melanjutkan.
+              </p>
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs font-semibold text-rose-300">
+                🚫 {violationReason}
+              </div>
+            </div>
+
+            <div className="space-y-1.5 text-sm font-bold text-white">
+              <p>Total Pelanggaran Tercatat: <span className="text-rose-400 font-mono text-xl">{violationCount} / 3</span></p>
+              {violationCount >= 2 ? (
+                <p className="text-xs text-amber-400 font-black">⚠️ HATİ: Sisa toleransi peringatan 1 kali. Jika melanggar lagi, ujian Anda langsung diserahkan secara paksa!</p>
+              ) : violationCount === 1 ? (
+                <p className="text-xs text-slate-400">⚠️ Jaga fokus ujian Anda dengan baik.</p>
+              ) : null}
+            </div>
+
+            <Button
+              size="lg"
+              className="w-full bg-rose-600 hover:bg-rose-700 border-rose-600 text-white font-black shadow-md"
+              onClick={() => {
+                setShowViolationWarning(false);
+                enterFullscreen();
+              }}
+            >
+              ⛶ Masuk Kembali ke Layar Penuh & Lanjutkan
+            </Button>
           </div>
         </div>
       )}
