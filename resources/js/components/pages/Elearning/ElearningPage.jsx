@@ -919,7 +919,7 @@ export default function ElearningPage() {
                           <iframe width="100%" height="100%" src={toEmbedUrl(selectedLesson.video_url)} title={selectedLesson.title} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
                         </div>
                       ) : selectedLesson.type === 'reading' ? (
-                        <div className="prose prose-slate dark:prose-invert max-w-none text-base leading-relaxed text-slate-800 dark:text-slate-200">
+                        <div className="prose rich-text ql-editor dark:prose-invert max-w-none text-base leading-relaxed text-slate-800 dark:text-slate-200">
                           <div dangerouslySetInnerHTML={{ __html: selectedLesson.content || 'Materi tidak tersedia' }} />
                         </div>
                       ) : selectedLesson.type === 'assignment' ? (
@@ -1034,7 +1034,7 @@ export default function ElearningPage() {
                           )}
 
                           {/* Assignment Instructions (Quill text) */}
-                          <div className="prose dark:prose-invert max-w-none">
+                          <div className="prose rich-text ql-editor dark:prose-invert max-w-none text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                             <div dangerouslySetInnerHTML={{ __html: selectedLesson.content || 'Instruksi tugas akhir sedang disiapkan.' }} />
                           </div>
 
@@ -1546,7 +1546,7 @@ export default function ElearningPage() {
                         {selectedLesson.summary && (
                           <div>
                             <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Ringkasan Materi</h3>
-                            <div className="text-sm text-slate-600 dark:text-slate-400" dangerouslySetInnerHTML={{ __html: selectedLesson.summary }} />
+                            <div className="text-sm text-slate-600 dark:text-slate-400 prose rich-text ql-editor dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: selectedLesson.summary }} />
                           </div>
                         )}
                       </div>

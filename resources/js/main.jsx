@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import 'react-quill-new/dist/quill.snow.css';
 import { store } from './app/store';
 import App from './App';
 import './app.css';

@@ -191,7 +191,7 @@ export default function CourseDetailView({
             {/* Description */}
             {course.description && (
               <div
-                className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800"
+                className="prose rich-text ql-editor dark:prose-invert max-w-none text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800"
                 dangerouslySetInnerHTML={{ __html: course.description }}
               />
             )}

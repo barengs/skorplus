@@ -68,3 +68,194 @@ body {
   }
 }
 
+/* 
+  ==============================================================
+  Rich Text, Article & Quill Content Styling (Numbering & Lists)
+  ==============================================================
+*/
+.prose,
+.rich-text,
+.ql-editor {
+  line-height: 1.7;
+}
+
+/* 1. Ordered Lists (Numbering) */
+.prose ol,
+.rich-text ol,
+.ql-editor ol {
+  list-style-type: decimal !important;
+  padding-left: 2rem !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.prose ol > li,
+.rich-text ol > li,
+.ql-editor ol > li {
+  list-style-type: decimal !important;
+  margin-bottom: 0.375rem !important;
+  padding-left: 0.25rem !important;
+}
+
+/* Nested ordered lists */
+.prose ol ol,
+.rich-text ol ol,
+.ql-editor ol ol {
+  list-style-type: lower-alpha !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.prose ol ol ol,
+.rich-text ol ol ol,
+.ql-editor ol ol ol {
+  list-style-type: lower-roman !important;
+  padding-left: 1.75rem !important;
+}
+
+/* 2. Unordered Lists (Bullets) */
+.prose ul,
+.rich-text ul,
+.ql-editor ul {
+  list-style-type: disc !important;
+  padding-left: 2rem !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.prose ul > li,
+.rich-text ul > li,
+.ql-editor ul > li {
+  list-style-type: disc !important;
+  margin-bottom: 0.375rem !important;
+  padding-left: 0.25rem !important;
+}
+
+/* Nested unordered lists */
+.prose ul ul,
+.rich-text ul ul,
+.ql-editor ul ul {
+  list-style-type: circle !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* 3. Quill 2.x specific data-list support (if Quill outputs data-list="ordered") */
+.prose ol,
+.rich-text ol,
+.ql-editor ol {
+  counter-reset: list-0 list-1 list-2 list-3;
+}
+
+.prose li[data-list="ordered"],
+.rich-text li[data-list="ordered"],
+.ql-editor li[data-list="ordered"] {
+  counter-increment: list-0;
+  position: relative;
+  list-style-type: none !important;
+  padding-left: 0.5rem !important;
+}
+
+.prose li[data-list="ordered"] > .ql-ui:before,
+.rich-text li[data-list="ordered"] > .ql-ui:before,
+.ql-editor li[data-list="ordered"] > .ql-ui:before {
+  content: counter(list-0, decimal) ". ";
+  position: absolute;
+  left: -1.75rem;
+  width: 1.5rem;
+  text-align: right;
+  font-weight: 600;
+  color: inherit;
+}
+
+.prose li[data-list="bullet"],
+.rich-text li[data-list="bullet"],
+.ql-editor li[data-list="bullet"] {
+  position: relative;
+  list-style-type: none !important;
+  padding-left: 0.5rem !important;
+}
+
+.prose li[data-list="bullet"] > .ql-ui:before,
+.rich-text li[data-list="bullet"] > .ql-ui:before,
+.ql-editor li[data-list="bullet"] > .ql-ui:before {
+  content: "•";
+  position: absolute;
+  left: -1.25rem;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+/* 4. Headings, Paragraphs, Blockquotes, Images inside rich text */
+.prose h1, .rich-text h1, .ql-editor h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.25;
+}
+
+.prose h2, .rich-text h2, .ql-editor h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.3;
+}
+
+.prose h3, .rich-text h3, .ql-editor h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.35;
+}
+
+.prose p, .rich-text p {
+  margin-top: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.prose blockquote, .rich-text blockquote, .ql-editor blockquote {
+  border-left: 4px solid #3b82f6 !important;
+  padding-left: 1rem !important;
+  margin: 1rem 0 !important;
+  font-style: italic !important;
+  color: #64748b !important;
+}
+
+.prose pre, .rich-text pre, .ql-editor pre {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+  overflow-x: auto !important;
+  margin: 1rem 0 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.85em !important;
+}
+
+.prose code, .rich-text code, .ql-editor code {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  padding: 0.15rem 0.4rem !important;
+  border-radius: 0.25rem !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.85em !important;
+}
+
+.dark .prose code, .dark .rich-text code, .dark .ql-editor code {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+.prose img, .rich-text img, .ql-editor img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 0.5rem !important;
+  margin: 1rem 0 !important;
+}
+
+

@@ -80,7 +80,7 @@ export default function AdminElearningPage() {
                     <Badge color="blue" className="mb-2">{course.category}</Badge>
                     <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-2 line-clamp-2">{course.title}</h3>
                     <div 
-                      className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3" 
+                      className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3 rich-text prose dark:prose-invert" 
                       dangerouslySetInnerHTML={{ __html: course.description }}
                     />
 

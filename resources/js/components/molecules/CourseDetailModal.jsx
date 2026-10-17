@@ -140,7 +140,7 @@ export default function CourseDetailModal({ course, modules = [], enrollment = n
 
             {/* Description */}
             <div className="mb-4">
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3" dangerouslySetInnerHTML={{ __html: course.description }} />
+              <div className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3 prose rich-text dark:prose-invert" dangerouslySetInnerHTML={{ __html: course.description }} />
             </div>
 
             {/* Progress Bar / Completion Status */}

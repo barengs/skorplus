@@ -269,10 +269,13 @@ export default function CourseDetailPage() {
               </h1>
 
               {/* Short Description */}
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                {course.description ||
-                  'Pelajari materi terstruktur dan komprehensif ini untuk menguasai kompetensi dari dasar hingga mahir dengan kurikulum yang telah teruji.'}
-              </p>
+              <div
+                className="text-slate-300 text-sm sm:text-base leading-relaxed line-clamp-3 prose dark:prose-invert"
+                dangerouslySetInnerHTML={{
+                  __html: course.description ||
+                    'Pelajari materi terstruktur dan komprehensif ini untuk menguasai kompetensi dari dasar hingga mahir dengan kurikulum yang telah teruji.'
+                }}
+              />
 
               {/* Meta information row */}
               <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-300 pt-1">
@@ -517,14 +520,13 @@ export default function CourseDetailPage() {
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Deskripsi Lengkap Kursus
               </h3>
-              <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed space-y-3">
-                <p>
-                  {course.description ||
-                    'Kursus ini dirancang oleh tutor berpengalaman untuk memberikan pemahaman menyeluruh terhadap konsep penting yang sering diujikan dan dibutuhkan di dunia akademik maupun industri.'}
-                </p>
-                <p>
-                  Setiap materi disusun secara bertahap dari pemahaman konsep dasar, visualisasi materi, pembahasan soal, hingga latihan kuis dan tugas mandiri. Siswa dapat belajar dengan fleksibel sesuai dengan ritme masing-masing.
-                </p>
+              <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed prose rich-text ql-editor dark:prose-invert max-w-none">
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: course.description ||
+                      '<p>Kursus ini dirancang oleh tutor berpengalaman untuk memberikan pemahaman menyeluruh terhadap konsep penting yang sering diujikan dan dibutuhkan di dunia akademik maupun industri.</p><p>Setiap materi disusun secara bertahap dari pemahaman konsep dasar, visualisasi materi, pembahasan soal, hingga latihan kuis dan tugas mandiri. Siswa dapat belajar dengan fleksibel sesuai dengan ritme masing-masing.</p>'
+                  }}
+                />
               </div>
             </div>
 
@@ -922,7 +924,7 @@ export default function CourseDetailPage() {
                 </div>
               ) : previewLesson.content ? (
                 <div
-                  className="prose dark:prose-invert max-w-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed"
+                  className="prose rich-text ql-editor dark:prose-invert max-w-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: previewLesson.content }}
                 />
               ) : (
