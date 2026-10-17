@@ -10,6 +10,7 @@ import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { exportToCsv } from '../../../../utils/exportCsv';
+import { printComprehensiveAnalyticsPDF } from '../../../../utils/pdfReportGenerator';
 import StudentReportModal from './StudentReportModal';
 
 export default function AdminReportPage() {
@@ -248,8 +249,8 @@ export default function AdminReportPage() {
             </p>
           </div>
           <div className="flex gap-2 no-print">
-             <Button variant="outline" onClick={() => window.print()} title="Cetak laporan (PDF)">
-                <FontAwesomeIcon icon={['fas', 'print']} className="mr-2" /> Cetak
+             <Button variant="outline" onClick={() => printComprehensiveAnalyticsPDF(dashboardData)} disabled={!dashboardData} title="Cetak dokumen analitik resmi (PDF)">
+                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-500" /> Cetak PDF
              </Button>
              <Button variant="outline" onClick={() => fetchDashboardStats()} disabled={loading}>
                 <FontAwesomeIcon icon={['fas', 'rotate-right']} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />

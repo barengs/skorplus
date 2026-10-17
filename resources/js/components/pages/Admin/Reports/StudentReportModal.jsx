@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Badge from '../../../atoms/Badge';
 import Button from '../../../atoms/Button';
+import { printStudentReportPDF, printCbtSessionDetailPDF } from '../../../../utils/pdfReportGenerator';
 
 export default function StudentReportModal({ userId, onClose }) {
   const [report, setReport] = useState(null);
@@ -47,8 +48,16 @@ export default function StudentReportModal({ userId, onClose }) {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrintReport = () => {
+    if (report) {
+      printStudentReportPDF(report);
+    }
+  };
+
+  const handlePrintSessionDetail = () => {
+    if (sessionDetail) {
+      printCbtSessionDetailPDF(sessionDetail);
+    }
   };
 
   if (loading) {
@@ -82,7 +91,7 @@ export default function StudentReportModal({ userId, onClose }) {
             </div>
             <div className="flex gap-2 no-print">
               <Button variant="outline" size="sm" onClick={() => setSelectedSessionId(null)}>← Kembali</Button>
-              <Button size="sm" onClick={handlePrint}><FontAwesomeIcon icon={['fas', 'print']} /> Cetak</Button>
+              <Button size="sm" onClick={handlePrintSessionDetail} title="Cetak lembar evaluasi pengerjaan soal (PDF)"><FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5" /> Cetak PDF</Button>
             </div>
           </div>
           
@@ -162,7 +171,7 @@ export default function StudentReportModal({ userId, onClose }) {
           </div>
           <div className="flex gap-2 no-print">
              <Button variant="outline" size="sm" onClick={onClose}>Batal / Tutup</Button>
-             <Button size="sm" onClick={handlePrint}><FontAwesomeIcon icon={['fas', 'print']} /> Cetak PDF</Button>
+             <Button size="sm" onClick={handlePrintReport} title="Cetak rapor akademik siswa (PDF)"><FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5" /> Cetak Rapor PDF</Button>
           </div>
         </div>
 
