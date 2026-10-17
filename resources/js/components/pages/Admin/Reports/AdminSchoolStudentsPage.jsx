@@ -7,6 +7,7 @@ import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { exportToCsv } from '../../../../utils/exportCsv';
+import { printSchoolStudentsPDF } from '../../../../utils/pdfReportGenerator';
 import StudentReportModal from './StudentReportModal';
 
 export default function AdminSchoolStudentsPage() {
@@ -109,6 +110,14 @@ export default function AdminSchoolStudentsPage() {
           </div>
 
           <div className="flex gap-2 no-print">
+            <Button
+              variant="outline"
+              onClick={() => printSchoolStudentsPDF(school, students)}
+              disabled={students.length === 0}
+              title="Cetak rekapitulasi data siswa & hasil CBT sekolah ini (PDF)"
+            >
+              <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF
+            </Button>
             <Button
               variant="outline"
               onClick={() =>

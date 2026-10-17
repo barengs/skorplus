@@ -10,7 +10,7 @@ import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { exportToCsv } from '../../../../utils/exportCsv';
-import { printComprehensiveAnalyticsPDF } from '../../../../utils/pdfReportGenerator';
+import { printComprehensiveAnalyticsPDF, printExecutiveSummaryPDF, printSchoolAnalyticsPDF, printCbtAnalyticsPDF, printMaterialsAnalyticsPDF, printSchoolStudentsPDF } from '../../../../utils/pdfReportGenerator';
 import StudentReportModal from './StudentReportModal';
 
 export default function AdminReportPage() {
@@ -248,9 +248,34 @@ export default function AdminReportPage() {
               Metrik tingkat lanjut untuk evaluasi sekolah, analisis efektivitas CBT, dan statistik penyelesaian E-Learning siswa.
             </p>
           </div>
-          <div className="flex gap-2 no-print">
-             <Button variant="outline" onClick={() => printComprehensiveAnalyticsPDF(dashboardData)} disabled={!dashboardData} title="Cetak dokumen analitik resmi (PDF)">
-                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-500" /> Cetak PDF
+          <div className="flex flex-wrap gap-2 no-print">
+             <Button variant="outline" onClick={() => printComprehensiveAnalyticsPDF(dashboardData)} disabled={!dashboardData} title="Cetak dokumen analitik komprehensif (Semua Bab: Ringkasan, Sekolah, CBT & Materi)">
+                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-500" /> Cetak Laporan Lengkap (Semua Bab)
+             </Button>
+             <Button
+                variant="outline"
+                disabled={!dashboardData}
+                title="Cetak khusus bagian/tab yang sedang aktif saat ini"
+                onClick={() => {
+                   if (activeTab === 'dashboard') {
+                      printExecutiveSummaryPDF(dashboardData);
+                   } else if (activeTab === 'schools') {
+                      printSchoolAnalyticsPDF(schoolsData, dashboardData);
+                   } else if (activeTab === 'cbt') {
+                      printCbtAnalyticsPDF(cbtData, dashboardData);
+                   } else if (activeTab === 'elearning') {
+                      printMaterialsAnalyticsPDF(materialsData, dashboardData);
+                   } else {
+                      printComprehensiveAnalyticsPDF(dashboardData);
+                   }
+                }}
+             >
+                <FontAwesomeIcon icon={['fas', 'print']} className="mr-2 text-blue-500" />
+                {activeTab === 'dashboard' && 'Cetak Ringkasan (PDF)'}
+                {activeTab === 'schools' && 'Cetak Analitik Sekolah (PDF)'}
+                {activeTab === 'cbt' && 'Cetak Analitik CBT (PDF)'}
+                {activeTab === 'elearning' && 'Cetak Analitik Materi (PDF)'}
+                {activeTab === 'logs' && 'Cetak Laporan Lengkap (PDF)'}
              </Button>
              <Button variant="outline" onClick={() => fetchDashboardStats()} disabled={loading}>
                 <FontAwesomeIcon icon={['fas', 'rotate-right']} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -431,25 +456,34 @@ export default function AdminReportPage() {
                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs overflow-x-auto">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
                        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Analisis Komprehensif per Sekolah</h3>
-                       <Button
-                          variant="outline"
-                          size="sm"
-                          className="no-print self-start"
-                          onClick={() => {
-                             const cols = [
-                                { key: 'name', label: 'Nama Sekolah' },
-                                { key: 'npsn', label: 'NPSN' },
-                                { key: 'package_name', label: 'Paket Belajar' },
-                                { key: 'students_count', label: 'Jumlah Siswa' },
-                                { key: 'avg_cbt_score', label: 'Rata-rata Skor CBT' },
-                                { key: 'cbt_pass_rate', label: 'Tingkat Kelulusan CBT (%)' },
-                                { key: 'avg_progress', label: 'Rata-rata Progres Belajar (%)' },
-                             ];
-                             exportToCsv(schoolsData.schools_list || [], cols, 'laporan-kinerja-sekolah');
-                          }}
-                       >
-                          <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5" /> Ekspor CSV Sekolah
-                       </Button>
+                       <div className="flex gap-2 no-print self-start">
+                          <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => printSchoolAnalyticsPDF(schoolsData, dashboardData)}
+                             title="Cetak Laporan Evaluasi & Kinerja Mitra Sekolah (PDF)"
+                          >
+                             <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF Sekolah
+                          </Button>
+                          <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => {
+                                const cols = [
+                                   { key: 'name', label: 'Nama Sekolah' },
+                                   { key: 'npsn', label: 'NPSN' },
+                                   { key: 'package_name', label: 'Paket Belajar' },
+                                   { key: 'students_count', label: 'Jumlah Siswa' },
+                                   { key: 'avg_cbt_score', label: 'Rata-rata Skor CBT' },
+                                   { key: 'cbt_pass_rate', label: 'Tingkat Kelulusan CBT (%)' },
+                                   { key: 'avg_progress', label: 'Rata-rata Progres Belajar (%)' },
+                                ];
+                                exportToCsv(schoolsData.schools_list || [], cols, 'laporan-kinerja-sekolah');
+                             }}
+                          >
+                             <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5" /> Ekspor CSV Sekolah
+                          </Button>
+                       </div>
                     </div>
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
@@ -557,6 +591,15 @@ export default function AdminReportPage() {
                                 onChange={(e) => setSearchSchoolStudent(e.target.value)}
                                 className="w-56 text-sm"
                              />
+                             <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => printSchoolStudentsPDF(selectedSchool, filteredSchoolStudents)}
+                                disabled={filteredSchoolStudents.length === 0}
+                                title="Cetak rekapitulasi data siswa dan skor CBT sekolah ini (PDF)"
+                             >
+                                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF
+                             </Button>
                              <Button
                                 variant="outline"
                                 size="sm"
@@ -723,7 +766,18 @@ export default function AdminReportPage() {
                  {/* Layout: Chart Kinerja Soal & Distribusi Skor */}
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                      <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
-                         <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-4 text-lg">Analisis Kinerja Paket Ujian</h3>
+                         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Analisis Kinerja Paket Ujian</h3>
+                            <Button
+                               variant="outline"
+                               size="sm"
+                               className="no-print self-start"
+                               onClick={() => printCbtAnalyticsPDF(cbtData, dashboardData)}
+                               title="Cetak Laporan Analitik CBT lengkap dengan distribusi skor (PDF)"
+                            >
+                               <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak Analitik CBT (PDF)
+                            </Button>
+                         </div>
                          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                              {cbtData.exams_ranking?.length > 0 ? (
                                  cbtData.exams_ranking.map((exam, i) => (
@@ -864,7 +918,18 @@ export default function AdminReportPage() {
                      </div>
 
                      <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
-                         <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-4 text-lg">Materi Terpopuler</h3>
+                         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Materi Terpopuler</h3>
+                            <Button
+                               variant="outline"
+                               size="sm"
+                               className="no-print self-start"
+                               onClick={() => printMaterialsAnalyticsPDF(materialsData, dashboardData)}
+                               title="Cetak Laporan Kurikulum & Analitik Materi E-Learning (PDF)"
+                            >
+                               <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak Analitik Materi (PDF)
+                            </Button>
+                         </div>
                          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                              {materialsData.courses_ranking?.length > 0 ? (
                                  materialsData.courses_ranking.map((course, i) => (
