@@ -487,91 +487,152 @@ export default function CbtPage() {
 
           {availableExams && availableExams.length > 0 ? (
             <div className="flex flex-col gap-3">
-              {availableExams.map((exam) => (
-                <button
-                  key={exam.id}
-                  onClick={() => {
-                    if (exam.cooldown_info?.in_cooldown) {
-                      toast.warning(`Ujian ini dalam masa jeda istirahat (sisa ${exam.cooldown_info.remaining_minutes} menit). Anda dapat mengulang kembali pada pukul ${exam.cooldown_info.retry_at_time} WIB.`);
-                      return;
-                    }
-                    if (exam.is_open === false) {
-                      if (exam.schedule_status === 'upcoming') {
-                        toast.info(`Ujian belum dibuka. Jadwal: ${exam.schedule_description}`);
-                      } else if (exam.schedule_status === 'expired') {
-                        toast.error(`Jadwal ujian ini telah berakhir. (${exam.schedule_description})`);
+              {availableExams.map((exam) => {
+                const isSelected = selectedType?.id === exam.id;
+                const isActionDisabled = exam.cooldown_info?.in_cooldown || (exam.is_open === false && exam.schedule_status !== 'always' && exam.schedule_status !== 'ongoing');
+
+                return (
+                  <div
+                    key={exam.id}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (exam.cooldown_info?.in_cooldown) {
+                          toast.warning(`Ujian ini dalam masa jeda istirahat (sisa ${exam.cooldown_info.remaining_minutes} menit). Anda dapat mengulang kembali pada pukul ${exam.cooldown_info.retry_at_time} WIB.`);
+                          return;
+                        }
+                        if (exam.is_open === false) {
+                          if (exam.schedule_status === 'upcoming') {
+                            toast.info(`Ujian belum dibuka. Jadwal: ${exam.schedule_description}`);
+                          } else if (exam.schedule_status === 'expired') {
+                            toast.error(`Jadwal ujian ini telah berakhir. (${exam.schedule_description})`);
+                          }
+                          return;
+                        }
+                        setSelectedType({
+                          id: exam.id,
+                          is_real: true,
+                          label: exam.title,
+                          description: exam.description,
+                          duration: exam.duration_minutes * 60,
+                          total_questions: exam.questions_count,
+                          is_open: exam.is_open,
+                          schedule_status: exam.schedule_status,
+                          schedule_description: exam.schedule_description,
+                          start_time: exam.start_time,
+                          end_time: exam.end_time,
+                        });
                       }
-                      return;
-                    }
-                    setSelectedType({
-                      id: exam.id,
-                      is_real: true,
-                      label: exam.title,
-                      description: exam.description,
-                      duration: exam.duration_minutes * 60,
-                      total_questions: exam.questions_count,
-                      is_open: exam.is_open,
-                      schedule_status: exam.schedule_status,
-                      schedule_description: exam.schedule_description,
-                      start_time: exam.start_time,
-                      end_time: exam.end_time,
-                    });
-                  }}
-                  className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all ${
-                    exam.cooldown_info?.in_cooldown || exam.is_open === false
-                      ? 'opacity-80 cursor-not-allowed border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/50'
-                      : 'cursor-pointer border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                  } ${selectedType?.id === exam.id ? 'border-blue-500 bg-blue-500/10' : ''}`}
-                >
-                  <span className="text-2xl mt-0.5">{exam.exam_type?.icon || '📝'}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-900 dark:text-slate-100">{exam.title}</p>
-                      {exam.exam_type && (
-                        <Badge color="blue" className="text-[10px] font-bold">
-                          {exam.exam_type.icon} {exam.exam_type.name}
-                        </Badge>
-                      )}
+                    }}
+                    onClick={() => {
+                      if (exam.cooldown_info?.in_cooldown) {
+                        toast.warning(`Ujian ini dalam masa jeda istirahat (sisa ${exam.cooldown_info.remaining_minutes} menit). Anda dapat mengulang kembali pada pukul ${exam.cooldown_info.retry_at_time} WIB.`);
+                        return;
+                      }
+                      if (exam.is_open === false) {
+                        if (exam.schedule_status === 'upcoming') {
+                          toast.info(`Ujian belum dibuka. Jadwal: ${exam.schedule_description}`);
+                        } else if (exam.schedule_status === 'expired') {
+                          toast.error(`Jadwal ujian ini telah berakhir. (${exam.schedule_description})`);
+                        }
+                        return;
+                      }
+                      setSelectedType({
+                        id: exam.id,
+                        is_real: true,
+                        label: exam.title,
+                        description: exam.description,
+                        duration: exam.duration_minutes * 60,
+                        total_questions: exam.questions_count,
+                        is_open: exam.is_open,
+                        schedule_status: exam.schedule_status,
+                        schedule_description: exam.schedule_description,
+                        start_time: exam.start_time,
+                        end_time: exam.end_time,
+                      });
+                    }}
+                    className={`flex flex-col p-4 rounded-xl border-2 text-left transition-all ${
+                      exam.cooldown_info?.in_cooldown || exam.is_open === false
+                        ? 'opacity-80 cursor-not-allowed border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/50'
+                        : 'cursor-pointer border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                    } ${isSelected ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20' : ''}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <span className="text-2xl mt-0.5">{exam.exam_type?.icon || '📝'}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">{exam.title}</p>
+                          {exam.exam_type && (
+                            <Badge color="blue" className="text-[10px] font-bold">
+                              {exam.exam_type.icon} {exam.exam_type.name}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{exam.duration_minutes} menit · {exam.questions_count} soal</p>
+                          {exam.cooldown_info?.in_cooldown && (
+                            <Badge color="purple" className="text-[10px] font-bold">
+                              ⏱️ Jeda: Sisa {exam.cooldown_info.remaining_minutes}m ({exam.cooldown_info.retry_at_time})
+                            </Badge>
+                          )}
+                          {exam.schedule_status === 'upcoming' && (
+                            <Badge color="amber" className="text-[10px]">⏰ {exam.schedule_description}</Badge>
+                          )}
+                          {exam.schedule_status === 'expired' && (
+                            <Badge color="rose" className="text-[10px]">❌ {exam.schedule_description}</Badge>
+                          )}
+                          {exam.schedule_status === 'ongoing' && exam.schedule_type !== 'always' && (
+                            <Badge color="emerald" className="text-[10px]">🟢 Sedang Dibuka</Badge>
+                          )}
+                        </div>
+                        
+                        {/* Daftar Subtes Terkandung */}
+                        {exam.subtests_list && exam.subtests_list.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Subtes:</span>
+                            {exam.subtests_list.map((st, i) => (
+                              <span key={i} className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900">
+                                {st}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {exam.description && (
+                          <p className={`text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 ${isSelected ? '' : 'line-clamp-2'}`}>
+                            {exam.description}
+                          </p>
+                        )}
+                      </div>
+                      {isSelected && <span className="text-blue-500 font-bold text-lg">✓</span>}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{exam.duration_minutes} menit · {exam.questions_count} soal</p>
-                      {exam.cooldown_info?.in_cooldown && (
-                        <Badge color="purple" className="text-[10px] font-bold">
-                          ⏱️ Jeda: Sisa {exam.cooldown_info.remaining_minutes}m ({exam.cooldown_info.retry_at_time})
-                        </Badge>
-                      )}
-                      {exam.schedule_status === 'upcoming' && (
-                        <Badge color="amber" className="text-[10px]">⏰ {exam.schedule_description}</Badge>
-                      )}
-                      {exam.schedule_status === 'expired' && (
-                        <Badge color="rose" className="text-[10px]">❌ {exam.schedule_description}</Badge>
-                      )}
-                      {exam.schedule_status === 'ongoing' && exam.schedule_type !== 'always' && (
-                        <Badge color="emerald" className="text-[10px]">🟢 Sedang Dibuka</Badge>
-                      )}
-                    </div>
-                    
-                    {/* Daftar Subtes Terkandung */}
-                    {exam.subtests_list && exam.subtests_list.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Subtes:</span>
-                        {exam.subtests_list.map((st, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900">
-                            {st}
-                          </span>
-                        ))}
+
+                    {/* Tombol Mulai Ujian langsung di dalam kartu yang sedang dipilih */}
+                    {isSelected && (
+                      <div className="mt-4 pt-3 border-t border-blue-200/80 dark:border-blue-900/60 flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span>Ujian ini dipilih dan siap dikerjakan</span>
+                        </div>
+                        <Button
+                          size="md"
+                          disabled={isActionDisabled}
+                          loading={loading}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartExam();
+                          }}
+                          className="w-full sm:w-auto px-6 py-2.5 font-bold shadow-md shadow-blue-500/25 hover:scale-[1.02] transition-transform"
+                        >
+                          Mulai Ujian Sekarang →
+                        </Button>
                       </div>
                     )}
-
-                    {exam.description && (
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                        {exam.description}
-                      </p>
-                    )}
                   </div>
-                  {selectedType?.id === exam.id && <span className="text-blue-500 font-bold text-lg">✓</span>}
-                </button>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <>
@@ -588,8 +649,10 @@ export default function CbtPage() {
                     const isSelected = selectedType?.id === typeId;
 
                     return (
-                      <button
+                      <div
                         key={typeId}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setSelectedType({
                           id: typeId,
                           code: typeId,
@@ -601,26 +664,48 @@ export default function CbtPage() {
                           total_questions: typeQuestions,
                           is_real: false,
                         })}
-                        className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                        className={`flex flex-col p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-500/10'
+                            ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/20 shadow-md ring-2 ring-blue-500/20'
                             : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
-                        <span className="text-2xl">{et.icon || '📝'}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{typeLabel}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {Math.floor(typeDuration / 60)} menit · {typeQuestions} soal
-                          </p>
-                          {et.description && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 line-clamp-1">
-                              {et.description}
+                        <div className="flex items-center gap-4">
+                          <span className="text-2xl">{et.icon || '📝'}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{typeLabel}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {Math.floor(typeDuration / 60)} menit · {typeQuestions} soal
                             </p>
-                          )}
+                            {et.description && (
+                              <p className={`text-xs text-slate-600 dark:text-slate-400 mt-1.5 ${isSelected ? '' : 'line-clamp-1'}`}>
+                                {et.description}
+                              </p>
+                            )}
+                          </div>
+                          {isSelected && <span className="text-blue-500 font-bold text-lg">✓</span>}
                         </div>
-                        {isSelected && <span className="text-blue-500 font-bold text-lg">✓</span>}
-                      </button>
+
+                        {isSelected && (
+                          <div className="mt-4 pt-3 border-t border-blue-200/80 dark:border-blue-900/60 flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              <span>Subtes ini dipilih dan siap dikerjakan</span>
+                            </div>
+                            <Button
+                              size="md"
+                              loading={loading}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartExam();
+                              }}
+                              className="w-full sm:w-auto px-6 py-2.5 font-bold shadow-md shadow-blue-500/25 hover:scale-[1.02] transition-transform"
+                            >
+                              Mulai Ujian Sekarang →
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -631,55 +716,6 @@ export default function CbtPage() {
               )}
             </>
           )}
-
-              {selectedType?.description && (
-                <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-200 text-sm space-y-1.5 animate-fadeIn">
-                  <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
-                    <span>📋 Panduan & Petunjuk Ujian:</span>
-                  </div>
-                  <p className="whitespace-pre-line text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed pl-5">
-                    {selectedType.description}
-                  </p>
-                </div>
-              )}
-
-              {selectedType?.is_real && selectedType.schedule_status && selectedType.schedule_status !== 'always' && (
-                <div className={`p-4 rounded-xl border text-sm space-y-1.5 animate-fadeIn ${
-                  selectedType.schedule_status === 'ongoing'
-                    ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-200'
-                    : selectedType.schedule_status === 'upcoming'
-                    ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-200'
-                    : 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 text-rose-900 dark:text-rose-200'
-                }`}>
-                  <div className="font-bold flex items-center gap-1.5">
-                    <span>🕐 Status Jadwal Ujian:</span>
-                  </div>
-                  <p className="text-xs sm:text-sm leading-relaxed pl-5">
-                    {selectedType.schedule_status === 'ongoing' && (
-                      <span>Ujian sedang berlangsung dan dapat dikerjakan saat ini. ({selectedType.schedule_description})</span>
-                    )}
-                    {selectedType.schedule_status === 'upcoming' && (
-                      <span>
-                        Ujian belum dapat dimulai. ({selectedType.schedule_description})
-                      </span>
-                    )}
-                    {selectedType.schedule_status === 'expired' && (
-                      <span>
-                        Jadwal pengerjaan ujian ini telah berakhir. ({selectedType.schedule_description})
-                      </span>
-                    )}
-                  </p>
-                </div>
-              )}
-
-              <Button
-                size="lg"
-                disabled={!selectedType || (selectedType?.is_real && selectedType.schedule_status !== 'always' && selectedType.schedule_status !== 'ongoing')}
-                loading={loading}
-                onClick={handleStartExam}
-              >
-                Mulai Ujian Sekarang
-              </Button>
             </>
           ) : (
             <div className="flex flex-col gap-4">
