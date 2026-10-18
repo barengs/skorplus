@@ -114,34 +114,7 @@ class CourseModuleLessonSeeder extends Seeder
             ['type' => 'video', 'video_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'duration_seconds' => 20 * 60, 'sort_order' => 1, 'is_preview' => true]
         );
 
-        // 4. Course: Pengetahuan Kuantitatif untuk SMA
-        $course4 = Course::updateOrCreate(
-            ['slug' => 'pengetahuan-kuantitatif-sma'],
-            [
-                'title' => 'Pengetahuan Kuantitatif SMA',
-                'slug' => 'pengetahuan-kuantitatif-sma',
-                'description' => 'Matematika dasar dan kuantitatif untuk SNBT 2027.',
-                'category' => 'Matematika',
-                'is_active' => true,
-                'thumbnail' => 'https://dummyimage.com/600x400/f59e0b/fff.png&text=PK',
-                'has_certificate' => true,
-                'rating' => 4.6,
-                'total_reviews' => 180,
-                'instructor_id' => 2,
-                'sort_order' => 4,
-            ]
-        );
-
-        $c4m1 = Module::updateOrCreate(
-            ['course_id' => $course4->id, 'title' => 'Aritmetika Sosial'],
-            ['sort_order' => 1]
-        );
-        Lesson::updateOrCreate(
-            ['module_id' => $c4m1->id, 'title' => 'Persentase & Perbandingan'],
-            ['type' => 'video', 'video_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ', 'duration_seconds' => 18 * 60, 'sort_order' => 1, 'is_preview' => true]
-        );
-
-        // 5. Learning Packages untuk SNBT 2027
+        // 4. Learning Packages untuk SNBT 2027
         $package = LearningPackage::updateOrCreate(
             ['slug' => 'paket-intensif-utbk-2027'],
             [
@@ -155,7 +128,7 @@ class CourseModuleLessonSeeder extends Seeder
                 'is_published' => true,
             ]
         );
-        $package->courses()->sync([$course1->id, $course2->id, $course3->id, $course4->id]);
+        $package->courses()->sync([$course1->id, $course2->id, $course3->id]);
 
         $package2 = LearningPackage::updateOrCreate(
             ['slug' => 'paket-literasi-bahasa-2027'],
