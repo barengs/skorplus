@@ -1,5 +1,5 @@
 # 1. Gunakan PHP versi 8.4
-FROM php:8.4-fpm
+FROM php:8.4.27-fpm
 
 # 2. Tambahkan libzip-dev ke daftar apt-get, dan zip ke daftar ekstensi PHP
 RUN apt-get update && apt-get install -y \
