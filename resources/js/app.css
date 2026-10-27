@@ -70,14 +70,41 @@ body {
 
 /* 
   ==============================================================
-  Rich Text, Article & Quill Content Styling (Numbering & Lists)
+  Rich Text, Article & Quill Content Styling (Word Wrapping & Typography)
   ==============================================================
 */
 .prose,
 .rich-text,
-.ql-editor {
+.ql-editor,
+.content-wrapper {
   line-height: 1.7;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  text-align: left;
 }
+
+.prose *,
+.rich-text *,
+.ql-editor * {
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+}
+
+/* Ensure reading view resets pre-wrap unless actively editing */
+.prose:not([contenteditable="true"]),
+.rich-text:not([contenteditable="true"]),
+.ql-editor:not([contenteditable="true"]),
+.ql-editor:not([contenteditable="true"]) p,
+.ql-editor:not([contenteditable="true"]) li {
+  white-space: normal;
+}
+
 
 /* 1. Ordered Lists (Numbering) */
 .prose ol,

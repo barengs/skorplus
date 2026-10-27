@@ -520,7 +520,7 @@ export default function CourseDetailPage() {
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Deskripsi Lengkap Kursus
               </h3>
-              <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed prose rich-text ql-editor dark:prose-invert max-w-none">
+              <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed prose rich-text ql-editor dark:prose-invert max-w-none break-normal">
                 <div
                   dangerouslySetInnerHTML={{
                     __html: course.description ||
@@ -924,7 +924,7 @@ export default function CourseDetailPage() {
                 </div>
               ) : previewLesson.content ? (
                 <div
-                  className="prose rich-text ql-editor dark:prose-invert max-w-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed"
+                  className="prose rich-text ql-editor dark:prose-invert max-w-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed break-normal"
                   dangerouslySetInnerHTML={{ __html: previewLesson.content }}
                 />
               ) : (

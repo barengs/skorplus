@@ -17,3 +17,36 @@
     --radius-3xl: 6px;
     --radius-4xl: 8px;
 }
+
+/* Rich Text & Typography Word Wrapping */
+.prose,
+.rich-text,
+.ql-editor,
+.content-wrapper {
+  line-height: 1.7;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  text-align: left;
+}
+
+.prose *,
+.rich-text *,
+.ql-editor * {
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+}
+
+.prose:not([contenteditable="true"]),
+.rich-text:not([contenteditable="true"]),
+.ql-editor:not([contenteditable="true"]),
+.ql-editor:not([contenteditable="true"]) p,
+.ql-editor:not([contenteditable="true"]) li {
+  white-space: normal;
+}
+
