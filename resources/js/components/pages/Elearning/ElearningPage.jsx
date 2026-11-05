@@ -181,7 +181,7 @@ export default function ElearningPage() {
       setDetailCourse(null);
       setView('course');
 
-      const resumeLesson = findLastLesson(fetchedModules, completedMap);
+      const resumeLesson = findLastLesson(fetchedModules, completedMap, progData?.locked_module_ids || []);
       if (resumeLesson) {
         const parentModule = fetchedModules.find(m => m.id === resumeLesson.moduleId);
         if (parentModule) {
@@ -297,9 +297,10 @@ export default function ElearningPage() {
     }
   };
 
-  const findLastLesson = (mods, prog) => {
+  const findLastLesson = (mods, prog, lockedIds = []) => {
     const flat = [];
     mods.forEach(m => {
+      if (lockedIds.includes(m.id)) return;
       if (m.lessons) {
         m.lessons.forEach(l => flat.push({ ...l, moduleId: m.id }));
       }
@@ -315,7 +316,11 @@ export default function ElearningPage() {
 
   const selectModule = (module) => {
     if (lockedModuleIds.includes(module.id)) {
-      toast.warning(`Kelompok materi "${module.title}" masih terkunci. Anda harus menyelesaikan kuis kelompok materi sebelumnya dengan skor minimal 60%!`);
+      toast.warning(
+        lockedByModuleTitle
+          ? `Kelompok materi "${module.title}" terkunci. Selesaikan kuis pada "${lockedByModuleTitle}" dengan skor minimal 60% terlebih dahulu.`
+          : `Kelompok materi "${module.title}" masih terkunci. Anda harus menyelesaikan kuis kelompok materi sebelumnya dengan skor minimal 60%!`
+      );
       return;
     }
     setSelectedModule(module);
@@ -326,8 +331,13 @@ export default function ElearningPage() {
   };
 
   const selectLesson = (lesson) => {
-    if (lockedModuleIds.includes(lesson.module_id || selectedModule?.id)) {
-      toast.warning('Kelompok materi ini masih terkunci. Anda harus menyelesaikan kuis kelompok materi sebelumnya dengan skor minimal 60%!');
+    const targetModuleId = lesson.moduleId || lesson.module_id || selectedModule?.id;
+    if (lockedModuleIds.includes(targetModuleId)) {
+      toast.warning(
+        lockedByModuleTitle
+          ? `Kelompok materi ini terkunci. Selesaikan kuis pada "${lockedByModuleTitle}" dengan skor minimal 60% terlebih dahulu.`
+          : 'Kelompok materi ini masih terkunci. Anda harus menyelesaikan kuis kelompok materi sebelumnya dengan skor minimal 60%!'
+      );
       return;
     }
     setSelectedLesson(lesson);
@@ -493,11 +503,32 @@ export default function ElearningPage() {
   const prevLesson = currentIndex > 0 ? flatLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex !== -1 && currentIndex < flatLessons.length - 1 ? flatLessons[currentIndex + 1] : null;
 
-  const navigateToLesson = (lesson) => {
+  const navigateToLesson = (lesson, activeLockedIds = lockedModuleIds, activeLockedByTitle = lockedByModuleTitle) => {
     if (!lesson) return;
-    const parentModule = modules.find(m => m.id === lesson.moduleId);
-    if (parentModule) setSelectedModule(parentModule);
+    const targetModuleId = lesson.moduleId || lesson.module_id;
+    if (activeLockedIds.includes(targetModuleId)) {
+      toast.warning(
+        activeLockedByTitle
+          ? `Kelompok materi ini terkunci. Selesaikan kuis pada "${activeLockedByTitle}" dengan skor minimal 60% terlebih dahulu.`
+          : 'Kelompok materi ini masih terkunci. Anda harus menyelesaikan kuis kelompok materi sebelumnya dengan skor minimal 60%!'
+      );
+      return;
+    }
+    const parentModule = modules.find(m => m.id === targetModuleId);
+    if (parentModule) {
+      setSelectedModule(parentModule);
+      setLessons(parentModule.lessons || []);
+    }
     setSelectedLesson(lesson);
+    setQuizAnswers({});
+    setActiveQuizQuestionIndex(0);
+    setIsRetakingQuiz(false);
+    setShowQuizReview(false);
+    setAssignmentUploadedFile(null);
+    setAssignmentNotes('');
+    if (lesson.type === 'assignment') {
+      fetchAssignmentHistory(lesson.id);
+    }
   };
 
   const markLessonComplete = async (lessonId) => {
@@ -522,21 +553,18 @@ export default function ElearningPage() {
         }
       }
 
-      // Refresh enrollment from server to ensure sync
-      try {
-        const progRes = await api.get(`/elearning/courses/${selectedCourse.id}/progress`);
-        const enr = progRes.data.enrollment || null;
-        const completedIds = progRes.data.completed_lesson_ids || [];
-        const progMap = {};
-        completedIds.forEach(id => progMap[id] = true);
-        setEnrollment(enr);
-        setProgress(progMap);
-      } catch (e) {
-        // ignore, keep local state
+      // Refresh enrollment and module lock states from server to ensure sync
+      let progData = null;
+      if (selectedCourse?.id) {
+        progData = await syncCourseProgress(selectedCourse.id);
       }
 
       if (nextLesson) {
-        navigateToLesson(nextLesson);
+        navigateToLesson(
+          nextLesson,
+          progData?.locked_module_ids || lockedModuleIds,
+          progData?.locked_by_module_title ?? lockedByModuleTitle
+        );
       } else {
         toast.success('Selamat! Anda telah menyelesaikan seluruh materi.');
         setTimeout(() => {
@@ -544,7 +572,15 @@ export default function ElearningPage() {
         }, 800);
       }
     } catch (err) {
-      toast.error('Gagal menandai materi');
+      const errMsg = err.response?.data?.message || 'Gagal menandai materi';
+      if (err.response?.data?.locked || err.response?.status === 403) {
+        toast.warning(errMsg);
+        if (selectedCourse?.id) {
+          syncCourseProgress(selectedCourse.id);
+        }
+      } else {
+        toast.error(errMsg);
+      }
     }
   };
 
