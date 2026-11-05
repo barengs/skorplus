@@ -332,7 +332,7 @@ export default function LandingPage() {
 
         <div className="relative max-w-7xl w-full mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
-            {/* Left Column: Hero Copy, CTAs & Stats */}
+            {/* Left Column: Hero Copy & CTAs */}
             <div className="lg:col-span-7 text-center lg:text-left flex flex-col items-center lg:items-start gap-6">
               {hero?.badge_text && (
                 <Badge color="blue" className="px-4 py-2 text-sm gap-2">
@@ -353,7 +353,7 @@ export default function LandingPage() {
                 {hero?.description || 'Persiapan komprehensif UTBK-SNBT, Kedinasan, dan Olimpiade.'}
               </p>
 
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-1">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
                 <Link to={token ? '/dashboard' : (hero?.cta_primary_link || '/daftar')}>
                   <Button size="xl" className="shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-shadow">
                     {token ? '🚀 Buka Dashboard' : (hero?.cta_primary_text || '🚀 Mulai Belajar Gratis')}
@@ -365,18 +365,6 @@ export default function LandingPage() {
                   </Button>
                 </a>
               </div>
-
-              {/* Stats strip */}
-              {stats && stats.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2 w-full">
-                  {stats.map((s) => (
-                    <div key={s.id} className="bg-white/90 dark:bg-slate-900/60 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-center lg:text-left hover:border-blue-500/40 dark:hover:border-slate-700 transition-colors shadow-xs">
-                      <div className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-0.5">{s.value}</div>
-                      <div className="text-xs text-slate-500">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Right Column: SkorPluss Mascot (SPARK) */}
@@ -387,11 +375,29 @@ export default function LandingPage() {
                 <img
                   src="/assets/Maskot_SKORPLUSS.png"
                   alt="Maskot SkorPluss SPARK"
-                  className="w-full max-w-[320px] sm:max-w-[380px] lg:max-w-[430px] h-auto object-contain drop-shadow-[0_20px_35px_rgba(37,99,235,0.28)] transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1 select-none"
+                  className="w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[410px] h-auto object-contain drop-shadow-[0_20px_35px_rgba(37,99,235,0.28)] transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1 select-none"
                 />
               </div>
             </div>
           </div>
+
+          {/* Full-width Stats Strip Below Hero & Mascot */}
+          {stats && stats.length > 0 && (
+            <div className="mt-12 lg:mt-14 pt-8 border-t border-slate-200/80 dark:border-slate-800/80">
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800 bg-white/80 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm">
+                {stats.map((s) => (
+                  <div key={s.id} className="py-6 px-6 text-center flex flex-col items-center justify-center">
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight mb-1">
+                      {s.value}
+                    </div>
+                    <div className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                      {s.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
