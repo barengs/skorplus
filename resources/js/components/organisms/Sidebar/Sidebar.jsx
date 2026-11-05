@@ -53,7 +53,7 @@ export default function Sidebar({ collapsed = false }) {
   return (
     <aside className={`flex flex-col bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} h-screen sticky top-0 overflow-y-auto`}>
       {/* Logo */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+      <div className={`h-16 shrink-0 px-4 flex items-center border-b border-slate-200 dark:border-slate-800 ${collapsed ? 'justify-center' : ''}`}>
         <Logo collapsed={collapsed} />
       </div>
 

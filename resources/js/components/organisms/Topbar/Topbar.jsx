@@ -42,7 +42,7 @@ export default function Topbar({ title, onToggleSidebar }) {
   const isAdmin = user?.roles?.includes('admin');
 
   return (
-    <header className="h-16 bg-slate-50 dark:bg-slate-950/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-20">
+    <header className="h-16 shrink-0 bg-slate-50 dark:bg-slate-950/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-20">
       <div className="flex items-center gap-4">
         <button
           onClick={onToggleSidebar}
