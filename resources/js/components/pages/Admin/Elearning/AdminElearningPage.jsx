@@ -46,7 +46,7 @@ export default function AdminElearningPage() {
   return (
     <AppLayout title="Kelola E-Learning">
       <div className="w-full pb-16 space-y-6">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">Manajemen Materi E-Learning</h2>
             <p className="text-slate-600 dark:text-slate-400 text-sm">Kelola daftar pelajaran, modul, dan video.</p>
@@ -54,7 +54,7 @@ export default function AdminElearningPage() {
           <Button onClick={() => navigate('/admin/elearning/courses/create')}>+ Tambah Pelajaran</Button>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {loading ? (
             <div className="col-span-full flex justify-center p-12">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />

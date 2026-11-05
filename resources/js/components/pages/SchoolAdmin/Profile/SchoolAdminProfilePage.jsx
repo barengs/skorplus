@@ -117,9 +117,9 @@ export default function SchoolAdminProfilePage() {
 
   return (
     <AppLayout title="Profil & Kemitraan Sekolah">
-      <div className="w-full max-w-4xl pb-16 space-y-6">
+      <div className="w-full pb-16 space-y-6">
         {/* Tab Navigation */}
-        <div className="flex gap-1 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-xl w-fit">
+        <div className="flex flex-wrap gap-1 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-xl w-full sm:w-fit">
           <button
             type="button"
             onClick={() => setActiveTab('profile')}

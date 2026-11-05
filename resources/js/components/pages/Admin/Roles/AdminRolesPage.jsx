@@ -91,7 +91,7 @@ export default function AdminRolesPage() {
   return (
     <AppLayout title="Kelola Role & Menu">
       <div className="w-full pb-16 space-y-6">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">Role & Menu Matrix</h2>
             <p className="text-slate-600 dark:text-slate-400 text-sm">

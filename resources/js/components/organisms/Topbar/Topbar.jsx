@@ -42,16 +42,16 @@ export default function Topbar({ title, onToggleSidebar }) {
   const isAdmin = user?.roles?.includes('admin');
 
   return (
-    <header className="h-16 shrink-0 bg-slate-50 dark:bg-slate-950/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-20">
-      <div className="flex items-center gap-4">
+    <header className="h-16 shrink-0 bg-slate-50 dark:bg-slate-950/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 px-4 sm:px-6 sticky top-0 z-20">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="w-9 h-9 rounded-md flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+          className="w-9 h-9 shrink-0 rounded-md flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
           aria-label="Toggle sidebar"
         >
           ☰
         </button>
-        {title && <h1 className="font-semibold text-slate-900 dark:text-slate-100 text-base">{title}</h1>}
+        {title && <h1 className="font-semibold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">{title}</h1>}
       </div>
 
       <div className="flex items-center gap-3">

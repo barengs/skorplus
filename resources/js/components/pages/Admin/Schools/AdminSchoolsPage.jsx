@@ -260,7 +260,7 @@ export default function AdminSchoolsPage() {
     <AppLayout title="Manajemen Sekolah">
       <div className="w-full pb-16 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">Manajemen Sekolah</h2>
             <p className="text-slate-500 text-sm mt-0.5">{schools.length} sekolah terdaftar</p>
@@ -271,12 +271,12 @@ export default function AdminSchoolsPage() {
         </div>
 
         {/* Filter */}
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Input
             placeholder="Cari nama, NPSN, atau email..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="max-w-xs"
+            className="w-full sm:max-w-xs"
           />
           <Button variant="ghost" onClick={loadSchools}>🔄 Refresh</Button>
         </div>

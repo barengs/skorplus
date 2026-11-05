@@ -81,7 +81,7 @@ export default function AdminSchoolStudentsPage() {
 
   return (
     <AppLayout title={`Data Siswa — ${school?.name || 'Sekolah'}`}>
-      <div className="w-full pb-16 space-y-6 max-w-6xl mx-auto">
+      <div className="w-full pb-16 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">

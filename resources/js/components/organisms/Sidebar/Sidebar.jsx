@@ -14,7 +14,7 @@ import { toast } from 'react-toastify';
 
 import api from '../../../services/api';
 
-export default function Sidebar({ collapsed = false }) {
+export default function Sidebar({ collapsed = false, mobileOpen = false, onCloseMobile }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, settings } = useSelector((s) => s.auth);
@@ -51,7 +51,20 @@ export default function Sidebar({ collapsed = false }) {
   const programBadge = { mandiri: 'slate', intensif: 'blue', garansi: 'gold' };
 
   return (
-    <aside className={`flex flex-col bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} h-screen sticky top-0 overflow-y-auto`}>
+    <>
+      {/* Mobile Backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-xs lg:hidden"
+          onClick={onCloseMobile}
+        />
+      )}
+
+      <aside
+        className={`flex flex-col shrink-0 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 h-screen overflow-y-auto fixed lg:sticky top-0 left-0 z-40 ${
+          mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'
+        } ${collapsed ? 'lg:w-16' : 'lg:w-64'}`}
+      >
       {/* Logo */}
       <div className={`h-16 shrink-0 px-4 flex items-center border-b border-slate-200 dark:border-slate-800 ${collapsed ? 'justify-center' : ''}`}>
         <Logo collapsed={collapsed} />
@@ -125,5 +138,6 @@ export default function Sidebar({ collapsed = false }) {
         </Button>
       </div>
     </aside>
+    </>
   );
 }

@@ -113,7 +113,7 @@ export default function ForumPage() {
 
   return (
     <AppLayout title="Forum Tanya Jawab">
-      <div className="max-w-3xl mx-auto flex flex-col gap-6">
+      <div className="w-full flex flex-col gap-6 pb-12">
         {/* Header bar */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>

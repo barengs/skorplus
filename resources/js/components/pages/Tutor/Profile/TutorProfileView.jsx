@@ -153,7 +153,7 @@ export default function TutorProfileView() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+    <div className="w-full space-y-6 pb-12">
       <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-slate-900 text-white p-6 sm:p-8 relative">
           <div className="flex items-center justify-between gap-2 mb-6">

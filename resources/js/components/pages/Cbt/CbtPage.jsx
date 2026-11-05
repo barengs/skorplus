@@ -53,6 +53,7 @@ export default function CbtPage() {
   const [isFrozen, setIsFrozen] = useState(false);
   const [graceTimeLeft, setGraceTimeLeft] = useState(60);
   const [showFrozenModal, setShowFrozenModal] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Full Screen & Anti-Cheat States
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -403,7 +404,7 @@ export default function CbtPage() {
   if (!currentSession) {
     return (
       <AppLayout title="Ujian CBT">
-        <div className="max-w-2xl mx-auto flex flex-col gap-6">
+        <div className="w-full flex flex-col gap-6 pb-12">
           <div className="flex border-b border-slate-200 dark:border-slate-800">
             <button 
               onClick={() => setActiveTab('available')} 
@@ -765,7 +766,7 @@ export default function CbtPage() {
     const color = score >= 80 ? 'emerald' : score >= 60 ? 'orange' : 'red';
     return (
       <AppLayout title="Hasil Ujian">
-        <div className="max-w-lg mx-auto text-center flex flex-col items-center gap-6 py-8">
+        <div className="w-full max-w-4xl mx-auto text-center flex flex-col items-center gap-6 py-8">
           <div className="text-7xl">{score >= 80 ? '🏆' : score >= 60 ? '👍' : '💪'}</div>
           <div>
             <div className="text-6xl font-black text-slate-900 dark:text-slate-100 mb-2">{score}</div>
@@ -883,6 +884,15 @@ export default function CbtPage() {
               </div>
             )}
 
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-slate-700"
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+            >
+              📋 Soal ({answeredCount}/{questions.length})
+            </Button>
+
             <Button variant="danger" size="sm" onClick={handleOpenSubmitModal} loading={submitting}>
               Serahkan Ujian
             </Button>
@@ -892,7 +902,7 @@ export default function CbtPage() {
         {/* Question area */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {question ? (
-            <div className="max-w-2xl mx-auto flex flex-col gap-5">
+            <div className="w-full max-w-4xl mx-auto flex flex-col gap-5">
               {/* Exam Frozen Warning Banner */}
               {isExamFrozen && (
                 <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
@@ -1131,9 +1141,19 @@ export default function CbtPage() {
         </div>
       </div>
 
+      {/* Mobile Navigator Backdrop */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-xs lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
       {/* Navigator sidebar */}
-      <div className="w-60 shrink-0 border-l border-slate-200 dark:border-slate-800 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950 hidden lg:block">
-        <CbtNavigator sessionId={currentSession.id} />
+      <div className={`w-64 shrink-0 border-l border-slate-200 dark:border-slate-800 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950 fixed lg:static inset-y-0 right-0 z-40 transition-transform duration-300 ${
+        mobileNavOpen ? 'translate-x-0 block shadow-2xl' : 'translate-x-full lg:translate-x-0 hidden lg:block'
+      }`}>
+        <CbtNavigator sessionId={currentSession.id} onSelectQuestion={() => setMobileNavOpen(false)} />
       </div>
 
       {/* Cancel Exam Confirmation Modal */}

@@ -72,43 +72,43 @@ export default function DashboardPage() {
 
     return (
       <AppLayout title="Dashboard Sekolah">
-        <div className="flex flex-col gap-8 max-w-6xl">
+        <div className="w-full flex flex-col gap-6 sm:gap-8 pb-10">
           {/* Header Banner */}
-          <div className="relative rounded-2xl overflow-hidden border border-blue-500/20 shadow-xs">
+          <div className="relative rounded-2xl overflow-hidden border border-blue-500/20 shadow-xs min-h-40 sm:min-h-48 flex items-center">
             {/* Cover Photo */}
-            <div className="h-40 sm:h-48 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20">
               {schoolInfo?.photo ? (
                 <img src={schoolInfo.photo} alt="Foto Sekolah" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/70 to-transparent dark:from-slate-900/90 dark:via-slate-900/70 dark:to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/40 dark:from-slate-900/95 dark:via-slate-900/80 dark:to-slate-900/40" />
             </div>
             {/* Content */}
-            <div className="absolute inset-0 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+            <div className="relative z-10 w-full p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-4">
                 {/* Logo Badge */}
-                <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg flex items-center justify-center overflow-hidden shrink-0">
                   {schoolInfo?.logo ? (
                     <img src={schoolInfo.logo} alt="Logo Sekolah" className="w-full h-full object-contain" />
                   ) : (
                     <FontAwesomeIcon icon={['fas', 'school']} className="text-2xl text-blue-600" />
                   )}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <Badge color="blue">Admin Mitra Sekolah</Badge>
                     {schoolInfo?.npsn && <span className="text-xs text-slate-500 font-mono">NPSN: {schoolInfo.npsn}</span>}
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">
                     {schoolInfo?.name || 'Sekolah'}
                   </h2>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
                     Selamat datang kembali, <strong>{user?.name}</strong>. Pantau aktivitas dan kemajuan belajar seluruh siswa Anda.
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 shrink-0">
                 <Link to="/school-admin/students">
                   <Button size="sm">
                     <FontAwesomeIcon icon={['fas', 'user-plus']} className="mr-1.5" /> Kelola Siswa
@@ -124,7 +124,7 @@ export default function DashboardPage() {
           </div>
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard
               label="Total Siswa Terdaftar"
               value={loading ? '—' : schoolStats?.total_students ?? 0}
@@ -228,29 +228,35 @@ export default function DashboardPage() {
 
   if (data?.dashboard_type && data?.dashboard_type !== 'student') {
     const isTutor = data?.dashboard_type === 'tutor';
+    const rolePrefix = isTutor ? 'Tutor' : 'Admin';
+    const displayName = user?.name || '';
+    const greetingName = displayName.toLowerCase().startsWith(rolePrefix.toLowerCase())
+      ? displayName
+      : `${rolePrefix} ${displayName}`.trim();
+
     return (
       <AppLayout title={isTutor ? "Tutor Dashboard" : "Dashboard Pengelola"}>
-        <div className="flex flex-col gap-8 max-w-6xl">
+        <div className="w-full flex flex-col gap-6 sm:gap-8 pb-10">
           {/* Header Banner */}
-          <div className={`bg-gradient-to-r ${isTutor ? 'from-emerald-600/20 to-teal-600/20 border-emerald-500/20' : 'from-violet-600/20 to-purple-600/20 border-violet-500/20'} border rounded-2xl p-6 shadow-xs`}>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">
-              Halo, {isTutor ? 'Tutor' : 'Admin'} {user?.name} 👋
+          <div className={`bg-gradient-to-r ${isTutor ? 'from-emerald-600/20 to-teal-600/20 border-emerald-500/20' : 'from-violet-600/20 to-purple-600/20 border-violet-500/20'} border rounded-2xl p-5 sm:p-6 shadow-xs`}>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mb-1">
+              Halo, {greetingName} 👋
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
+            <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
               {isTutor ? 'Kelola kelas, materi pengajaran, dan diskusi siswa.' : 'Ringkasan performa platform SkorPluss hari ini.'}
             </p>
           </div>
 
           {/* Quick Primary KPI Cards */}
           {isTutor ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <StatCard label="Kursus Diampu" value={loading ? '—' : tutorStats?.my_courses ?? 0} icon={<FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-blue-500" />} color="blue" to="/admin/elearning" />
               <StatCard label="Total Seluruh Siswa" value={loading ? '—' : tutorStats?.total_students ?? 0} icon={<FontAwesomeIcon icon={['fas', 'users']} className="text-emerald-500" />} color="emerald" />
               <StatCard label="Bank Soal / Ujian" value={loading ? '—' : tutorStats?.active_exams ?? 0} icon={<FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-500" />} color="purple" to="/admin/cbt" />
               <StatCard label="Diskusi Belum Dijawab" value={loading ? '—' : tutorStats?.forum_unanswered ?? 0} icon={<FontAwesomeIcon icon={['fas', 'comments']} className="text-amber-500" />} color="gold" to="/forum" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <StatCard label="Total Siswa" value={loading ? '—' : adminStats?.total_siswa ?? 0} icon={<FontAwesomeIcon icon={['fas', 'users']} className="text-blue-500" />} color="blue" to="/admin/users" />
               <StatCard label="Total Kursus" value={loading ? '—' : adminStats?.total_courses ?? 0} icon={<FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-emerald-500" />} color="emerald" to="/admin/elearning" />
               <StatCard label="Total Ujian CBT" value={loading ? '—' : adminStats?.total_exams ?? 0} icon={<FontAwesomeIcon icon={['fas', 'file-signature']} className="text-purple-500" />} color="purple" to="/admin/cbt" />
@@ -316,7 +322,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Kursus Mini KPI Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                   <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
                     <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
                       <span>Total Pendaftaran</span>
@@ -533,7 +539,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* CBT Mini KPI Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                   <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
                     <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
                       <span>Rata-rata Nilai</span>
@@ -648,8 +654,8 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Sesi Status Breakdown */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-4">
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex flex-wrap items-center gap-4">
                         <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                           <span>Selesai: <strong>{cbtStats?.completed_sessions ?? 0}</strong></span>
@@ -808,7 +814,7 @@ export default function DashboardPage() {
 
   return (
     <AppLayout title="Dashboard">
-      <div className="flex flex-col gap-8 max-w-6xl">
+      <div className="w-full flex flex-col gap-6 sm:gap-8 pb-10">
         {/* Banner Sesi Ujian Sedang Berlangsung */}
         {activeCbtSession && (
           <div className="bg-gradient-to-r from-amber-500 via-rose-500 to-rose-600 rounded-2xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse">
@@ -881,7 +887,7 @@ export default function DashboardPage() {
               Lihat Rincian Belajar →
             </Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard
               label="Kursus Diikuti"
               value={loading ? '—' : elearningStats?.enrolled_courses ?? 0}

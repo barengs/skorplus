@@ -440,13 +440,13 @@ export default function AdminSchoolDetailPage() {
     <AppLayout title={`Detail: ${school.name}`}>
       <div className="w-full pb-16 space-y-6">
         {/* Navigation & Actions */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <Link to="/admin/schools">
             <Button variant="ghost" size="sm">
               <FontAwesomeIcon icon={['fas', 'arrow-left']} className="mr-2" /> Kembali ke Daftar Sekolah
             </Button>
           </Link>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setMediaModalOpen(true)}>
               <FontAwesomeIcon icon={['fas', 'camera']} className="mr-1.5" /> Ubah Logo & Foto
             </Button>

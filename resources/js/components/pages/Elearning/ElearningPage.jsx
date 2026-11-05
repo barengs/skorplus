@@ -63,6 +63,7 @@ export default function ElearningPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('catalog');
   const [previewLesson, setPreviewLesson] = useState(null);
+  const [mobileModulesOpen, setMobileModulesOpen] = useState(false);
 
   // In-Dashboard Course Detail State
   const [detailCourse, setDetailCourse] = useState(null);
@@ -662,7 +663,7 @@ export default function ElearningPage() {
               />
 
               {/* Main Academy View Area */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 w-full min-w-0">
                 {academyTab === 'progress' && (
                   <ProgressBelajarView
                     activeCourses={myProgressData.active_courses || []}
@@ -756,30 +757,42 @@ export default function ElearningPage() {
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-slate-950 overflow-hidden font-sans">
       {/* ── TOP NAV ── */}
-      <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0 z-20 relative shadow-sm">
-        <button
-          onClick={() => {
-            setView('catalog');
-            setSelectedCourse(null);
-            setDetailCourse(null);
-            fetchMyProgress();
-            fetchStreakData(currentCalendarMonth);
-          }}
-          className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm font-bold flex items-center gap-2 transition-colors"
-        >
-          <FontAwesomeIcon icon={['fas', 'arrow-left']} /> Kembali ke Dashboard Belajar
-        </button>
-        <div className="flex items-center gap-3">
+      <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-2 px-4 sm:px-6 shrink-0 z-20 relative shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => setMobileModulesOpen((prev) => !prev)}
+            className="md:hidden px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 shrink-0"
+            aria-label="Toggle Daftar Modul"
+          >
+            <FontAwesomeIcon icon={['fas', 'bars']} />
+            <span>Modul</span>
+          </button>
+          <button
+            onClick={() => {
+              setView('catalog');
+              setSelectedCourse(null);
+              setDetailCourse(null);
+              fetchMyProgress();
+              fetchStreakData(currentCalendarMonth);
+            }}
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs sm:text-sm font-bold flex items-center gap-2 transition-colors truncate"
+          >
+            <FontAwesomeIcon icon={['fas', 'arrow-left']} />
+            <span className="truncate">Kembali ke Dashboard Belajar</span>
+          </button>
+        </div>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {progressPercent === 100 && (
             <button
               onClick={() => {
                 setCertCourse(selectedCourse);
                 setCertModalOpen(true);
               }}
-              className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+              className="px-3 sm:px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
             >
               <FontAwesomeIcon icon={['fas', 'award']} className="text-amber-200" />
-              <span>Ambil Sertifikat</span>
+              <span className="hidden sm:inline">Ambil Sertifikat</span>
             </button>
           )}
           <Badge color="blue" className="hidden sm:flex">Mode Belajar Fokus</Badge>
@@ -788,9 +801,17 @@ export default function ElearningPage() {
 
       {/* ── SPLIT LAYOUT ── */}
       <div className="flex flex-1 overflow-hidden relative">
+        {mobileModulesOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-xs md:hidden"
+            onClick={() => setMobileModulesOpen(false)}
+          />
+        )}
         
         {/* ── LEFT SIDEBAR ── */}
-        <div className="w-[320px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex flex-col h-full overflow-hidden z-10 shadow-sm hidden md:flex">
+        <div className={`w-[300px] sm:w-[320px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col h-full overflow-hidden z-40 md:z-10 shadow-xl md:shadow-sm fixed md:static inset-y-0 left-0 transition-transform duration-300 ${
+          mobileModulesOpen ? 'translate-x-0 flex' : '-translate-x-full md:translate-x-0 hidden md:flex'
+        }`}>
           
           {/* Course Info Header */}
           <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -884,6 +905,7 @@ export default function ElearningPage() {
                             if (!isLocked) {
                               selectModule(module);
                               selectLesson(lesson);
+                              setMobileModulesOpen(false);
                             }
                           }}
                           disabled={isLocked}

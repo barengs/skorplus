@@ -90,13 +90,13 @@ export default function AdminSettingsPage() {
           <p className="text-slate-600 dark:text-slate-400 text-sm">Konfigurasi nama, logo, dan preferensi bahasa aplikasi</p>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-8">
+        <form onSubmit={handleSave} className="space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 sm:p-8">
           {/* Logo Section */}
           <div className="pb-6 border-b border-slate-200 dark:border-slate-800">
             <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-4">Logo Aplikasi</h3>
-            <div className="flex gap-8">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
               {/* Logo Preview */}
-              <div className="w-32 h-32 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700">
+              <div className="w-32 h-32 shrink-0 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700">
                 {logoPreview ? (
                   <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain p-2" />
                 ) : (

@@ -493,7 +493,7 @@ export default function AdminGuidePage() {
 
   return (
     <AppLayout title="Buku Panduan Administrasi" subtitle="Petunjuk teknis operasional fitur sistem SkorPluss langkah demi langkah">
-      <div className="space-y-6 pb-12">
+      <div className="w-full space-y-6 pb-12">
         {/* Header Hero Banner */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 p-6 md:p-8 text-white shadow-xl">
           <div className="relative z-10 max-w-3xl">

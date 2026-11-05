@@ -134,7 +134,7 @@ export default function ForumDetailPage() {
   if (loading) {
     return (
       <AppLayout title="Detil Diskusi Forum">
-        <div className="max-w-3xl mx-auto flex flex-col gap-6 animate-pulse">
+        <div className="w-full flex flex-col gap-6 animate-pulse">
           <div className="h-5 w-40 bg-slate-200 dark:bg-slate-800 rounded" />
           <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-lg" />
           <div className="h-40 bg-slate-200 dark:bg-slate-800 rounded-lg" />
@@ -146,7 +146,7 @@ export default function ForumDetailPage() {
   if (error || !post) {
     return (
       <AppLayout title="Detil Diskusi Forum">
-        <div className="max-w-3xl mx-auto text-center py-16">
+        <div className="w-full text-center py-16">
           <div className="text-5xl mb-4">🔍</div>
           <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Topik Tidak Ditemukan</h2>
           <p className="text-slate-500 mb-6">{error || 'Pertanyaan atau diskusi ini mungkin telah dihapus.'}</p>
@@ -162,7 +162,7 @@ export default function ForumDetailPage() {
 
   return (
     <AppLayout title={post.title || 'Detil Diskusi Forum'}>
-      <div className="max-w-3xl mx-auto flex flex-col gap-6 pb-12">
+      <div className="w-full flex flex-col gap-6 pb-12">
         {/* Navigation Breadcrumb / Back button */}
         <div className="flex items-center justify-between gap-4">
           <Link
