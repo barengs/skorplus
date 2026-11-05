@@ -41,7 +41,7 @@ class StudentController extends Controller
 
         $query = User::role('siswa', 'api')
             ->where('school_id', $school->id)
-            ->with(['profile'])
+            ->with(['profile', 'studentProfile'])
             ->withCount(['cbtSessions']);
 
         if ($request->filled('search')) {
@@ -57,14 +57,21 @@ class StudentController extends Controller
             $query->where('program', $request->program);
         }
 
-        $students = $query->latest()->get()->map(function (User $user) {
-            $data = $user->toArray();
-            $data['phone'] = $user->profile?->phone ?? $user->phone;
-            $data['gender'] = $user->profile?->gender;
-            $data['birth_year'] = $user->profile?->birth_year;
-            $data['address'] = $user->profile?->address;
+        if ($request->filled('class_level')) {
+            $classLevel = $request->class_level;
+            $query->where(function ($q) use ($classLevel) {
+                $q->whereHas('studentProfile', function ($sq) use ($classLevel) {
+                    $sq->where('class_level', $classLevel)
+                        ->orWhere('class_level_id', $classLevel);
+                })->orWhereHas('profile', function ($pq) use ($classLevel) {
+                    $pq->where('class_level', $classLevel)
+                        ->orWhere('class_level_id', $classLevel);
+                });
+            });
+        }
 
-            return $data;
+        $students = $query->latest()->get()->map(function (User $user) {
+            return $this->formatStudentPayload($user);
         });
 
         return response()->json([
@@ -75,6 +82,22 @@ class StudentController extends Controller
             ],
             'students' => $students,
         ]);
+    }
+
+    private function formatStudentPayload(User $user): array
+    {
+        $user->loadMissing(['profile', 'studentProfile']);
+        $resolved = $user->resolvedProfileAttributes();
+        $data = $user->toArray();
+        $data['phone'] = $resolved['phone'];
+        $data['gender'] = $resolved['gender'];
+        $data['birth_year'] = $resolved['birth_year'];
+        $data['address'] = $resolved['address'];
+        $data['class_level_id'] = $resolved['class_level_id'];
+        $data['class_level'] = $resolved['class_level'];
+        $data['target_campus'] = $resolved['target_campus'];
+
+        return $data;
     }
 
     public function store(Request $request): JsonResponse
@@ -89,6 +112,8 @@ class StudentController extends Controller
             'phone' => 'nullable|string|max:30',
             'avatar' => 'nullable|string',
             'program' => 'nullable|string|in:mandiri,intensif,garansi',
+            'class_level_id' => 'nullable|integer|exists:class_levels,id',
+            'class_level' => 'nullable|string|max:100',
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer',
             'address' => 'nullable|string',
@@ -108,19 +133,22 @@ class StudentController extends Controller
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
-        $student->profile()->create([
+        $siswaRole = Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
+        $student->assignRole($siswaRole);
+
+        $student->syncRoleProfile([
+            'role' => 'siswa',
             'phone' => $validated['phone'] ?? null,
             'gender' => $validated['gender'] ?? null,
             'birth_year' => $validated['birth_year'] ?? null,
             'address' => $validated['address'] ?? null,
+            'class_level_id' => $validated['class_level_id'] ?? null,
+            'class_level' => $validated['class_level'] ?? null,
         ]);
-
-        $siswaRole = Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
-        $student->assignRole($siswaRole);
 
         return response()->json([
             'message' => 'Siswa berhasil didaftarkan.',
-            'student' => $student->load('profile'),
+            'student' => $this->formatStudentPayload($student->fresh()),
         ], 201);
     }
 
@@ -132,11 +160,11 @@ class StudentController extends Controller
             return response()->json(['message' => 'Akses ditolak.'], 403);
         }
 
-        $student->load(['profile', 'cbtSessions' => function ($q) {
+        $student->load(['profile', 'studentProfile', 'cbtSessions' => function ($q) {
             $q->latest()->take(10);
         }]);
 
-        return response()->json($student);
+        return response()->json($this->formatStudentPayload($student));
     }
 
     public function update(Request $request, User $student): JsonResponse
@@ -155,6 +183,8 @@ class StudentController extends Controller
             'phone' => 'nullable|string|max:30',
             'avatar' => 'nullable|string',
             'program' => 'nullable|string|in:mandiri,intensif,garansi',
+            'class_level_id' => 'nullable|integer|exists:class_levels,id',
+            'class_level' => 'nullable|string|max:100',
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer',
             'address' => 'nullable|string',
@@ -177,19 +207,17 @@ class StudentController extends Controller
 
         $student->update($updateData);
 
-        $student->profile()->updateOrCreate(
-            ['user_id' => $student->id],
-            [
-                'phone' => $validated['phone'] ?? $student->profile?->phone,
-                'gender' => $validated['gender'] ?? $student->profile?->gender,
-                'birth_year' => $validated['birth_year'] ?? $student->profile?->birth_year,
-                'address' => $validated['address'] ?? $student->profile?->address,
-            ]
-        );
+        $profileInput = ['role' => 'siswa'];
+        foreach (['phone', 'gender', 'birth_year', 'address', 'class_level_id', 'class_level'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $profileInput[$field] = $validated[$field];
+            }
+        }
+        $student->syncRoleProfile($profileInput);
 
         return response()->json([
             'message' => 'Data siswa berhasil diperbarui.',
-            'student' => $student->fresh()->load('profile'),
+            'student' => $this->formatStudentPayload($student->fresh()),
         ]);
     }
 
@@ -217,6 +245,7 @@ class StudentController extends Controller
             'students.*.nisn' => 'nullable|string|max:30',
             'students.*.phone' => 'nullable|string|max:30',
             'students.*.program' => 'nullable|string|in:mandiri,intensif,garansi',
+            'students.*.class_level' => 'nullable|string|max:100',
         ]);
 
         $siswaRole = Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
@@ -251,11 +280,12 @@ class StudentController extends Controller
                     'is_active' => true,
                 ]);
 
-                $user->profile()->create([
-                    'phone' => $item['phone'] ?? null,
-                ]);
-
                 $user->assignRole($siswaRole);
+                $user->syncRoleProfile([
+                    'role' => 'siswa',
+                    'phone' => $item['phone'] ?? null,
+                    'class_level' => $item['class_level'] ?? null,
+                ]);
                 $created++;
             }
             DB::commit();

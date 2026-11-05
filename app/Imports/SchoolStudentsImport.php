@@ -116,6 +116,10 @@ class SchoolStudentsImport implements ToCollection, WithHeadingRow
             // Address
             $address = ! empty($row['alamat']) ? trim((string) $row['alamat']) : null;
 
+            // Class Level (Tingkat Kelas)
+            $rawClassLevel = $row['tingkat_kelas'] ?? $row['kelas'] ?? $row['class_level'] ?? null;
+            $classLevel = ! empty($rawClassLevel) ? trim((string) $rawClassLevel) : null;
+
             DB::beginTransaction();
             try {
                 $student = User::create([
@@ -130,14 +134,16 @@ class SchoolStudentsImport implements ToCollection, WithHeadingRow
                     'is_active' => true,
                 ]);
 
-                $student->profile()->create([
+                $student->assignRole($siswaRole);
+
+                $student->syncRoleProfile([
+                    'role' => 'siswa',
                     'phone' => $phone,
                     'gender' => $gender,
                     'birth_year' => $birthYear,
                     'address' => $address,
+                    'class_level' => $classLevel,
                 ]);
-
-                $student->assignRole($siswaRole);
 
                 DB::commit();
 

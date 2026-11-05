@@ -22,9 +22,11 @@ export default function AdminUsersPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProgram, setFilterProgram] = useState('');
+  const [filterClassLevel, setFilterClassLevel] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [availableRoles, setAvailableRoles] = useState([]);
   const [availablePrograms, setAvailablePrograms] = useState([]);
+  const [classLevels, setClassLevels] = useState([]);
   
   const [availableSchools, setAvailableSchools] = useState([]);
   
@@ -38,6 +40,7 @@ export default function AdminUsersPage() {
     school_id: '',
     school: '',
     nisn: '',
+    class_level: '',
     gender: '',
     birth_year: '',
     address: '',
@@ -50,6 +53,9 @@ export default function AdminUsersPage() {
     api.get('/admin/roles').then((res) => setAvailableRoles(res.data)).catch(() => {});
     api.get('/learning-packages').then((res) => setAvailablePrograms(res.data)).catch(() => {});
     api.get('/schools/public').then((res) => setAvailableSchools(res.data)).catch(() => {});
+    api.get('/class-levels').then((res) => {
+      if (Array.isArray(res.data)) setClassLevels(res.data);
+    }).catch(() => {});
   }, [dispatch]);
 
   const handleSchoolChange = (e) => {
@@ -81,6 +87,7 @@ export default function AdminUsersPage() {
         school_id: user.school_id || (userSchool ? String(userSchool.id) : ''),
         school: user.school || (userSchool ? userSchool.name : ''),
         nisn: user.nisn || '',
+        class_level: user.class_level || '',
         gender: user.gender || '',
         birth_year: user.birth_year ? String(user.birth_year) : '',
         address: user.address || '',
@@ -98,6 +105,7 @@ export default function AdminUsersPage() {
         school_id: '',
         school: '',
         nisn: '',
+        class_level: '',
         gender: '',
         birth_year: '',
         address: '',
@@ -155,6 +163,7 @@ export default function AdminUsersPage() {
     return users.filter((u) => {
       const matchSearch = searchTerm === '' || u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.includes(searchTerm);
       const matchProgram = filterProgram === '' || u.program === filterProgram;
+      const matchClassLevel = filterClassLevel === '' || u.class_level === filterClassLevel;
       
       const isSiswa = u.roles?.includes('siswa');
       const hasNoRole = !u.roles || u.roles.length === 0;
@@ -168,9 +177,9 @@ export default function AdminUsersPage() {
         matchTab = true;
       }
 
-      return matchSearch && matchProgram && matchTab;
+      return matchSearch && matchProgram && (activeTab !== 'siswa' || matchClassLevel) && matchTab;
     });
-  }, [users, searchTerm, filterProgram, activeTab]);
+  }, [users, searchTerm, filterProgram, filterClassLevel, activeTab]);
 
   // TanStack Table Column Definitions
   const columns = useMemo(
@@ -183,6 +192,14 @@ export default function AdminUsersPage() {
       {
         accessorKey: 'email',
         header: 'Email',
+      },
+      {
+        accessorKey: 'class_level',
+        header: 'Tingkat Kelas',
+        cell: (info) => {
+          const val = info.getValue();
+          return val ? <Badge color="blue">{val}</Badge> : <span className="text-xs text-slate-400">-</span>;
+        },
       },
       {
         accessorKey: 'program',
@@ -244,12 +261,17 @@ export default function AdminUsersPage() {
     <AppLayout title="Kelola Pengguna & Siswa">
       <div className="w-full pb-16 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
             <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">Manajemen Pengguna</h2>
             <p className="text-slate-600 dark:text-slate-400 text-sm">Total Pengguna Terdaftar: {users.length}</p>
           </div>
-          <Button onClick={() => openModal()}>+ Tambah Pengguna</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/admin/class-levels')}>
+              🎓 Master Tingkat Kelas
+            </Button>
+            <Button onClick={() => openModal()}>+ Tambah Pengguna</Button>
+          </div>
         </div>
 
         {/* Tabs for Separation */}
@@ -287,23 +309,35 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Filters */}
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
+        <div className="grid md:grid-cols-4 gap-4 mb-6">
           <Input
             placeholder="Cari nama atau email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           {activeTab === 'siswa' && (
-            <select
-              value={filterProgram}
-              onChange={(e) => setFilterProgram(e.target.value)}
-              className="px-4 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Semua Program</option>
-              {availablePrograms.map((p) => (
-                <option key={p.id} value={p.name}>{p.name}</option>
-              ))}
-            </select>
+            <>
+              <select
+                value={filterClassLevel}
+                onChange={(e) => setFilterClassLevel(e.target.value)}
+                className="px-4 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Semua Tingkat Kelas</option>
+                {classLevels.map((lvl) => (
+                  <option key={lvl.id} value={lvl.name}>{lvl.name}</option>
+                ))}
+              </select>
+              <select
+                value={filterProgram}
+                onChange={(e) => setFilterProgram(e.target.value)}
+                className="px-4 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Semua Program</option>
+                {availablePrograms.map((p) => (
+                  <option key={p.id} value={p.name}>{p.name}</option>
+                ))}
+              </select>
+            </>
           )}
           <Button variant="ghost" onClick={() => dispatch(fetchAdminUsers())}>
             🔄 Refresh Data
@@ -453,6 +487,27 @@ export default function AdminUsersPage() {
                     />
                   </div>
                 </div>
+
+                {formData.role === 'siswa' && (
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Tingkat Kelas
+                    </label>
+                    <select
+                      value={formData.class_level}
+                      onChange={(e) => setFormData({ ...formData, class_level: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      <option value="">Pilih Tingkat Kelas</option>
+                      {classLevels.map((lvl) => (
+                        <option key={lvl.id} value={lvl.name}>{lvl.name}</option>
+                      ))}
+                      {formData.class_level && !classLevels.some((lvl) => lvl.name === formData.class_level) && (
+                        <option value={formData.class_level}>{formData.class_level}</option>
+                      )}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">

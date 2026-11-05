@@ -16,11 +16,13 @@ export default function SchoolAdminStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProgram, setFilterProgram] = useState('');
+  const [filterClassLevel, setFilterClassLevel] = useState('');
+  const [classLevels, setClassLevels] = useState([]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', nisn: '', phone: '', avatar: '', program: 'intensif',
+    name: '', email: '', password: '', nisn: '', class_level: '', phone: '', avatar: '', program: 'intensif',
     gender: '', birth_year: '', address: '', is_active: true,
   });
   const [saving, setSaving] = useState(false);
@@ -51,13 +53,18 @@ export default function SchoolAdminStudentsPage() {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    api.get('/class-levels').then(res => {
+      if (Array.isArray(res.data)) setClassLevels(res.data);
+    }).catch(() => {});
+  }, []);
 
   const openModal = (student = null) => {
     if (student) {
       setFormData({
         name: student.name, email: student.email, password: '',
-        nisn: student.nisn || '', phone: student.phone || '', avatar: student.avatar || '',
+        nisn: student.nisn || '', class_level: student.class_level || '', phone: student.phone || '', avatar: student.avatar || '',
         program: student.program || 'intensif', gender: student.gender || '',
         birth_year: student.birth_year ? String(student.birth_year) : '',
         address: student.address || '', is_active: student.is_active,
@@ -65,7 +72,7 @@ export default function SchoolAdminStudentsPage() {
       setEditingStudent(student);
     } else {
       setFormData({
-        name: '', email: '', password: '', nisn: '', phone: '', avatar: '',
+        name: '', email: '', password: '', nisn: '', class_level: '', phone: '', avatar: '',
         program: 'intensif', gender: '', birth_year: '', address: '', is_active: true,
       });
       setEditingStudent(null);
@@ -264,9 +271,10 @@ export default function SchoolAdminStudentsPage() {
         s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (s.nisn || '').includes(searchTerm);
       const matchProg = !filterProgram || s.program === filterProgram;
-      return matchSearch && matchProg;
+      const matchClass = !filterClassLevel || s.class_level === filterClassLevel;
+      return matchSearch && matchProg && matchClass;
     });
-  }, [students, searchTerm, filterProgram]);
+  }, [students, searchTerm, filterProgram, filterClassLevel]);
 
   const columns = useMemo(() => [
     {
@@ -286,6 +294,15 @@ export default function SchoolAdminStudentsPage() {
             )}
           </div>
         </div>
+      ),
+    },
+    {
+      accessorKey: 'class_level',
+      header: 'Tingkat Kelas',
+      cell: (info) => (
+        info.getValue()
+          ? <Badge color="blue">{info.getValue()}</Badge>
+          : <span className="text-xs text-slate-400">-</span>
       ),
     },
     {
@@ -363,12 +380,22 @@ export default function SchoolAdminStudentsPage() {
         </div>
 
         {/* Filters */}
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid md:grid-cols-4 gap-3">
           <Input
             placeholder="Cari nama, email, atau NISN..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
+          <select
+            value={filterClassLevel}
+            onChange={e => setFilterClassLevel(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm"
+          >
+            <option value="">Semua Tingkat Kelas</option>
+            {classLevels.map(lvl => (
+              <option key={lvl.id} value={lvl.name}>{lvl.name}</option>
+            ))}
+          </select>
           <select
             value={filterProgram}
             onChange={e => setFilterProgram(e.target.value)}
@@ -465,8 +492,31 @@ export default function SchoolAdminStudentsPage() {
                   <Input value={formData.nisn} onChange={e => setFormData({ ...formData, nisn: e.target.value })} placeholder="10 digit NISN" />
                 </div>
                 <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tingkat Kelas</label>
+                  <select
+                    value={formData.class_level}
+                    onChange={e => setFormData({ ...formData, class_level: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm"
+                  >
+                    <option value="">Pilih Tingkat Kelas</option>
+                    {classLevels.map(lvl => (
+                      <option key={lvl.id} value={lvl.name}>{lvl.name}</option>
+                    ))}
+                    {formData.class_level && !classLevels.some(lvl => lvl.name === formData.class_level) && (
+                      <option value={formData.class_level}>{formData.class_level}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">No. WhatsApp</label>
                   <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="081..." />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tahun Lahir</label>
+                  <Input type="number" value={formData.birth_year} onChange={e => setFormData({ ...formData, birth_year: e.target.value })} placeholder="Contoh: 2008" />
                 </div>
               </div>
 

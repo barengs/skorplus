@@ -76,12 +76,16 @@ class AdminStudentReportController extends Controller
             return $st;
         })->values();
 
+        $resolved = $user->resolvedProfileAttributes();
+
         return response()->json([
             'student' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'nisn' => $user->nisn,
+                'class_level' => $resolved['class_level'],
+                'target_campus' => $resolved['target_campus'],
                 'school' => $user->schoolEntity?->name ?? $user->school,
                 'program' => $user->program,
                 'is_active' => (bool) $user->is_active,

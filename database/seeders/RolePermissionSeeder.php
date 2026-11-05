@@ -35,6 +35,16 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $demoSiswa->assignRole($siswa);
+        $demoSiswa->syncRoleProfile([
+            'role' => 'siswa',
+            'phone' => '08123456789',
+            'gender' => 'laki-laki',
+            'birth_year' => 2008,
+            'class_level' => 'Kelas 12 (XII)',
+            'target_campus' => 'Institut Teknologi Sepuluh Nopember (ITS)',
+            'address' => 'Jl. Kusuma Bangsa No. 21, Surabaya',
+            'bio' => 'Fokus persiapan UTBK-SNBT Teknik Informatika ITS.',
+        ]);
 
         $demoTutor = User::firstOrCreate(
             ['email' => 'tutor@skorpluss.com'],
@@ -47,6 +57,14 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $demoTutor->assignRole($tutor);
+        $demoTutor->syncRoleProfile([
+            'role' => 'tutor',
+            'specialization' => 'Penalaran Matematika & Kuantitatif',
+            'alma_mater' => 'Institut Teknologi Bandung (ITB) - Fisika',
+            'phone' => '081290001122',
+            'gender' => 'laki-laki',
+            'bio' => 'Instruktur senior persiapan UTBK-SNBT & Sains dengan pengalaman mengajar lebih dari 10 tahun.',
+        ]);
 
         $demoAdmin = User::firstOrCreate(
             ['email' => 'admin@skorpluss.com'],
@@ -57,6 +75,13 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $demoAdmin->assignRole($admin);
+        $demoAdmin->syncRoleProfile([
+            'role' => 'admin',
+            'position' => 'Super Administrator',
+            'department' => 'Manajemen Operasional & Akademik',
+            'phone' => '08113000999',
+            'bio' => 'Pengelola utama platform SkorPluss Learning Center.',
+        ]);
 
         $demoAdminSekolah = User::firstOrCreate(
             ['email' => 'admin.sekolah@skorpluss.com'],
@@ -67,6 +92,14 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $demoAdminSekolah->assignRole($adminSekolah);
+        $demoAdminSekolah->syncRoleProfile([
+            'role' => 'admin_sekolah',
+            'position' => 'Wakasek Bidang Kurikulum & UTBK',
+            'nip' => '198405122010011008',
+            'phone' => '081331002200',
+            'gender' => 'laki-laki',
+            'bio' => 'Koordinator program pendampingan UTBK-SNBT sekolah mitra.',
+        ]);
 
         $this->command->info('Roles & demo users seeded:');
         $this->command->info('  siswa@skorpluss.com / password');

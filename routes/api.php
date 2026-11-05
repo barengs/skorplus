@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\AdminAuditLogController;
 use App\Http\Controllers\Api\Admin\AdminCbtController;
 use App\Http\Controllers\Api\Admin\AdminCbtImportController;
+use App\Http\Controllers\Api\Admin\AdminClassLevelController;
 use App\Http\Controllers\Api\Admin\AdminCourseModuleController;
 use App\Http\Controllers\Api\Admin\AdminElearningController;
 use App\Http\Controllers\Api\Admin\AdminExamQuestionController;
@@ -47,6 +48,7 @@ Route::get('elearning/courses/{slug}', [ElearningController::class, 'courseDetai
 Route::get('courses/{course}/reviews', [ReviewController::class, 'courseReviews']);
 Route::get('programs/{slug}/reviews', [ReviewController::class, 'programReviews']);
 Route::get('schools/public', [AdminSchoolController::class, 'publicList']);
+Route::get('class-levels', [AdminClassLevelController::class, 'publicList']);
 
 // Public auth routes
 Route::prefix('auth')->group(function () {
@@ -123,6 +125,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('roles/matrix/toggle', [RoleMenuController::class, 'toggle']);
         Route::apiResource('roles', AdminRoleController::class);
         Route::apiResource('users', UserController::class);
+        Route::apiResource('class-levels', AdminClassLevelController::class)->except(['show']);
         Route::apiResource('programs', ProgramController::class);
         Route::apiResource('testimonials', TestimonialController::class);
         Route::apiResource('features', FeatureController::class);

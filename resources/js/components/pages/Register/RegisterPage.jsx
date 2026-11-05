@@ -17,21 +17,26 @@ export default function RegisterPage() {
 
   const [step, setStep] = useState(0);
   const [schools, setSchools] = useState([]);
+  const [classLevels, setClassLevels] = useState([]);
   const [form, setForm] = useState({
-    name: '', phone: '', school_id: '', nisn: '',
+    name: '', phone: '', school_id: '', nisn: '', class_level: '',
     email: '', password: '', password_confirmation: '',
   });
 
   useEffect(() => {
-    const fetchSchools = async () => {
+    const fetchInitialData = async () => {
       try {
-        const res = await api.get('/schools/public');
-        setSchools(res.data);
+        const [schoolsRes, levelsRes] = await Promise.all([
+          api.get('/schools/public'),
+          api.get('/class-levels'),
+        ]);
+        setSchools(schoolsRes.data || []);
+        setClassLevels(Array.isArray(levelsRes.data) ? levelsRes.data : []);
       } catch (err) {
-        console.error('Failed to fetch schools', err);
+        console.error('Failed to fetch registration options', err);
       }
     };
-    fetchSchools();
+    fetchInitialData();
   }, []);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -101,8 +106,22 @@ export default function RegisterPage() {
                     ))}
                   </select>
                 </div>
-                <Input id="nisn" label="NISN" placeholder="10 digit NISN" value={form.nisn} onChange={set('nisn')} />
+                <div>
+                  <label htmlFor="class_level" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tingkat Kelas</label>
+                  <select
+                    id="class_level"
+                    value={form.class_level}
+                    onChange={set('class_level')}
+                    className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="">Pilih Tingkat Kelas</option>
+                    {classLevels.map((lvl) => (
+                      <option key={lvl.id} value={lvl.name}>{lvl.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
+              <Input id="nisn" label="NISN (Opsional)" placeholder="10 digit NISN" value={form.nisn} onChange={set('nisn')} />
               <Button onClick={() => setStep(1)} disabled={!form.name || !form.school_id} size="lg" className="w-full mt-2">
                 Lanjut →
               </Button>
@@ -128,7 +147,7 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-4">
               <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Konfirmasi Pendaftaran</h2>
               <div className="bg-slate-100 dark:bg-slate-800 rounded-md p-4 flex flex-col gap-2 text-sm">
-                {[['Nama', form.name], ['Sekolah', schools.find((s) => String(s.id) === String(form.school_id))?.name || 'Sekolah Terdaftar'], ['NISN', form.nisn], ['Email', form.email]].map(([label, val]) => (
+                {[['Nama', form.name], ['Sekolah', schools.find((s) => String(s.id) === String(form.school_id))?.name || 'Sekolah Terdaftar'], ['Tingkat Kelas', form.class_level], ['NISN', form.nisn], ['Email', form.email]].map(([label, val]) => (
                   val && <div key={label} className="flex justify-between"><span className="text-slate-600 dark:text-slate-400">{label}</span><span className="font-semibold text-slate-800 dark:text-slate-200">{val}</span></div>
                 ))}
               </div>

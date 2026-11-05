@@ -198,6 +198,10 @@ export default function StudentReportModal({ userId, onClose }) {
                        <span className="font-medium text-slate-800 dark:text-slate-200">{student.nisn || student.id}</span>
                     </div>
                     <div>
+                       <span className="block text-[11px] text-slate-400 font-semibold mb-0.5">Tingkat Kelas</span>
+                       <span className="font-medium text-slate-800 dark:text-slate-200">{student.class_level || '-'}</span>
+                    </div>
+                    <div>
                        <span className="block text-[11px] text-slate-400 font-semibold mb-0.5">Program</span>
                        <span className="font-medium text-slate-800 dark:text-slate-200 uppercase">{student.program || 'Umum'}</span>
                     </div>

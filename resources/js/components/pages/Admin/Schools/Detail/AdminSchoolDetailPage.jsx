@@ -20,12 +20,13 @@ export default function AdminSchoolDetailPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProgram, setFilterProgram] = useState('');
+  const [classLevels, setClassLevels] = useState([]);
 
   // Student Modal
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', nisn: '', phone: '', avatar: '', program: 'intensif', is_active: true,
+    name: '', email: '', password: '', nisn: '', class_level: '', phone: '', avatar: '', program: 'intensif', is_active: true,
   });
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -190,17 +191,22 @@ export default function AdminSchoolDetailPage() {
     if (student) {
       setFormData({
         name: student.name, email: student.email, password: '',
-        nisn: student.nisn || '', phone: student.phone || '',
+        nisn: student.nisn || '', class_level: student.class_level || '', phone: student.phone || '',
         avatar: student.avatar || '',
         program: student.program || 'intensif', is_active: student.is_active,
       });
       setEditingStudent(student);
     } else {
       setFormData({
-        name: '', email: '', password: '', nisn: '', phone: '', avatar: '',
+        name: '', email: '', password: '', nisn: '', class_level: '', phone: '', avatar: '',
         program: 'intensif', is_active: true,
       });
       setEditingStudent(null);
+    }
+    if (classLevels.length === 0) {
+      api.get('/class-levels').then(res => {
+        if (Array.isArray(res.data)) setClassLevels(res.data);
+      }).catch(() => {});
     }
     setModalOpen(true);
   };
@@ -362,6 +368,15 @@ export default function AdminSchoolDetailPage() {
             )}
           </div>
         </div>
+      ),
+    },
+    {
+      accessorKey: 'class_level',
+      header: 'Tingkat Kelas',
+      cell: (info) => (
+        info.getValue()
+          ? <Badge color="blue">{info.getValue()}</Badge>
+          : <span className="text-xs text-slate-400">-</span>
       ),
     },
     {
@@ -679,9 +694,26 @@ export default function AdminSchoolDetailPage() {
                   <Input value={formData.nisn} onChange={e => setFormData({ ...formData, nisn: e.target.value })} placeholder="10 digit NISN" />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">No. WhatsApp</label>
-                  <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="081..." />
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tingkat Kelas</label>
+                  <select
+                    value={formData.class_level}
+                    onChange={e => setFormData({ ...formData, class_level: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm"
+                  >
+                    <option value="">Pilih Tingkat Kelas</option>
+                    {classLevels.map(lvl => (
+                      <option key={lvl.id} value={lvl.name}>{lvl.name}</option>
+                    ))}
+                    {formData.class_level && !classLevels.some(lvl => lvl.name === formData.class_level) && (
+                      <option value={formData.class_level}>{formData.class_level}</option>
+                    )}
+                  </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1">No. WhatsApp</label>
+                <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="081..." />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

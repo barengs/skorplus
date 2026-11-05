@@ -143,6 +143,14 @@ export default function AdminUserDetailPage() {
                   <span className="font-medium text-slate-800 dark:text-slate-200">{user.nisn || '-'}</span>
                 </div>
                 <div>
+                  <span className="font-semibold text-slate-500 block text-xs">Tingkat Kelas:</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">{user.class_level || '-'}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-500 block text-xs">Target Kampus / PTN:</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">{user.target_campus || '-'}</span>
+                </div>
+                <div>
                   <span className="font-semibold text-slate-500 block text-xs">Nomor WhatsApp / HP:</span>
                   <span className="font-medium text-slate-800 dark:text-slate-200">{user.phone || '-'}</span>
                 </div>

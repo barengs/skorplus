@@ -96,6 +96,11 @@ class AdminSchoolController extends Controller
 
             $adminRole = Role::firstOrCreate(['name' => 'admin_sekolah', 'guard_name' => 'api']);
             $adminUser->assignRole($adminRole);
+            $adminUser->syncRoleProfile([
+                'role' => 'admin_sekolah',
+                'phone' => $validated['phone'] ?? null,
+                'position' => 'Koordinator Sekolah',
+            ]);
         }
 
         $school->loadCount(['students', 'admins']);
@@ -108,17 +113,33 @@ class AdminSchoolController extends Controller
         $school->loadCount(['students', 'admins']);
         $school->load([
             'admins' => function ($q) {
-                $q->select('id', 'name', 'email', 'phone', 'avatar', 'school_id', 'is_active', 'created_at');
+                $q->select('id', 'name', 'email', 'phone', 'avatar', 'school_id', 'is_active', 'created_at')
+                    ->with('schoolAdminProfile');
             },
             'students' => function ($q) {
                 $q->select('id', 'name', 'email', 'nisn', 'phone', 'avatar', 'program', 'school_id', 'is_active', 'created_at')
-                    ->with('profile')
+                    ->with(['profile', 'studentProfile'])
                     ->withCount('cbtSessions')
                     ->latest();
             },
         ]);
 
-        return response()->json($school);
+        $schoolData = $school->toArray();
+        $schoolData['students'] = collect($school->students)->map(function (User $student) {
+            $resolved = $student->resolvedProfileAttributes();
+            $item = $student->toArray();
+            $item['phone'] = $resolved['phone'];
+            $item['gender'] = $resolved['gender'];
+            $item['birth_year'] = $resolved['birth_year'];
+            $item['address'] = $resolved['address'];
+            $item['class_level_id'] = $resolved['class_level_id'];
+            $item['class_level'] = $resolved['class_level'];
+            $item['target_campus'] = $resolved['target_campus'];
+
+            return $item;
+        })->values()->all();
+
+        return response()->json($schoolData);
     }
 
     public function update(Request $request, School $school): JsonResponse
@@ -170,6 +191,11 @@ class AdminSchoolController extends Controller
 
         $adminRole = Role::firstOrCreate(['name' => 'admin_sekolah', 'guard_name' => 'api']);
         $adminUser->assignRole($adminRole);
+        $adminUser->syncRoleProfile([
+            'role' => 'admin_sekolah',
+            'phone' => $validated['phone'] ?? null,
+            'position' => 'Koordinator Sekolah',
+        ]);
 
         return response()->json([
             'message' => 'Akun Admin Sekolah berhasil dibuat',
@@ -187,6 +213,11 @@ class AdminSchoolController extends Controller
             'phone' => 'nullable|string|max:30',
             'avatar' => 'nullable|string',
             'program' => 'nullable|string|in:mandiri,intensif,garansi',
+            'class_level_id' => 'nullable|integer|exists:class_levels,id',
+            'class_level' => 'nullable|string|max:100',
+            'gender' => 'nullable|string|in:laki-laki,perempuan',
+            'birth_year' => 'nullable|integer',
+            'address' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -203,18 +234,33 @@ class AdminSchoolController extends Controller
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
-        $student->profile()->create([
-            'phone' => $validated['phone'] ?? null,
-        ]);
-
         $siswaRole = Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
         $student->assignRole($siswaRole);
 
+        $student->syncRoleProfile([
+            'role' => 'siswa',
+            'phone' => $validated['phone'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'birth_year' => $validated['birth_year'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'class_level_id' => $validated['class_level_id'] ?? null,
+            'class_level' => $validated['class_level'] ?? null,
+        ]);
+
         AuditLog::record('CREATE_STUDENT', "Admin menambahkan siswa baru '{$student->name}' ke sekolah {$school->name}.", 'school', $student);
+
+        $student->load(['profile', 'studentProfile']);
+        $resolved = $student->resolvedProfileAttributes();
+        $studentData = $student->toArray();
+        $studentData['class_level_id'] = $resolved['class_level_id'];
+        $studentData['class_level'] = $resolved['class_level'];
+        $studentData['gender'] = $resolved['gender'];
+        $studentData['birth_year'] = $resolved['birth_year'];
+        $studentData['address'] = $resolved['address'];
 
         return response()->json([
             'message' => 'Siswa berhasil ditambahkan ke sekolah.',
-            'student' => $student->load('profile'),
+            'student' => $studentData,
         ], 201);
     }
 
@@ -232,6 +278,11 @@ class AdminSchoolController extends Controller
             'phone' => 'nullable|string|max:30',
             'avatar' => 'nullable|string',
             'program' => 'nullable|string|in:mandiri,intensif,garansi',
+            'class_level_id' => 'nullable|integer|exists:class_levels,id',
+            'class_level' => 'nullable|string|max:100',
+            'gender' => 'nullable|string|in:laki-laki,perempuan',
+            'birth_year' => 'nullable|integer',
+            'address' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -251,18 +302,28 @@ class AdminSchoolController extends Controller
 
         $student->update($updateData);
 
-        if (isset($validated['phone'])) {
-            $student->profile()->updateOrCreate(
-                ['user_id' => $student->id],
-                ['phone' => $validated['phone']]
-            );
+        $profileInput = ['role' => 'siswa'];
+        foreach (['phone', 'gender', 'birth_year', 'address', 'class_level_id', 'class_level'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $profileInput[$field] = $validated[$field];
+            }
         }
+        $student->syncRoleProfile($profileInput);
 
         AuditLog::record('UPDATE_STUDENT', "Admin memperbarui data siswa '{$student->name}' ({$student->email}) pada sekolah {$school->name}.", 'school', $student);
 
+        $fresh = $student->fresh()->load(['profile', 'studentProfile']);
+        $resolved = $fresh->resolvedProfileAttributes();
+        $studentData = $fresh->toArray();
+        $studentData['class_level_id'] = $resolved['class_level_id'];
+        $studentData['class_level'] = $resolved['class_level'];
+        $studentData['gender'] = $resolved['gender'];
+        $studentData['birth_year'] = $resolved['birth_year'];
+        $studentData['address'] = $resolved['address'];
+
         return response()->json([
             'message' => 'Data siswa berhasil diperbarui.',
-            'student' => $student->fresh()->load('profile'),
+            'student' => $studentData,
         ]);
     }
 

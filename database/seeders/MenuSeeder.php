@@ -25,8 +25,9 @@ class MenuSeeder extends Seeder
 
             // System
             ['label' => 'Kelola Pengguna', 'path' => '/admin/users', 'icon' => 'fa-users', 'section' => 'system', 'sort_order' => 1, 'roles' => array_values(array_filter([$admin->id]))],
-            ['label' => 'Kelola Sekolah', 'path' => '/admin/schools', 'icon' => 'fa-school', 'section' => 'system', 'sort_order' => 2, 'roles' => array_values(array_filter([$admin->id]))],
-            ['label' => 'Profil Sekolah', 'path' => '/school-admin/profile', 'icon' => 'fa-school', 'section' => 'system', 'sort_order' => 3, 'roles' => array_values(array_filter([$adminSekolah->id]))],
+            ['label' => 'Master Tingkat Kelas', 'path' => '/admin/class-levels', 'icon' => 'fa-graduation-cap', 'section' => 'system', 'sort_order' => 2, 'roles' => array_values(array_filter([$admin->id]))],
+            ['label' => 'Kelola Sekolah', 'path' => '/admin/schools', 'icon' => 'fa-school', 'section' => 'system', 'sort_order' => 3, 'roles' => array_values(array_filter([$admin->id]))],
+            ['label' => 'Profil Sekolah', 'path' => '/school-admin/profile', 'icon' => 'fa-school', 'section' => 'system', 'sort_order' => 4, 'roles' => array_values(array_filter([$adminSekolah->id]))],
             ['label' => 'Kelola Program/Paket', 'path' => '/admin/learning-packages', 'icon' => 'fa-cubes', 'section' => 'system', 'sort_order' => 4, 'roles' => array_values(array_filter([$admin->id]))],
             ['label' => 'Kelola Ujian & Soal', 'path' => '/admin/cbt', 'icon' => 'fa-list-check', 'section' => 'system', 'sort_order' => 5, 'roles' => array_values(array_filter([$admin->id, $tutor->id]))],
             ['label' => 'Kelola E-Learning', 'path' => '/admin/elearning', 'icon' => 'fa-book-open-reader', 'section' => 'system', 'sort_order' => 6, 'roles' => array_values(array_filter([$admin->id, $tutor->id]))],

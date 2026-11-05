@@ -25,7 +25,7 @@ class SchoolStudentsExport implements FromCollection, ShouldAutoSize, WithHeadin
     {
         return User::role('siswa', 'api')
             ->where('school_id', $this->school->id)
-            ->with(['profile', 'cbtSessions'])
+            ->with(['profile', 'studentProfile', 'cbtSessions'])
             ->withCount('cbtSessions')
             ->orderBy('name')
             ->get();
@@ -38,6 +38,7 @@ class SchoolStudentsExport implements FromCollection, ShouldAutoSize, WithHeadin
             'Nama Lengkap',
             'Email',
             'NISN',
+            'Tingkat Kelas',
             'No. WhatsApp / HP',
             'Program',
             'Jenis Kelamin',
@@ -55,17 +56,19 @@ class SchoolStudentsExport implements FromCollection, ShouldAutoSize, WithHeadin
     public function map($student): array
     {
         $this->rowNumber++;
+        $resolved = $student->resolvedProfileAttributes();
 
         return [
             $this->rowNumber,
             $student->name,
             $student->email,
             $student->nisn ? (string) $student->nisn : '-',
-            $student->phone ?: ($student->profile?->phone ?: '-'),
+            $resolved['class_level'] ?: '-',
+            $resolved['phone'] ?: '-',
             ucfirst($student->program ?: 'intensif'),
-            $student->profile?->gender ? ucfirst($student->profile->gender) : '-',
-            $student->profile?->birth_year ?: '-',
-            $student->profile?->address ?: '-',
+            $resolved['gender'] ? ucfirst($resolved['gender']) : '-',
+            $resolved['birth_year'] ?: '-',
+            $resolved['address'] ?: '-',
             $student->cbt_sessions_count ?? $student->cbtSessions->count(),
             $student->is_active ? 'Aktif' : 'Nonaktif',
             $student->created_at ? $student->created_at->format('d/m/Y H:i') : '-',

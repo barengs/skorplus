@@ -13,6 +13,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // 0. Master Class Levels (Kelas 10, 11, 12, Alumni)
+            ClassLevelSeeder::class,
+
             // 1. Roles, Permissions & Core Demo Users
             RolePermissionSeeder::class,
 

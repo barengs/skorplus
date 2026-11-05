@@ -12,7 +12,7 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with(['roles', 'profile']);
+        $query = User::with(['roles', 'profile', 'studentProfile', 'tutorProfile', 'schoolAdminProfile', 'adminProfile']);
 
         if ($request->search) {
             $search = $request->search;
@@ -27,20 +27,50 @@ class UserController extends Controller
             $query->where('program', $request->program);
         }
 
-        $users = $query->latest()->get()->map(function (User $user) {
-            $data = $user->toArray();
-            $data['roles'] = $user->getRoleNames();
-            $data['phone'] = $user->profile?->phone ?? $user->phone;
-            $data['gender'] = $user->profile?->gender;
-            $data['birth_year'] = $user->profile?->birth_year;
-            $data['address'] = $user->profile?->address;
-            $data['social_media'] = $user->profile?->social_media ?? [];
-            $data['bio'] = $user->profile?->bio;
+        if ($request->class_level) {
+            $cl = $request->class_level;
+            $query->where(function ($q) use ($cl) {
+                $q->whereHas('studentProfile', function ($sq) use ($cl) {
+                    $sq->where('class_level', $cl)->orWhere('class_level_id', $cl);
+                })->orWhereHas('profile', function ($pq) use ($cl) {
+                    $pq->where('class_level', $cl)->orWhere('class_level_id', $cl);
+                });
+            });
+        }
 
-            return $data;
+        $users = $query->latest()->get()->map(function (User $user) {
+            return $this->formatUserPayload($user);
         });
 
         return response()->json($users);
+    }
+
+    private function formatUserPayload(User $user): array
+    {
+        $user->loadMissing(['roles', 'profile', 'studentProfile', 'tutorProfile', 'schoolAdminProfile', 'adminProfile', 'schoolEntity']);
+        $resolved = $user->resolvedProfileAttributes();
+        $data = $user->toArray();
+        $data['roles'] = $user->getRoleNames();
+        $data['profile_type'] = $resolved['profile_type'];
+        $data['phone'] = $resolved['phone'];
+        $data['gender'] = $resolved['gender'];
+        $data['birth_year'] = $resolved['birth_year'];
+        $data['address'] = $resolved['address'];
+        $data['social_media'] = $resolved['social_media'] ?? [];
+        $data['bio'] = $resolved['bio'];
+        $data['class_level_id'] = $resolved['class_level_id'];
+        $data['class_level'] = $resolved['class_level'];
+        $data['target_campus'] = $resolved['target_campus'];
+        $data['specialization'] = $resolved['specialization'];
+        $data['alma_mater'] = $resolved['alma_mater'];
+        $data['position'] = $resolved['position'];
+        $data['department'] = $resolved['department'];
+        $data['nip'] = $resolved['nip'];
+        $data['is_on_trial'] = $user->isOnTrial();
+        $data['trial_days_remaining'] = $user->trialDaysRemaining();
+        $data['school_name'] = $user->schoolEntity?->name ?? $user->school;
+
+        return $data;
     }
 
     public function store(Request $request)
@@ -53,6 +83,14 @@ class UserController extends Controller
             'school' => 'nullable|string',
             'school_id' => 'nullable|integer|exists:schools,id',
             'nisn' => 'nullable|string|unique:users',
+            'class_level_id' => 'nullable|integer|exists:class_levels,id',
+            'class_level' => 'nullable|string|max:100',
+            'target_campus' => 'nullable|string|max:255',
+            'specialization' => 'nullable|string|max:255',
+            'alma_mater' => 'nullable|string|max:255',
+            'position' => 'nullable|string|max:100',
+            'department' => 'nullable|string|max:100',
+            'nip' => 'nullable|string|max:50',
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer',
             'address' => 'nullable|string',
@@ -76,53 +114,40 @@ class UserController extends Controller
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
-        $user->profile()->create([
-            'phone' => $validated['phone'] ?? null,
-            'gender' => $validated['gender'] ?? null,
-            'birth_year' => $validated['birth_year'] ?? null,
-            'address' => $validated['address'] ?? null,
-            'social_media' => $validated['social_media'] ?? null,
-            'bio' => $validated['bio'] ?? null,
-        ]);
-
         $roleName = $validated['role'] ?? 'siswa';
         $role = Role::where('name', $roleName)->where('guard_name', 'api')->first();
         if ($role) {
             $user->assignRole($role);
         }
 
-        $data = $user->load('profile')->toArray();
-        $data['roles'] = $user->getRoleNames();
-        $data['phone'] = $user->profile?->phone ?? $user->phone;
-        $data['gender'] = $user->profile?->gender;
-        $data['birth_year'] = $user->profile?->birth_year;
-        $data['address'] = $user->profile?->address;
-        $data['social_media'] = $user->profile?->social_media ?? [];
-        $data['bio'] = $user->profile?->bio;
+        $user->syncRoleProfile([
+            'role' => $roleName,
+            'phone' => $validated['phone'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'birth_year' => $validated['birth_year'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'social_media' => $validated['social_media'] ?? null,
+            'bio' => $validated['bio'] ?? null,
+            'class_level_id' => $validated['class_level_id'] ?? null,
+            'class_level' => $validated['class_level'] ?? null,
+            'target_campus' => $validated['target_campus'] ?? null,
+            'specialization' => $validated['specialization'] ?? null,
+            'alma_mater' => $validated['alma_mater'] ?? null,
+            'position' => $validated['position'] ?? null,
+            'department' => $validated['department'] ?? null,
+            'nip' => $validated['nip'] ?? null,
+        ]);
 
-        return response()->json($data, 201);
+        return response()->json($this->formatUserPayload($user->fresh()), 201);
     }
 
     public function show(User $user)
     {
-        $user->load(['roles', 'profile', 'schoolEntity', 'cbtSessions' => function ($q) {
+        $user->load(['roles', 'profile', 'studentProfile', 'tutorProfile', 'schoolAdminProfile', 'adminProfile', 'schoolEntity', 'cbtSessions' => function ($q) {
             $q->with('exam')->latest()->take(10);
         }]);
 
-        $data = $user->toArray();
-        $data['roles'] = $user->getRoleNames();
-        $data['phone'] = $user->profile?->phone ?? $user->phone;
-        $data['gender'] = $user->profile?->gender;
-        $data['birth_year'] = $user->profile?->birth_year;
-        $data['address'] = $user->profile?->address;
-        $data['social_media'] = $user->profile?->social_media ?? [];
-        $data['bio'] = $user->profile?->bio;
-
-        $data['is_on_trial'] = $user->isOnTrial();
-        $data['trial_days_remaining'] = $user->trialDaysRemaining();
-        $data['school_name'] = $user->schoolEntity?->name ?? $user->school;
-
-        return response()->json($data);
+        return response()->json($this->formatUserPayload($user));
     }
 
     public function update(Request $request, User $user)
@@ -135,6 +160,14 @@ class UserController extends Controller
             'school' => 'nullable|string',
             'school_id' => 'nullable|integer|exists:schools,id',
             'nisn' => 'nullable|string|unique:users,nisn,'.$user->id,
+            'class_level_id' => 'nullable|integer|exists:class_levels,id',
+            'class_level' => 'nullable|string|max:100',
+            'target_campus' => 'nullable|string|max:255',
+            'specialization' => 'nullable|string|max:255',
+            'alma_mater' => 'nullable|string|max:255',
+            'position' => 'nullable|string|max:100',
+            'department' => 'nullable|string|max:100',
+            'nip' => 'nullable|string|max:50',
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer',
             'address' => 'nullable|string',
@@ -155,18 +188,6 @@ class UserController extends Controller
             'is_active' => $validated['is_active'] ?? $user->is_active,
         ]);
 
-        $user->profile()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'phone' => $request->has('phone') ? $request->phone : ($user->profile?->phone ?? $user->phone),
-                'gender' => $request->has('gender') ? $request->gender : $user->profile?->gender,
-                'birth_year' => $request->has('birth_year') ? $request->birth_year : $user->profile?->birth_year,
-                'address' => $request->has('address') ? $request->address : $user->profile?->address,
-                'social_media' => $request->has('social_media') ? $request->social_media : $user->profile?->social_media,
-                'bio' => $request->has('bio') ? $request->bio : $user->profile?->bio,
-            ]
-        );
-
         if (isset($validated['role'])) {
             $role = Role::where('name', $validated['role'])->where('guard_name', 'api')->first();
             if ($role) {
@@ -174,16 +195,26 @@ class UserController extends Controller
             }
         }
 
-        $data = $user->fresh()->load('profile')->toArray();
-        $data['roles'] = $user->getRoleNames();
-        $data['phone'] = $user->profile?->phone ?? $user->phone;
-        $data['gender'] = $user->profile?->gender;
-        $data['birth_year'] = $user->profile?->birth_year;
-        $data['address'] = $user->profile?->address;
-        $data['social_media'] = $user->profile?->social_media ?? [];
-        $data['bio'] = $user->profile?->bio;
+        $profileInput = $request->only([
+            'phone',
+            'gender',
+            'birth_year',
+            'address',
+            'social_media',
+            'bio',
+            'class_level_id',
+            'class_level',
+            'target_campus',
+            'specialization',
+            'alma_mater',
+            'position',
+            'department',
+            'nip',
+            'role',
+        ]);
+        $user->syncRoleProfile($profileInput);
 
-        return response()->json($data);
+        return response()->json($this->formatUserPayload($user->fresh()));
     }
 
     public function destroy(User $user)

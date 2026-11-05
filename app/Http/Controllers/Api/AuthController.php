@@ -26,6 +26,8 @@ class AuthController extends Controller
             'phone' => 'nullable|string|max:20',
             'school_id' => 'required|exists:schools,id',
             'nisn' => 'nullable|string|max:20|unique:users',
+            'class_level_id' => 'nullable|integer|exists:class_levels,id',
+            'class_level' => 'nullable|string|max:100',
             'program' => 'nullable|in:mandiri,intensif,garansi',
         ]);
 
@@ -67,6 +69,13 @@ class AuthController extends Controller
             $siswaRole = Role::where('name', 'siswa')->first()
                 ?? Role::firstOrCreate(['name' => 'siswa', 'guard_name' => 'api']);
             $user->assignRole($siswaRole);
+
+            $user->syncRoleProfile([
+                'role' => 'siswa',
+                'phone' => $request->phone,
+                'class_level_id' => $request->class_level_id,
+                'class_level' => $request->class_level,
+            ]);
 
             AuditLog::record('REGISTER', "Pendaftaran akun siswa baru: {$user->name} ({$user->email})", 'auth', $user, null, $user);
 
@@ -114,6 +123,14 @@ class AuthController extends Controller
             'avatar' => 'nullable|string',
             'school' => 'nullable|string|max:255',
             'nisn' => 'nullable|string|max:20|unique:users,nisn,'.$user->id,
+            'class_level_id' => 'nullable|integer|exists:class_levels,id',
+            'class_level' => 'nullable|string|max:100',
+            'target_campus' => 'nullable|string|max:255',
+            'specialization' => 'nullable|string|max:255',
+            'alma_mater' => 'nullable|string|max:255',
+            'position' => 'nullable|string|max:100',
+            'department' => 'nullable|string|max:100',
+            'nip' => 'nullable|string|max:50',
             'phone' => 'nullable|string|max:30',
             'gender' => 'nullable|string|in:laki-laki,perempuan',
             'birth_year' => 'nullable|integer|min:1940|max:'.date('Y'),
@@ -152,6 +169,9 @@ class AuthController extends Controller
         if ($request->has('school')) {
             $user->school = $request->school;
         }
+        if ($request->has('alma_mater') && $user->hasRole('tutor') && ! $request->has('school')) {
+            $user->school = $request->alma_mater;
+        }
         if ($request->has('nisn')) {
             $user->nisn = $request->nisn;
         }
@@ -160,24 +180,25 @@ class AuthController extends Controller
         }
         $user->save();
 
-        // Update or create profile record
-        $user->loadMissing('profile');
-        $profileData = [
-            'phone' => $request->has('phone') ? $request->phone : ($user->profile?->phone ?? $user->phone),
-            'gender' => $request->has('gender') ? $request->gender : $user->profile?->gender,
-            'birth_year' => $request->has('birth_year') ? $request->birth_year : $user->profile?->birth_year,
-            'address' => $request->has('address') ? $request->address : $user->profile?->address,
-            'bio' => $request->has('bio') ? $request->bio : $user->profile?->bio,
-        ];
+        // Update or create role-specific profile record (student_profiles, tutor_profiles, school_admin_profiles, admin_profiles)
+        $profileInputs = $request->only([
+            'phone',
+            'gender',
+            'birth_year',
+            'address',
+            'bio',
+            'social_media',
+            'class_level_id',
+            'class_level',
+            'target_campus',
+            'specialization',
+            'alma_mater',
+            'position',
+            'department',
+            'nip',
+        ]);
 
-        if ($request->has('social_media')) {
-            $profileData['social_media'] = $request->social_media;
-        }
-
-        $user->profile()->updateOrCreate(
-            ['user_id' => $user->id],
-            $profileData
-        );
+        $user->syncRoleProfile($profileInputs);
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui.',
@@ -201,24 +222,33 @@ class AuthController extends Controller
 
     private function userPayload(User $user): array
     {
-        $user->loadMissing('profile');
-        $profile = $user->profile;
+        $user->loadMissing(['schoolEntity', 'profile', 'studentProfile', 'tutorProfile', 'schoolAdminProfile', 'adminProfile']);
+        $resolved = $user->resolvedProfileAttributes();
 
         return [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
             'nisn' => $user->nisn,
-            'school' => $user->school,
+            'school' => $user->schoolEntity?->name ?? $user->school,
             'school_id' => $user->school_id,
-            'phone' => $profile?->phone ?? $user->phone,
+            'phone' => $resolved['phone'],
             'program' => $user->program,
             'avatar' => $user->avatar,
-            'gender' => $profile?->gender,
-            'birth_year' => $profile?->birth_year,
-            'address' => $profile?->address,
-            'social_media' => $profile?->social_media ?? (object) [],
-            'bio' => $profile?->bio,
+            'profile_type' => $resolved['profile_type'],
+            'class_level_id' => $resolved['class_level_id'],
+            'class_level' => $resolved['class_level'],
+            'target_campus' => $resolved['target_campus'],
+            'specialization' => $resolved['specialization'],
+            'alma_mater' => $resolved['alma_mater'],
+            'position' => $resolved['position'],
+            'department' => $resolved['department'],
+            'nip' => $resolved['nip'],
+            'gender' => $resolved['gender'],
+            'birth_year' => $resolved['birth_year'],
+            'address' => $resolved['address'],
+            'social_media' => $resolved['social_media'],
+            'bio' => $resolved['bio'],
             'roles' => $user->getRoleNames(),
             'trial' => [
                 'is_on_trial' => $user->isOnTrial(),

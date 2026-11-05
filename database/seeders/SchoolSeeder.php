@@ -90,6 +90,15 @@ class SchoolSeeder extends Seeder
                 ]
             );
             $student1->assignRole($siswaRole);
+            $student1->syncRoleProfile([
+                'role' => 'siswa',
+                'phone' => '081298765432',
+                'gender' => 'laki-laki',
+                'birth_year' => 2008,
+                'class_level' => 'Kelas 12 (XII)',
+                'target_campus' => 'Universitas Airlangga (UNAIR)',
+                'address' => 'Jl. Dharmawangsa No. 14, Surabaya',
+            ]);
 
             $student2 = User::updateOrCreate(
                 ['email' => 'siti.nurhaliza@siswa.sch.id'],
@@ -106,6 +115,15 @@ class SchoolSeeder extends Seeder
                 ]
             );
             $student2->assignRole($siswaRole);
+            $student2->syncRoleProfile([
+                'role' => 'siswa',
+                'phone' => '081298765433',
+                'gender' => 'perempuan',
+                'birth_year' => 2009,
+                'class_level' => 'Kelas 11 (XI)',
+                'target_campus' => 'Universitas Gadjah Mada (UGM)',
+                'address' => 'Jl. Manyar Kertoarjo No. 8, Surabaya',
+            ]);
         }
 
         // Assign learning packages to the 3 schools
@@ -164,6 +182,15 @@ class SchoolSeeder extends Seeder
                 ]
             );
             $student3->assignRole($siswaRole);
+            $student3->syncRoleProfile([
+                'role' => 'siswa',
+                'phone' => '082334567890',
+                'gender' => 'laki-laki',
+                'birth_year' => 2008,
+                'class_level' => 'Kelas 12 (XII)',
+                'target_campus' => 'Universitas Brawijaya (UB)',
+                'address' => 'Jl. Ijen No. 10, Malang',
+            ]);
 
             if ($pkg2) {
                 $schoolPackage2 = SchoolLearningPackage::updateOrCreate(
