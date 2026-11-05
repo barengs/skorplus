@@ -23,7 +23,7 @@
 .rich-text,
 .ql-editor,
 .content-wrapper {
-  line-height: 1.7;
+  line-height: 1.75;
   word-break: normal !important;
   overflow-wrap: break-word !important;
   word-wrap: break-word !important;
@@ -45,8 +45,49 @@
 .prose:not([contenteditable="true"]),
 .rich-text:not([contenteditable="true"]),
 .ql-editor:not([contenteditable="true"]),
-.ql-editor:not([contenteditable="true"]) p,
-.ql-editor:not([contenteditable="true"]) li {
-  white-space: normal;
+.prose:not([contenteditable="true"]) *:not(pre):not(code),
+.rich-text:not([contenteditable="true"]) *:not(pre):not(code),
+.ql-editor:not([contenteditable="true"]) *:not(pre):not(code) {
+  white-space: normal !important;
+}
+
+/* Rich Text Read-Only Typography (Quill Output) */
+.rich-text p {
+  margin-bottom: 0.85em;
+}
+.rich-text p:last-child {
+  margin-bottom: 0;
+}
+.rich-text h1,
+.rich-text h2,
+.rich-text h3,
+.rich-text h4 {
+  font-weight: 800;
+  line-height: 1.35;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+.rich-text h1 { font-size: 1.75rem; }
+.rich-text h2 { font-size: 1.4rem; }
+.rich-text h3 { font-size: 1.15rem; }
+.rich-text h4 { font-size: 1rem; }
+.rich-text ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.85em;
+}
+.rich-text ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.85em;
+}
+.rich-text li {
+  margin-bottom: 0.3em;
+}
+.rich-text blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  margin: 1em 0;
+  font-style: italic;
 }
 

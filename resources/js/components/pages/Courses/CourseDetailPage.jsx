@@ -9,6 +9,7 @@ import Logo from '../../atoms/Logo';
 import Button from '../../atoms/Button';
 import Badge from '../../atoms/Badge';
 import { toEmbedUrl } from '../../../utils/videoHelper';
+import { normalizeRichTextHtml } from '../../../utils/richTextHelper';
 import ReviewModal from '../../molecules/ReviewModal';
 import CertificateModal from '../../molecules/CertificateModal';
 
@@ -272,8 +273,10 @@ export default function CourseDetailPage() {
               <div
                 className="text-slate-300 text-sm sm:text-base leading-relaxed line-clamp-3 prose dark:prose-invert"
                 dangerouslySetInnerHTML={{
-                  __html: course.description ||
-                    'Pelajari materi terstruktur dan komprehensif ini untuk menguasai kompetensi dari dasar hingga mahir dengan kurikulum yang telah teruji.'
+                  __html: normalizeRichTextHtml(
+                    course.description ||
+                      'Pelajari materi terstruktur dan komprehensif ini untuk menguasai kompetensi dari dasar hingga mahir dengan kurikulum yang telah teruji.'
+                  )
                 }}
               />
 
@@ -520,11 +523,13 @@ export default function CourseDetailPage() {
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Deskripsi Lengkap Kursus
               </h3>
-              <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed prose rich-text ql-editor dark:prose-invert max-w-none break-normal">
+              <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed prose rich-text dark:prose-invert max-w-none break-normal">
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: course.description ||
-                      '<p>Kursus ini dirancang oleh tutor berpengalaman untuk memberikan pemahaman menyeluruh terhadap konsep penting yang sering diujikan dan dibutuhkan di dunia akademik maupun industri.</p><p>Setiap materi disusun secara bertahap dari pemahaman konsep dasar, visualisasi materi, pembahasan soal, hingga latihan kuis dan tugas mandiri. Siswa dapat belajar dengan fleksibel sesuai dengan ritme masing-masing.</p>'
+                    __html: normalizeRichTextHtml(
+                      course.description ||
+                        '<p>Kursus ini dirancang oleh tutor berpengalaman untuk memberikan pemahaman menyeluruh terhadap konsep penting yang sering diujikan dan dibutuhkan di dunia akademik maupun industri.</p><p>Setiap materi disusun secara bertahap dari pemahaman konsep dasar, visualisasi materi, pembahasan soal, hingga latihan kuis dan tugas mandiri. Siswa dapat belajar dengan fleksibel sesuai dengan ritme masing-masing.</p>'
+                    )
                   }}
                 />
               </div>
@@ -924,8 +929,8 @@ export default function CourseDetailPage() {
                 </div>
               ) : previewLesson.content ? (
                 <div
-                  className="prose rich-text ql-editor dark:prose-invert max-w-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed break-normal"
-                  dangerouslySetInnerHTML={{ __html: previewLesson.content }}
+                  className="prose rich-text dark:prose-invert max-w-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed break-normal"
+                  dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(previewLesson.content) }}
                 />
               ) : (
                 <div className="text-center py-12 text-slate-500 text-sm">

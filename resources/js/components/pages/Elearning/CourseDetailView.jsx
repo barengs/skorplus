@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '../../atoms/Button';
 import Badge from '../../atoms/Badge';
 import { toEmbedUrl } from '../../../utils/videoHelper';
+import { normalizeRichTextHtml } from '../../../utils/richTextHelper';
 
 export default function CourseDetailView({
   course,
@@ -191,8 +192,8 @@ export default function CourseDetailView({
             {/* Description */}
             {course.description && (
               <div
-                className="prose rich-text ql-editor dark:prose-invert max-w-none text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed break-normal pt-2 border-t border-slate-100 dark:border-slate-800"
-                dangerouslySetInnerHTML={{ __html: course.description }}
+                className="prose rich-text dark:prose-invert max-w-none text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed break-normal pt-2 border-t border-slate-100 dark:border-slate-800"
+                dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(course.description) }}
               />
             )}
 

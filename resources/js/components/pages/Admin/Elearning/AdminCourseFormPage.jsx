@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { compressImageToFile } from '../../../../utils/imageCompressor';
+import { cleanRichTextForSave } from '../../../../utils/richTextHelper';
 
 const CATEGORIES = [
   'TPS UTBK-SNBT',
@@ -57,7 +58,7 @@ export default function AdminCourseFormPage() {
       setFormData({
         title: c.title || '',
         category: c.category || 'TPS UTBK-SNBT',
-        description: c.description || '',
+        description: cleanRichTextForSave(c.description || ''),
         is_active: Boolean(c.is_active),
       });
       setPreviewImg(c.thumbnail || null);
@@ -103,11 +104,15 @@ export default function AdminCourseFormPage() {
 
     try {
       setSaving(true);
+      const payload = {
+        ...formData,
+        description: cleanRichTextForSave(formData.description),
+      };
       if (isEditing) {
-        await dispatch(updateAdminCourse({ id: courseId, data: formData })).unwrap();
+        await dispatch(updateAdminCourse({ id: courseId, data: payload })).unwrap();
         toast.success('Kursus berhasil diperbarui!');
       } else {
-        const created = await dispatch(createAdminCourse(formData)).unwrap();
+        const created = await dispatch(createAdminCourse(payload)).unwrap();
         toast.success('Kursus berhasil dibuat!');
         navigate(`/admin/elearning/courses/${created.id}/curriculum`);
         return;

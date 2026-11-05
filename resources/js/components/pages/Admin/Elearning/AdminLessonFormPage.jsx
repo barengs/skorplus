@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { cleanRichTextForSave } from '../../../../utils/richTextHelper';
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -97,7 +98,7 @@ export default function AdminLessonFormPage() {
         title: l.title || '',
         type: l.type || 'video',
         video_url: l.video_url || '',
-        content: l.content || l.summary || '',
+        content: cleanRichTextForSave(l.content || l.summary || ''),
         is_preview: Boolean(l.is_preview),
         duration_seconds: l.duration_seconds || 0,
         min_pass_score: l.min_pass_score !== undefined && l.min_pass_score !== null ? l.min_pass_score : 60,
@@ -277,12 +278,13 @@ export default function AdminLessonFormPage() {
       }
     }
 
+    const cleanedContent = cleanRichTextForSave(lessonForm.content);
     const payload = {
       title: lessonForm.title,
       type: lessonForm.type,
       video_url: lessonForm.type === 'video' ? lessonForm.video_url : null,
-      content: lessonForm.content,
-      summary: lessonForm.content,
+      content: cleanedContent,
+      summary: cleanedContent,
       is_preview: Boolean(lessonForm.is_preview),
       duration_seconds: parseInt(lessonForm.duration_seconds || 0),
       min_pass_score: lessonForm.type === 'quiz' ? parseInt(lessonForm.min_pass_score || 60) : null,

@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { toEmbedUrl } from '../../../utils/videoHelper';
+import { normalizeRichTextHtml } from '../../../utils/richTextHelper';
 import DailyCheckinModal from './DailyCheckinModal';
 import AcademySidebar from './AcademySidebar';
 import ProgressBelajarView from './ProgressBelajarView';
@@ -955,8 +956,8 @@ export default function ElearningPage() {
                           <iframe width="100%" height="100%" src={toEmbedUrl(selectedLesson.video_url)} title={selectedLesson.title} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
                         </div>
                       ) : selectedLesson.type === 'reading' ? (
-                        <div className="prose rich-text ql-editor dark:prose-invert max-w-none text-base leading-relaxed break-normal text-slate-800 dark:text-slate-200">
-                          <div dangerouslySetInnerHTML={{ __html: selectedLesson.content || 'Materi tidak tersedia' }} />
+                        <div className="prose rich-text dark:prose-invert max-w-none text-base leading-relaxed break-normal text-slate-800 dark:text-slate-200">
+                          <div dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(selectedLesson.content || 'Materi tidak tersedia') }} />
                         </div>
                       ) : selectedLesson.type === 'assignment' ? (
                         <div className="p-6 sm:p-8 space-y-6">
@@ -1070,8 +1071,8 @@ export default function ElearningPage() {
                           )}
 
                           {/* Assignment Instructions (Quill text) */}
-                          <div className="prose rich-text ql-editor dark:prose-invert max-w-none text-sm leading-relaxed break-normal text-slate-700 dark:text-slate-300">
-                            <div dangerouslySetInnerHTML={{ __html: selectedLesson.content || 'Instruksi tugas akhir sedang disiapkan.' }} />
+                          <div className="prose rich-text dark:prose-invert max-w-none text-sm leading-relaxed break-normal text-slate-700 dark:text-slate-300">
+                            <div dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(selectedLesson.content || 'Instruksi tugas akhir sedang disiapkan.') }} />
                           </div>
 
                           {/* Latest Submission Status Banner */}
@@ -1578,14 +1579,14 @@ export default function ElearningPage() {
                         </div>
                       )}
 
-                      <div className="p-6 border-t border-slate-200 dark:border-slate-800 space-y-4 bg-slate-50 dark:bg-slate-900/50">
-                        {selectedLesson.summary && (
+                      {selectedLesson.summary && (selectedLesson.type === 'video' || selectedLesson.summary !== selectedLesson.content) && (
+                        <div className="p-6 border-t border-slate-200 dark:border-slate-800 space-y-4 bg-slate-50 dark:bg-slate-900/50">
                           <div>
                             <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Ringkasan Materi</h3>
-                            <div className="text-sm text-slate-600 dark:text-slate-400 prose rich-text ql-editor dark:prose-invert max-w-none break-normal" dangerouslySetInnerHTML={{ __html: selectedLesson.summary }} />
+                            <div className="text-sm text-slate-600 dark:text-slate-400 prose rich-text dark:prose-invert max-w-none break-normal" dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(selectedLesson.summary) }} />
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       {/* Course Completion & Testimonial Box */}
                       {(!nextLesson || progressPercent === 100) && (
@@ -1666,14 +1667,6 @@ export default function ElearningPage() {
               <p className="max-w-md mx-auto">Pilih materi pada daftar modul di sebelah kiri untuk memulai proses pembelajaran Anda.</p>
             </div>
           )}
-
-          {/* Floating AI Helper Bar */}
-          <div className="absolute bottom-0 inset-x-0 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-t border-slate-200 dark:border-slate-800 flex justify-center">
-            <button className="px-6 py-2.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all hover:scale-105">
-              <FontAwesomeIcon icon={['fas', 'robot']} />
-              Tanya Dibby AI tentang materi ini
-            </button>
-          </div>
         </div>
       </div>
 

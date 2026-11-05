@@ -22,6 +22,20 @@ class Course extends Model
         'display_program',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $course): void {
+            if ($course->description !== null) {
+                $course->description = Lesson::normalizeRichText($course->description);
+            }
+        });
+    }
+
+    public function getDescriptionAttribute(?string $value): ?string
+    {
+        return Lesson::normalizeRichText($value);
+    }
+
     public function instructor()
     {
         return $this->belongsTo(User::class, 'instructor_id');
