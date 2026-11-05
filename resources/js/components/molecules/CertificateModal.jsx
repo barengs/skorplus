@@ -45,15 +45,29 @@ export default function CertificateModal({
 
           {/* Header */}
           <div className="flex flex-col items-center mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-amber-500 text-3xl sm:text-4xl">🎓</span>
-              <span className="text-lg sm:text-xl font-black tracking-wider text-slate-900 dark:text-white uppercase">
-                SkorPluss <span className="text-blue-600 dark:text-blue-400">Learning Center</span>
-              </span>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <img
+                src="/assets/skorpluss_logo.png"
+                alt="SkorPluss Logo"
+                className="w-11 h-11 sm:w-13 sm:h-13 object-contain drop-shadow-xs select-none"
+              />
+              <div className="flex flex-col items-start leading-none">
+                <div className="text-2xl sm:text-3xl font-black tracking-tight">
+                  <span className="text-slate-800 dark:text-white">Skor</span>
+                  <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent">Pluss</span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-1 w-full justify-center">
+                  <span className="h-[1.5px] w-3.5 bg-amber-500/80 rounded-full" />
+                  <span className="text-[10px] sm:text-[11px] font-semibold tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Learning Center
+                  </span>
+                  <span className="h-[1.5px] w-3.5 bg-amber-500/80 rounded-full" />
+                </div>
+              </div>
             </div>
-            <div className="h-0.5 w-32 bg-gradient-to-r from-transparent via-amber-500 to-transparent my-1" />
-            <span className="text-[11px] uppercase tracking-widest text-amber-700 dark:text-amber-400 font-bold">
-              Akademi Pembelajaran Mandiri & Bimbingan Belajar Nasional
+            <div className="h-0.5 w-40 bg-gradient-to-r from-transparent via-amber-500 to-transparent my-1.5" />
+            <span className="text-xs sm:text-sm font-serif font-semibold tracking-wide text-slate-700 dark:text-slate-300 mt-0.5">
+              Bimbingan Belajar &amp; Konsultasi Pendidikan
             </span>
           </div>
 
