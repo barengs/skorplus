@@ -70,6 +70,7 @@ class StudentElearningController extends Controller
         $courseId = $course->id;
         $enrollment = CourseEnrollment::where('user_id', $user->id)->where('course_id', $courseId)->first();
         if ($enrollment) {
+            $totalLessons = $course->modules()->withCount('lessons')->get()->sum('lessons_count');
             $completedLessons = LessonProgress::where('user_id', $user->id)
                 ->whereHas('lesson.module', function ($q) use ($courseId) {
                     $q->where('course_id', $courseId);
@@ -77,8 +78,11 @@ class StudentElearningController extends Controller
                 ->where('is_completed', true)
                 ->count();
 
+            $enrollment->total_lessons = max((int) $totalLessons, $completedLessons);
             $enrollment->completed_lessons = $completedLessons;
-            $enrollment->progress_percentage = $enrollment->total_lessons > 0 ? (int) round(($completedLessons / $enrollment->total_lessons) * 100) : 0;
+            $enrollment->progress_percentage = $enrollment->total_lessons > 0
+                ? min(100, (int) round(($completedLessons / $enrollment->total_lessons) * 100))
+                : 0;
 
             if ($enrollment->progress_percentage === 100 && ! $enrollment->completed_at) {
                 $enrollment->completed_at = now();
@@ -166,9 +170,11 @@ class StudentElearningController extends Controller
         );
 
         // Update Course Enrollment Progress if passed
-        $courseId = $lesson->module->course_id;
+        $course = $lesson->module->course;
+        $courseId = $course->id;
         $enrollment = CourseEnrollment::where('user_id', $user->id)->where('course_id', $courseId)->first();
         if ($enrollment) {
+            $totalLessons = $course->modules()->withCount('lessons')->get()->sum('lessons_count');
             $completedLessons = LessonProgress::where('user_id', $user->id)
                 ->whereHas('lesson.module', function ($q) use ($courseId) {
                     $q->where('course_id', $courseId);
@@ -176,8 +182,11 @@ class StudentElearningController extends Controller
                 ->where('is_completed', true)
                 ->count();
 
+            $enrollment->total_lessons = max((int) $totalLessons, $completedLessons);
             $enrollment->completed_lessons = $completedLessons;
-            $enrollment->progress_percentage = $enrollment->total_lessons > 0 ? (int) round(($completedLessons / $enrollment->total_lessons) * 100) : 0;
+            $enrollment->progress_percentage = $enrollment->total_lessons > 0
+                ? min(100, (int) round(($completedLessons / $enrollment->total_lessons) * 100))
+                : 0;
 
             if ($enrollment->progress_percentage === 100 && ! $enrollment->completed_at) {
                 $enrollment->completed_at = now();

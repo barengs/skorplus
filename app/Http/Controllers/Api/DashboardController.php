@@ -102,6 +102,17 @@ class DashboardController extends Controller
 
         $enrollments = CourseEnrollment::where('user_id', $user->id)->with('course')->latest('updated_at')->get();
 
+        foreach ($enrollments as $enr) {
+            if (($enr->progress_percentage ?? 0) > 100) {
+                $enr->progress_percentage = 100;
+                $enr->total_lessons = max((int) $enr->total_lessons, (int) $enr->completed_lessons);
+                if (! $enr->completed_at) {
+                    $enr->completed_at = now();
+                }
+                $enr->save();
+            }
+        }
+
         $completedLessonsCount = LessonProgress::where('user_id', $user->id)
             ->where('is_completed', true)
             ->count();

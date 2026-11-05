@@ -143,15 +143,6 @@ export default function StudentProfileView() {
     return Math.round((filled / fields.length) * 100);
   }, [formData]);
 
-  const yearOptions = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let y = currentYear - 10; y >= 1960; y--) {
-      years.push(y);
-    }
-    return years;
-  }, []);
-
   const handleClassLevelChange = (e) => {
     const selectedName = e.target.value;
     const found = classLevels.find((item) => item.name === selectedName);
@@ -493,18 +484,14 @@ export default function StudentProfileView() {
                   <FontAwesomeIcon icon={faCalendarAlt} className="text-amber-500" />
                   Tahun Lahir
                 </label>
-                <select
+                <Input
+                  type="number"
+                  min="1950"
+                  max={new Date().getFullYear()}
                   value={formData.birth_year}
                   onChange={(e) => setFormData({ ...formData, birth_year: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  <option value="">Pilih Tahun Lahir</option>
-                  {yearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Contoh: 2008"
+                />
               </div>
 
               {/* Asal Sekolah */}

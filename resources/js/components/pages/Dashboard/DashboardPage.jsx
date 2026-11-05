@@ -985,68 +985,114 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Elearning/Tugas Akhir Chart */}
+          {/* Elearning Progress Pie Chart */}
           <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-purple-400/60 dark:hover:border-purple-500/60 rounded-lg p-5 transition-all shadow-xs hover:shadow-md flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <Link to="/elearning?tab=progress" className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                   <FontAwesomeIcon icon={['fas', 'chart-column']} className="text-purple-500" /> Progres Belajar Kursus
+                  <FontAwesomeIcon icon={['fas', 'chart-pie']} className="text-purple-500" /> Progres Belajar Kursus
                 </Link>
                 <Link to="/elearning?tab=progress" className="text-xs font-semibold text-purple-600 dark:text-purple-400 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
                   Lihat Progres Kelas →
                 </Link>
               </div>
-              {/* Chart Body with Reference Gridlines */}
-              <div className="relative h-44 mt-2 pt-4 flex flex-col justify-end">
-                {/* Background Gridlines */}
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7">
-                  <div className="border-b border-dashed border-slate-200 dark:border-slate-800 flex justify-end">
-                    <span className="text-[10px] text-slate-400 -mt-2.5 px-1 bg-white dark:bg-slate-900">100%</span>
-                  </div>
-                  <div className="border-b border-dashed border-slate-200 dark:border-slate-800 flex justify-end">
-                    <span className="text-[10px] text-slate-400 -mt-2.5 px-1 bg-white dark:bg-slate-900">50%</span>
-                  </div>
-                  <div className="border-b border-slate-200 dark:border-slate-700" />
-                </div>
 
-                {/* Bars Container */}
+              {/* Pie Chart Body */}
+              <div className="relative min-h-44 mt-2 flex items-center justify-center">
                 {recentCourses.length === 0 ? (
-                  <Link to="/elearning?tab=catalog" className="h-full flex flex-col items-center justify-center text-slate-400 text-sm hover:text-blue-500 transition-colors z-10">
+                  <Link to="/elearning?tab=catalog" className="h-44 flex flex-col items-center justify-center text-slate-400 text-sm hover:text-blue-500 transition-colors z-10">
                     <span>Belum ada kursus aktif</span>
                     <span className="text-xs text-blue-500 mt-1">Mulai pilih kursus di katalog →</span>
                   </Link>
-                ) : (
-                  <div className="relative z-10 flex items-end gap-3 h-full pb-7">
-                    {recentCourses.map((enr) => (
-                      <Link
-                        key={enr.id}
-                        to={enr.course?.slug ? `/elearning/${enr.course.slug}` : '/elearning?tab=progress'}
-                        className="flex-1 h-full flex flex-col justify-end items-center group/bar cursor-pointer relative"
-                        title={`${enr.course?.title || 'Kursus'}: ${enr.progress_percentage || 0}%`}
-                      >
-                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 mb-1 group-hover/bar:scale-110 transition-transform">
-                          {enr.progress_percentage || 0}%
-                        </span>
+                ) : (() => {
+                  const SLICE_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
+                  const totalCourseSlots = recentCourses.length * 100;
+                  let currentDeg = 0;
+                  const gradientStops = [];
+
+                  const normalizedCourses = recentCourses.map((enr, idx) => {
+                    const pct = Math.min(100, Math.max(0, Number(enr.progress_percentage) || 0));
+                    const color = pct === 100 ? '#10b981' : SLICE_COLORS[idx % SLICE_COLORS.length];
+                    const sliceDeg = (pct / totalCourseSlots) * 360;
+                    if (sliceDeg > 0) {
+                      const nextDeg = currentDeg + sliceDeg;
+                      gradientStops.push(`${color} ${currentDeg.toFixed(2)}deg ${nextDeg.toFixed(2)}deg`);
+                      currentDeg = nextDeg;
+                    }
+                    return { ...enr, clampedPct: pct, color };
+                  });
+
+                  if (currentDeg < 360) {
+                    gradientStops.push(`rgba(148, 163, 184, 0.22) ${currentDeg.toFixed(2)}deg 360deg`);
+                  }
+
+                  const avgProgress = Math.round(
+                    normalizedCourses.reduce((sum, item) => sum + item.clampedPct, 0) / normalizedCourses.length
+                  );
+
+                  return (
+                    <div className="w-full flex flex-col sm:flex-row items-center gap-6 py-2">
+                      {/* Pie Chart Visual */}
+                      <div className="relative shrink-0 flex items-center justify-center">
                         <div
-                          className={`w-full max-w-10 rounded-t-sm transition-all duration-500 hover:brightness-110 shadow-xs ${
-                            enr.progress_percentage === 100
-                              ? 'bg-emerald-500'
-                              : enr.progress_percentage > 0
-                              ? 'bg-purple-600'
-                              : 'bg-slate-300 dark:bg-slate-700'
-                          }`}
-                          style={{ height: `${Math.max(enr.progress_percentage || 0, 6)}%` }}
-                        />
-                        <div className="absolute -bottom-6 w-full text-center text-[10px] text-slate-500 truncate px-1" title={enr.course?.title}>
-                          {enr.course?.title ? (enr.course.title.length > 12 ? enr.course.title.substring(0, 10) + '...' : enr.course.title) : 'Kursus'}
+                          className="w-36 h-36 rounded-full shadow-inner transition-transform duration-500 group-hover:scale-105 flex items-center justify-center"
+                          style={{
+                            background: `conic-gradient(${gradientStops.join(', ')})`,
+                          }}
+                          title={`Rata-rata Progres Belajar: ${avgProgress}%`}
+                        >
+                          <div className="w-20 h-20 rounded-full bg-white dark:bg-slate-900 flex flex-col items-center justify-center shadow-xs border border-slate-100 dark:border-slate-800">
+                            <span className="text-lg font-black text-slate-900 dark:text-white leading-none">
+                              {avgProgress}%
+                            </span>
+                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">
+                              Selesai
+                            </span>
+                          </div>
                         </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                      </div>
+
+                      {/* Legend & Course List */}
+                      <div className="flex-1 w-full space-y-2.5 min-w-0">
+                        {normalizedCourses.map((enr) => (
+                          <Link
+                            key={enr.id}
+                            to={enr.course?.slug ? `/elearning/${enr.course.slug}` : '/elearning?tab=progress'}
+                            className="flex flex-col gap-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group/item"
+                            title={`${enr.course?.title || 'Kursus'}: ${enr.clampedPct}%`}
+                          >
+                            <div className="flex items-center justify-between gap-2 text-xs">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: enr.color }}
+                                />
+                                <span className="font-semibold text-slate-700 dark:text-slate-200 truncate group-hover/item:text-purple-600 dark:group-hover/item:text-purple-400 transition-colors">
+                                  {enr.course?.title || 'Kursus'}
+                                </span>
+                              </div>
+                              <span className="font-extrabold text-slate-800 dark:text-slate-100 shrink-0">
+                                {enr.clampedPct}%
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${enr.clampedPct}%`,
+                                  backgroundColor: enr.color,
+                                }}
+                              />
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
-            <Link to="/elearning?tab=progress" className="mt-8 text-xs text-center text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 block transition-colors">
+            <Link to="/elearning?tab=progress" className="mt-4 text-xs text-center text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 block transition-colors">
               {recentCourses.length > 0
                 ? `Berdasarkan ${recentCourses.length} kursus aktif dipelajari · Klik kursus untuk buka materi`
                 : 'Belum ada kursus aktif · Mulai belajar di katalog'}
