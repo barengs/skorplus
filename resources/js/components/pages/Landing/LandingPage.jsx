@@ -316,7 +316,7 @@ export default function LandingPage() {
       <LandingNav promo={promo} />
 
       {/* ── HERO ── */}
-      <section className="relative flex flex-col items-center justify-center overflow-hidden pt-32 pb-10">
+      <section className="relative flex flex-col items-center justify-center overflow-hidden pt-28 md:pt-32 pb-14">
         {/* Background glows */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-3xl" />
@@ -330,50 +330,68 @@ export default function LandingPage() {
           backgroundSize: '60px 60px'
         }} />
 
-        <div className="relative max-w-5xl mx-auto px-6 text-center flex flex-col items-center gap-8">
-          {hero?.badge_text && (
-            <Badge color="blue" className="px-4 py-2 text-sm gap-2">
-              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse inline-block" />
-              {hero.badge_text}
-            </Badge>
-          )}
+        <div className="relative max-w-7xl w-full mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
+            {/* Left Column: Hero Copy, CTAs & Stats */}
+            <div className="lg:col-span-7 text-center lg:text-left flex flex-col items-center lg:items-start gap-6">
+              {hero?.badge_text && (
+                <Badge color="blue" className="px-4 py-2 text-sm gap-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse inline-block" />
+                  {hero.badge_text}
+                </Badge>
+              )}
 
-          <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight">
-            {hero?.title || 'Raih Impian'}
-            <br />
-            <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              {hero?.subtitle || 'Bersama SkorPluss'}
-            </span>
-          </h1>
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black leading-tight tracking-tight">
+                {hero?.title || 'Raih Impian'}
+                <br />
+                <span className="bg-gradient-to-r from-blue-500 via-violet-500 to-indigo-500 dark:from-blue-400 dark:via-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                  {hero?.subtitle || 'Bersama SkorPluss'}
+                </span>
+              </h1>
 
-          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-            {hero?.description || 'Persiapan komprehensif UTBK-SNBT, Kedinasan, dan Olimpiade.'}
-          </p>
+              <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+                {hero?.description || 'Persiapan komprehensif UTBK-SNBT, Kedinasan, dan Olimpiade.'}
+              </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link to={token ? '/dashboard' : (hero?.cta_primary_link || '/daftar')}>
-              <Button size="xl" className="shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-shadow">
-                {token ? '🚀 Buka Dashboard' : (hero?.cta_primary_text || '🚀 Mulai Belajar Gratis')}
-              </Button>
-            </Link>
-            <a href={hero?.cta_secondary_link || '#program'}>
-              <Button variant="ghost" size="xl">
-                {hero?.cta_secondary_text || 'Lihat Program →'}
-              </Button>
-            </a>
-          </div>
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-1">
+                <Link to={token ? '/dashboard' : (hero?.cta_primary_link || '/daftar')}>
+                  <Button size="xl" className="shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-shadow">
+                    {token ? '🚀 Buka Dashboard' : (hero?.cta_primary_text || '🚀 Mulai Belajar Gratis')}
+                  </Button>
+                </Link>
+                <a href={hero?.cta_secondary_link || '#program'}>
+                  <Button variant="ghost" size="xl">
+                    {hero?.cta_secondary_text || 'Lihat Program →'}
+                  </Button>
+                </a>
+              </div>
 
-          {/* Stats strip */}
-          {stats && stats.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-4 w-full max-w-3xl">
-              {stats.map((s) => (
-                <div key={s.id} className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center hover:border-slate-700 transition-colors">
-                  <div className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-0.5">{s.value}</div>
-                  <div className="text-xs text-slate-500">{s.label}</div>
+              {/* Stats strip */}
+              {stats && stats.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2 w-full">
+                  {stats.map((s) => (
+                    <div key={s.id} className="bg-white/90 dark:bg-slate-900/60 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-center lg:text-left hover:border-blue-500/40 dark:hover:border-slate-700 transition-colors shadow-xs">
+                      <div className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-0.5">{s.value}</div>
+                      <div className="text-xs text-slate-500">{s.label}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+
+            {/* Right Column: SkorPluss Mascot (SPARK) */}
+            <div className="lg:col-span-5 flex items-center justify-center relative">
+              {/* Decorative Aura behind Mascot */}
+              <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-tr from-blue-500/20 via-indigo-500/15 to-amber-400/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative group flex flex-col items-center">
+                <img
+                  src="/assets/Maskot_SKORPLUSS.png"
+                  alt="Maskot SkorPluss SPARK"
+                  className="w-full max-w-[320px] sm:max-w-[380px] lg:max-w-[430px] h-auto object-contain drop-shadow-[0_20px_35px_rgba(37,99,235,0.28)] transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1 select-none"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
