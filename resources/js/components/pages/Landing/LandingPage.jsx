@@ -460,76 +460,91 @@ export default function LandingPage() {
                 className="flex gap-6 overflow-x-auto scroll-smooth py-6 px-4 snap-x snap-mandatory scrollbar-none"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                {programs.map((p) => (
-                  <div
-                    key={p.id}
-                    className={`w-[300px] sm:w-[350px] shrink-0 snap-start relative bg-gradient-to-b ${p.color} rounded-md p-[1px] flex flex-col transition-all duration-300 hover:-translate-y-1 ${p.is_popular ? 'scale-[1.02] shadow-2xl shadow-blue-500/20 ring-1 ring-blue-500/30' : ''}`}
-                  >
-                    {p.is_popular && (
-                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-                        <span className="bg-blue-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/40 whitespace-nowrap">
-                          ⭐ PALING POPULER
-                        </span>
-                      </div>
-                    )}
-                    <div className="bg-slate-50 dark:bg-slate-950 rounded-md p-7 h-full flex flex-col">
-                      {p.thumbnail && (
-                        <div className="w-full aspect-[3/4] rounded-xl overflow-hidden mb-5 bg-slate-200 dark:bg-slate-800 relative shadow-xs">
-                          <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                {programs.map((p) => {
+                  const plainDescription = p.description
+                    ? p.description.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim()
+                    : '';
+
+                  return (
+                    <div
+                      key={p.id}
+                      className={`w-[300px] sm:w-[350px] shrink-0 snap-start relative bg-gradient-to-b ${p.color} rounded-2xl p-[1.5px] flex flex-col transition-all duration-300 hover:-translate-y-1 group ${p.is_popular ? 'scale-[1.02] shadow-2xl shadow-blue-500/20 ring-1 ring-blue-500/30' : ''}`}
+                    >
+                      {p.is_popular && (
+                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                          <span className="bg-blue-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/40 whitespace-nowrap">
+                            ⭐ PALING POPULER
+                          </span>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="text-3xl">{p.icon}</div>
-                        {p.cbt_quota && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
-                            CBT {p.cbt_quota === 999 ? 'Unlimited' : p.cbt_quota + 'x'}
-                          </span>
+                      <div className="bg-slate-50 dark:bg-slate-950 rounded-[15px] overflow-hidden h-full flex flex-col">
+                        {/* Full-bleed Portrait Thumbnail */}
+                        {p.thumbnail && (
+                          <div className="w-full aspect-[3/4] bg-slate-200 dark:bg-slate-800 relative overflow-hidden shrink-0">
+                            <img
+                              src={p.thumbnail}
+                              alt={p.name}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          </div>
                         )}
-                      </div>
-                      <div className="font-black text-xl text-slate-900 dark:text-slate-100 mb-1">{p.name}</div>
-                      {p.description && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">{p.description}</p>
-                      )}
-                      <div className="flex items-baseline gap-2 mb-5">
-                        <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{p.price}</span>
-                        <span className="text-slate-500 text-sm whitespace-nowrap">{p.price_period}</span>
-                        {p.strike_price && (
-                          <span className="text-sm text-slate-400 line-through whitespace-nowrap">{p.strike_price}</span>
-                        )}
-                      </div>
-                      <ul className="flex flex-col gap-2.5 mb-7 flex-1">
-                        {(p.features || []).map((f, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
-                            <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>
-                            {f}
-                          </li>
-                        ))}
-                        {p.courses_count > 0 && (
-                          <li className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
-                            <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>
-                            {p.courses_count} Kursus SMA & SNBT
-                          </li>
-                        )}
-                      </ul>
-                      <div className="space-y-2 mt-auto">
-                        <Link to={`/program/${p.slug || p.id}`} className="block">
-                          <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
-                            <span>Lihat Detail Program & Silabus</span>
-                            <span>→</span>
-                          </button>
-                        </Link>
-                        <Link to={token ? `/program/${p.slug || p.id}` : `/daftar?program=${p.slug || p.id}`} className="block">
-                          <Button 
-                            variant={p.is_popular ? 'primary' : 'ghost'} 
-                            className="w-full"
-                          >
-                            Pilih {p.name}
-                          </Button>
-                        </Link>
+
+                        {/* Card Body with Padding */}
+                        <div className="p-6 sm:p-7 flex-1 flex flex-col">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="text-3xl">{p.icon}</div>
+                            {p.cbt_quota && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                                CBT {p.cbt_quota === 999 ? 'Unlimited' : p.cbt_quota + 'x'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-black text-xl text-slate-900 dark:text-slate-100 mb-1">{p.name}</div>
+                          {plainDescription && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">{plainDescription}</p>
+                          )}
+                          <div className="flex items-baseline gap-2 mb-5">
+                            <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{p.price}</span>
+                            <span className="text-slate-500 text-sm whitespace-nowrap">{p.price_period}</span>
+                            {p.strike_price && (
+                              <span className="text-sm text-slate-400 line-through whitespace-nowrap">{p.strike_price}</span>
+                            )}
+                          </div>
+                          <ul className="flex flex-col gap-2.5 mb-7 flex-1">
+                            {(p.features || []).map((f, i) => (
+                              <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+                                <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>
+                                {f}
+                              </li>
+                            ))}
+                            {p.courses_count > 0 && (
+                              <li className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+                                <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>
+                                {p.courses_count} Kursus SMA & SNBT
+                              </li>
+                            )}
+                          </ul>
+                          <div className="space-y-2 mt-auto">
+                            <Link to={`/program/${p.slug || p.id}`} className="block">
+                              <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                                <span>Lihat Detail Program & Silabus</span>
+                                <span>→</span>
+                              </button>
+                            </Link>
+                            <Link to={token ? `/program/${p.slug || p.id}` : `/daftar?program=${p.slug || p.id}`} className="block">
+                              <Button 
+                                variant={p.is_popular ? 'primary' : 'ghost'} 
+                                className="w-full"
+                              >
+                                Pilih {p.name}
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Right Arrow */}
