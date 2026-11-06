@@ -69,9 +69,10 @@ export function LandingNav({ promo: propPromo }) {
 
   const navLinks = [
     { href: isKursusPage ? '/#program' : '#program', label: 'Program', isAnchor: !isKursusPage },
-    { href: isKursusPage ? '/#fitur' : '#fitur', label: 'Fitur', isAnchor: !isKursusPage },
+    { href: isKursusPage ? '/#fasilitas' : '#fasilitas', label: 'Fasilitas', isAnchor: !isKursusPage },
     { href: '/kursus', label: 'Kursus', isRoute: true },
     { href: isKursusPage ? '/#testimoni' : '#testimoni', label: 'Testimoni', isAnchor: !isKursusPage },
+    { href: isKursusPage ? '/#faq' : '#faq', label: 'FAQ', isAnchor: !isKursusPage },
     { href: isKursusPage ? '/#about' : '#about', label: 'Tentang', isAnchor: !isKursusPage },
   ];
 
@@ -91,11 +92,11 @@ export function LandingNav({ promo: propPromo }) {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Logo href="/" />
+      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <Logo href="/" size="lg" />
 
         {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-1.5">
           {navLinks.map((item) => {
             const isActive = item.isRoute && location.pathname === item.href;
             if (item.isRoute) {
@@ -103,10 +104,10 @@ export function LandingNav({ promo: propPromo }) {
                 <Link
                   key={item.href}
                   to={item.href}
-                  className={`px-4 py-2 rounded-md text-sm transition-all ${
+                  className={`px-4 py-2 rounded-lg text-base transition-all ${
                     isActive
                       ? 'text-blue-600 dark:text-blue-400 font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold'
                   }`}
                 >
                   {item.label}
@@ -117,7 +118,7 @@ export function LandingNav({ promo: propPromo }) {
               <a
                 key={item.label}
                 href={item.href}
-                className="px-4 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                className="px-4 py-2 rounded-lg text-base font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
               >
                 {item.label}
               </a>
@@ -156,7 +157,7 @@ export function LandingNav({ promo: propPromo }) {
                   key={item.href}
                   to={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`py-2 text-sm font-medium ${
+                  className={`py-2 text-base font-semibold ${
                     location.pathname === item.href
                       ? 'text-blue-600 dark:text-blue-400 font-bold'
                       : 'text-slate-700 dark:text-slate-300'
@@ -171,7 +172,7 @@ export function LandingNav({ promo: propPromo }) {
                 key={item.label}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className="py-2 text-slate-700 dark:text-slate-300 text-sm font-medium"
+                className="py-2 text-slate-700 dark:text-slate-300 text-base font-semibold"
               >
                 {item.label}
               </a>
@@ -194,11 +195,39 @@ export function LandingNav({ promo: propPromo }) {
   );
 }
 
+const DEFAULT_FAQS = [
+  {
+    q: 'Apa itu SkorPluss Learning Center dan siapa saja yang bisa bergabung?',
+    a: 'SkorPluss adalah platform bimbingan belajar dan konsultasi pendidikan terpadu yang dirancang untuk siswa SMP, SMA/SMK, hingga alumni (gap year) dalam mempersiapkan UTBK-SNBT, Seleksi Sekolah Kedinasan, Olimpiade, dan peningkatan prestasi akademik sekolah.',
+  },
+  {
+    q: 'Bagaimana sistem penilaian Tryout CBT di SkorPluss?',
+    a: 'Seluruh simulasi ujian Computer-Based Test (CBT) di SkorPluss telah menggunakan sistem penilaian berbasis Item Response Theory (IRT) dan pembobotan terbaru yang disesuaikan dengan standar seleksi nasional UTBK-SNBT maupun SKD Kedinasan, lengkap dengan pembahasan mendalam.',
+  },
+  {
+    q: 'Apa perbedaan antara paket program belajar yang tersedia?',
+    a: 'Setiap paket belajar memiliki cakupan kursus E-Learning, kuota simulasi ujian CBT, serta fasilitas pendampingan yang berbeda. Anda dapat mulai dari akses coba gratis, memilih paket reguler/intensif, hingga paket kemitraan sekolah sesuai kebutuhan target kelulusan Anda.',
+  },
+  {
+    q: 'Apakah saya bisa bertanya langsung kepada tutor jika ada materi atau soal yang sulit?',
+    a: 'Tentu saja! Melalui fasilitas Forum Tanya Jawab yang terintegrasi di dashboard, Anda dapat mendiskusikan soal maupun materi yang belum dipahami langsung bersama Master Tutor SkorPluss.',
+  },
+  {
+    q: 'Apakah siswa mendapatkan sertifikat setelah menyelesaikan kelas E-Learning?',
+    a: 'Ya, setiap siswa yang menyelesaikan seluruh modul materi, kuis evaluasi, dan tugas pada suatu kursus hingga mencapai progres 100% berhak mengunduh Sertifikat Kelulusan resmi berverifikasi dari SkorPluss Learning Center.',
+  },
+  {
+    q: 'Bagaimana cara mendaftarkan sekolah sebagai Mitra Resmi SkorPluss?',
+    a: 'Pihak sekolah dapat menghubungi tim kemitraan SkorPluss melalui kontak layanan kami untuk mendapatkan akun Admin Mitra Sekolah, kuota paket belajar kolektif siswa, serta dashboard pemantauan progres dan nilai tryout CBT seluruh siswa sekolah secara real-time.',
+  },
+];
+
 // ── Main Landing Page ─────────────────────────────────────────────────────────
 export default function LandingPage() {
   const [data, setData] = useState(null);
   const [settings, setSettings] = useState({ app_name: 'SkorPluss', tagline: '' });
   const [loading, setLoading] = useState(true);
+  const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const { token } = useSelector((s) => s.auth);
 
   const programsSliderRef = React.useRef(null);
@@ -544,14 +573,15 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ── FEATURES ── */}
+      {/* ── FASILITAS (FEATURES) ── */}
       {features && features.length > 0 && (
-        <section id="fitur" className="py-24 px-6 bg-white dark:bg-slate-900/30">
+        <section id="fasilitas" className="py-24 px-6 bg-white dark:bg-slate-900/30 scroll-mt-20">
+          <div id="fitur" className="sr-only" />
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-14">
-              <Badge color="emerald" className="mb-4">Fitur Unggulan</Badge>
-              <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 mb-3">Teknologi Belajar Terdepan</h2>
-              <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">Setiap fitur dirancang untuk memaksimalkan hasil belajar dan meningkatkan peluang masuk PTN impian.</p>
+              <Badge color="emerald" className="mb-4">Fasilitas Unggulan</Badge>
+              <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 mb-3">Fasilitas & Teknologi Belajar Terdepan</h2>
+              <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">Setiap fasilitas dirancang untuk memaksimalkan hasil belajar dan meningkatkan peluang masuk PTN impian.</p>
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -756,6 +786,70 @@ export default function LandingPage() {
           </div>
         </section>
       )}
+
+      {/* ── FAQ / TANYA JAWAB (COLLAPSIBLE) ── */}
+      <section id="faq" className="py-24 px-6 bg-white dark:bg-slate-900/30 border-t border-slate-200/60 dark:border-slate-800/60 scroll-mt-20">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <Badge color="blue" className="mb-4">FAQ · Tanya Jawab</Badge>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-slate-100 mb-3">
+              Pertanyaan yang Sering Diajukan
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
+              Temukan jawaban cepat seputar program bimbingan, fasilitas belajar, simulasi CBT, hingga kemitraan sekolah di SkorPluss.
+            </p>
+          </div>
+
+          <div className="space-y-3.5">
+            {(data?.faqs && data.faqs.length > 0 ? data.faqs : DEFAULT_FAQS).map((item, idx) => {
+              const isOpen = openFaqIndex === idx;
+              const question = item.question || item.q;
+              const answer = item.answer || item.a;
+
+              return (
+                <div
+                  key={idx}
+                  className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                    isOpen
+                      ? 'bg-white dark:bg-slate-900 border-blue-500/50 dark:border-blue-500/50 shadow-md shadow-blue-500/5'
+                      : 'bg-slate-50/80 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
+                    aria-expanded={isOpen}
+                    className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 cursor-pointer select-none"
+                  >
+                    <span className={`font-bold text-base sm:text-lg transition-colors ${
+                      isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
+                    }`}>
+                      {question}
+                    </span>
+                    <span
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
+                        isOpen
+                          ? 'bg-blue-600 text-white rotate-180'
+                          : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-6 pb-5 pt-0 text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800/80">
+                      <div className="pt-3.5">{answer}</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* ── CTA ── */}
       <section id="about" className="py-24 px-6">
