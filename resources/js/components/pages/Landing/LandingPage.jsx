@@ -474,8 +474,8 @@ export default function LandingPage() {
                     )}
                     <div className="bg-slate-50 dark:bg-slate-950 rounded-md p-7 h-full flex flex-col">
                       {p.thumbnail && (
-                        <div className="w-full h-32 rounded-xl overflow-hidden mb-4 bg-slate-200 dark:bg-slate-800">
-                          <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover" />
+                        <div className="w-full aspect-[3/4] rounded-xl overflow-hidden mb-5 bg-slate-200 dark:bg-slate-800 relative shadow-xs">
+                          <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                         </div>
                       )}
                       <div className="flex items-center gap-2 mb-2">

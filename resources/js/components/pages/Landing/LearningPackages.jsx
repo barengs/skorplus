@@ -46,8 +46,8 @@ export default function LearningPackages() {
               className="flex-none w-[320px] snap-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col"
             >
               {pkg.thumbnail && (
-                <div className="h-40 bg-slate-200 dark:bg-slate-800 relative">
-                  <img src={pkg.thumbnail} alt={pkg.name} className="w-full h-full object-cover" />
+                <div className="w-full aspect-[3/4] bg-slate-200 dark:bg-slate-800 relative overflow-hidden">
+                  <img src={pkg.thumbnail} alt={pkg.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
                 </div>
               )}
               
