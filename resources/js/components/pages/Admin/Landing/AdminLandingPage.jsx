@@ -6,6 +6,7 @@ import Input from '../../../atoms/Input';
 import FormField from '../../../molecules/FormField';
 import api from '../../../../services/api';
 import { toast } from 'react-toastify';
+import FacilityCustomIcon from '../../Landing/FacilityIcons';
 
 export default function AdminLandingPage() {
   const [activeTab, setActiveTab] = useState('hero');
@@ -308,14 +309,16 @@ export default function AdminLandingPage() {
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {features.map((f) => (
-                <div key={f.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-6 flex flex-col justify-between">
-                  <div>
-                    <div className="text-3xl mb-3">{f.icon}</div>
+              {features.map((f, idx) => (
+                <div key={f.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 flex flex-col justify-between items-center text-center shadow-sm">
+                  <div className="flex flex-col items-center text-center w-full">
+                    <div className="h-16 flex items-center justify-center mb-4">
+                      <FacilityCustomIcon feature={f} index={idx} className="h-12 w-auto" />
+                    </div>
                     <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-2">{f.title}</h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">{f.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{f.description}</p>
                   </div>
-                  <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 w-full">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -396,10 +399,11 @@ export default function AdminLandingPage() {
               <form onSubmit={handleSaveModalItem} className="space-y-4">
                 {modalType === 'feature' && (
                   <>
-                    <FormField label="Icon Emoji">
+                    <FormField label="Icon (Emoji / URL Gambar / Custom)">
                       <Input
                         value={editingItem.icon || ''}
                         onChange={(e) => setEditingItem({ ...editingItem, icon: e.target.value })}
+                        placeholder="Emoji 🧠 atau URL gambar / SVG"
                         required
                       />
                     </FormField>

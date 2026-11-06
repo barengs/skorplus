@@ -7,6 +7,7 @@ import Badge from '../../atoms/Badge';
 import Button from '../../atoms/Button';
 import ThemeToggle from '../../atoms/ThemeToggle';
 import { formatRupiah } from '../../../utils/currencyHelper';
+import FacilityCustomIcon from './FacilityIcons';
 
 // ── Countdown Component ──────────────────────────────────────────────────────
 function PromoCountdown({ seconds }) {
@@ -596,16 +597,24 @@ export default function LandingPage() {
               <Badge color="emerald" className="mb-4">Fasilitas Unggulan</Badge>
               <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 mb-3">Fasilitas & Teknologi Belajar Terdepan</h2>
               <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">Setiap fasilitas dirancang untuk memaksimalkan hasil belajar dan meningkatkan peluang masuk PTN impian.</p>
+              <div className="w-12 h-1 bg-slate-800 dark:bg-slate-200 rounded-full mx-auto mt-4" />
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {features.map((f) => (
-                <div key={f.id} className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-700 rounded-lg p-6 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 group-hover:bg-blue-500/10 flex items-center justify-center text-2xl mb-4 transition-colors">
-                    {f.icon}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {features.map((f, idx) => (
+                <div
+                  key={f.id}
+                  className="bg-white dark:bg-slate-900 rounded-2xl p-7 sm:p-8 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-slate-100 dark:border-slate-800/80"
+                >
+                  <div className="w-full h-20 sm:h-24 flex items-center justify-center mb-5">
+                    <FacilityCustomIcon feature={f} index={idx} className="h-16 sm:h-20 w-auto" />
                   </div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-2">{f.title}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{f.description}</p>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg sm:text-xl mb-3 text-center">
+                    {f.title}
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed text-center font-normal">
+                    {f.description}
+                  </p>
                 </div>
               ))}
             </div>
