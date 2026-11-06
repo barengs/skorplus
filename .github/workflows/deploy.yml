@@ -19,6 +19,9 @@ jobs:
           script: |
             set -e
 
+            # Pastikan izin storage & bootstrap/cache selalu dikembalikan ke www-data meskipun script terhenti di tengah jalan
+            trap 'docker compose exec -T app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true' EXIT
+
             # 1. Pastikan folder utama ada dan masuk ke direktori
             mkdir -p /var/www/skorpluss
             cd /var/www/skorpluss
