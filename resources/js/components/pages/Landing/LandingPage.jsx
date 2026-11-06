@@ -468,29 +468,29 @@ export default function LandingPage() {
                   return (
                     <div
                       key={p.id}
-                      className={`w-[300px] sm:w-[350px] shrink-0 snap-start relative bg-gradient-to-b ${p.color} rounded-2xl p-[1.5px] flex flex-col transition-all duration-300 hover:-translate-y-1 group ${p.is_popular ? 'scale-[1.02] shadow-2xl shadow-blue-500/20 ring-1 ring-blue-500/30' : ''}`}
+                      className={`w-[300px] sm:w-[350px] shrink-0 snap-start relative bg-white dark:bg-slate-900 rounded-2xl flex flex-col transition-all duration-300 hover:-translate-y-1 group shadow-lg hover:shadow-2xl ${p.is_popular ? 'shadow-xl shadow-blue-500/15' : ''}`}
                     >
                       {p.is_popular && (
                         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-                          <span className="bg-blue-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/40 whitespace-nowrap">
+                          <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-600/40 whitespace-nowrap">
                             ⭐ PALING POPULER
                           </span>
                         </div>
                       )}
-                      <div className="bg-slate-50 dark:bg-slate-950 rounded-[15px] overflow-hidden h-full flex flex-col">
-                        {/* Full-bleed Portrait Thumbnail */}
-                        {p.thumbnail && (
-                          <div className="w-full aspect-[3/4] bg-slate-200 dark:bg-slate-800 relative overflow-hidden shrink-0">
-                            <img
-                              src={p.thumbnail}
-                              alt={p.name}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                          </div>
-                        )}
 
-                        {/* Card Body with Padding */}
-                        <div className="p-6 sm:p-7 flex-1 flex flex-col">
+                      {/* Full-bleed Portrait Thumbnail */}
+                      {p.thumbnail && (
+                        <div className="w-full aspect-[3/4] bg-slate-100 dark:bg-slate-800 rounded-t-2xl relative overflow-hidden shrink-0">
+                          <img
+                            src={p.thumbnail}
+                            alt={p.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        </div>
+                      )}
+
+                      {/* Card Body with Padding */}
+                      <div className="p-6 sm:p-7 flex-1 flex flex-col">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="text-3xl">{p.icon}</div>
                             {p.cbt_quota && (
@@ -542,7 +542,6 @@ export default function LandingPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
                   );
                 })}
               </div>

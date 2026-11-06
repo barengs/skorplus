@@ -43,7 +43,7 @@ export default function LearningPackages() {
           {packages.map((pkg) => (
             <div 
               key={pkg.id} 
-              className="flex-none w-[320px] snap-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col"
+              className="flex-none w-[320px] snap-center bg-white dark:bg-slate-900 rounded-2xl shadow-xl hover:shadow-2xl overflow-hidden flex flex-col transition-all duration-300"
             >
               {pkg.thumbnail && (
                 <div className="w-full aspect-[3/4] bg-slate-200 dark:bg-slate-800 relative overflow-hidden">
