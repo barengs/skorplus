@@ -39,7 +39,7 @@ export function LandingNav({ promo: propPromo }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [promo, setPromo] = useState(propPromo || globalPromoCache);
   const location = useLocation();
-  const isKursusPage = location.pathname.startsWith('/kursus');
+  const isHomePage = location.pathname === '/';
 
   const { token } = useSelector((s) => s.auth);
 
@@ -69,13 +69,26 @@ export function LandingNav({ promo: propPromo }) {
   }, [propPromo]);
 
   const navLinks = [
-    { href: isKursusPage ? '/#program' : '#program', label: 'Program', isAnchor: !isKursusPage },
-    { href: isKursusPage ? '/#fasilitas' : '#fasilitas', label: 'Fasilitas', isAnchor: !isKursusPage },
+    { href: isHomePage ? '#program' : '/#program', label: 'Program' },
+    { href: isHomePage ? '#fasilitas' : '/#fasilitas', label: 'Fasilitas' },
     { href: '/kursus', label: 'Kursus', isRoute: true },
-    { href: isKursusPage ? '/#testimoni' : '#testimoni', label: 'Testimoni', isAnchor: !isKursusPage },
-    { href: isKursusPage ? '/#faq' : '#faq', label: 'FAQ', isAnchor: !isKursusPage },
-    { href: isKursusPage ? '/#about' : '#about', label: 'Tentang', isAnchor: !isKursusPage },
+    { href: isHomePage ? '#testimoni' : '/#testimoni', label: 'Testimoni' },
+    { href: isHomePage ? '#faq' : '/#faq', label: 'FAQ' },
+    { href: isHomePage ? '#about' : '/#about', label: 'Tentang' },
   ];
+
+  const handleNavClick = (e, href) => {
+    setMobileOpen(false);
+    if (isHomePage && href.startsWith('#')) {
+      const targetId = href.replace('#', '');
+      const el = document.getElementById(targetId);
+      if (el) {
+        e.preventDefault();
+        el.scrollIntoView({ behavior: 'smooth' });
+        window.history.pushState(null, '', href);
+      }
+    }
+  };
 
   return (
     <nav
@@ -115,11 +128,23 @@ export function LandingNav({ promo: propPromo }) {
                 </Link>
               );
             }
+            if (!isHomePage) {
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className="px-4 py-2 rounded-lg text-base font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                >
+                  {item.label}
+                </Link>
+              );
+            }
             return (
               <a
                 key={item.label}
                 href={item.href}
-                className="px-4 py-2 rounded-lg text-base font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                onClick={(e) => handleNavClick(e, item.href)}
+                className="px-4 py-2 rounded-lg text-base font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
               >
                 {item.label}
               </a>
@@ -168,12 +193,24 @@ export function LandingNav({ promo: propPromo }) {
                 </Link>
               );
             }
+            if (!isHomePage) {
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="py-2 text-slate-700 dark:text-slate-300 text-base font-semibold"
+                >
+                  {item.label}
+                </Link>
+              );
+            }
             return (
               <a
                 key={item.label}
                 href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="py-2 text-slate-700 dark:text-slate-300 text-base font-semibold"
+                onClick={(e) => handleNavClick(e, item.href)}
+                className="py-2 text-slate-700 dark:text-slate-300 text-base font-semibold cursor-pointer"
               >
                 {item.label}
               </a>
@@ -230,6 +267,30 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const { token } = useSelector((s) => s.auth);
+  const location = useLocation();
+
+  // Smooth scroll to target section when landing URL contains a hash (e.g. /#fasilitas or /#program)
+  useEffect(() => {
+    if (location.hash) {
+      const targetId = location.hash.replace('#', '');
+      const scrollToTarget = () => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      };
+
+      scrollToTarget();
+      const t1 = setTimeout(scrollToTarget, 100);
+      const t2 = setTimeout(scrollToTarget, 350);
+      const t3 = setTimeout(scrollToTarget, 700);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    }
+  }, [location.pathname, location.hash, loading]);
 
   const programsSliderRef = React.useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -433,7 +494,7 @@ export default function LandingPage() {
 
       {/* ──PROGRAMS ── */}
       {programs && programs.length > 0 && (
-        <section id="program" className="pt-4 pb-24 px-6">
+        <section id="program" className="pt-4 pb-24 px-6 scroll-mt-20">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-14">
               <Badge color="violet" className="mb-4">Program Belajar</Badge>
@@ -493,14 +554,13 @@ export default function LandingPage() {
 
                       {/* Card Body with Padding */}
                       <div className="p-6 sm:p-7 flex-1 flex flex-col">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="text-3xl">{p.icon}</div>
-                          {p.cbt_quota && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                        {p.cbt_quota && (
+                          <div className="flex items-center gap-2 mb-2.5">
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
                               CBT {p.cbt_quota === 999 ? 'Unlimited' : p.cbt_quota + 'x'}
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                         <div className="font-black text-xl text-slate-900 dark:text-slate-100 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {p.name}
                         </div>
@@ -611,7 +671,7 @@ export default function LandingPage() {
 
       {/* ── TESTIMONIALS ── */}
       {testimonials && testimonials.length > 0 && (
-        <section id="testimoni" className="py-24 px-6">
+        <section id="testimoni" className="py-24 px-6 scroll-mt-20">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-14">
               <Badge color="gold" className="mb-4">Testimoni Siswa</Badge>
@@ -862,7 +922,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section id="about" className="py-24 px-6">
+      <section id="about" className="py-24 px-6 scroll-mt-20">
         <div className="max-w-3xl mx-auto">
           <div className="relative bg-gradient-to-br from-blue-600/20 via-violet-600/20 to-indigo-600/20 border border-blue-500/20 rounded-md p-10 text-center overflow-hidden">
             <div className="absolute inset-0 pointer-events-none">
