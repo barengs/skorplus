@@ -103,6 +103,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Student E-Learning
     Route::get('elearning/my-progress', [StudentElearningController::class, 'myProgress']);
+    Route::get('elearning/my-mastery', [StudentElearningController::class, 'getStudentMastery']);
     Route::get('elearning/streak-and-checkin', [StudentElearningController::class, 'streakAndCheckin']);
     Route::post('elearning/checkin', [StudentElearningController::class, 'storeCheckin']);
     Route::post('elearning/courses/{id}/enroll', [StudentElearningController::class, 'enroll']);
@@ -200,6 +201,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('students/template', [StudentController::class, 'downloadTemplate']);
         Route::post('students/import', [StudentController::class, 'import']);
         Route::get('students/{student}', [StudentController::class, 'show']);
+        Route::get('students/{student}/report', [StudentController::class, 'report']);
         Route::put('students/{student}', [StudentController::class, 'update']);
         Route::delete('students/{student}', [StudentController::class, 'destroy']);
 

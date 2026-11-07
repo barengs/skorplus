@@ -10,6 +10,7 @@ use App\Models\DailyCheckin;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\User;
+use App\Services\KnowledgeTracingService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -150,6 +151,10 @@ class StudentElearningController extends Controller
         $minPassScore = $lesson->min_pass_score ?? 60;
         $isPassed = ($scorePercentage >= $minPassScore);
 
+        // Machine Learning: Evaluasi Penguasaan Materi (Bayesian Knowledge Tracing - BKT)
+        $bktService = app(KnowledgeTracingService::class);
+        $bktMastery = $bktService->evaluateResponses($evaluations);
+
         $attemptData = [
             'score_percentage' => $scorePercentage,
             'correct_count' => $correctCount,
@@ -157,6 +162,7 @@ class StudentElearningController extends Controller
             'min_pass_score' => $minPassScore,
             'is_passed' => $isPassed,
             'evaluations' => $evaluations,
+            'bkt_mastery' => $bktMastery,
             'attempted_at' => now()->toIso8601String(),
         ];
 
@@ -204,8 +210,21 @@ class StudentElearningController extends Controller
             'correct_count' => $correctCount,
             'total_questions' => $totalQuestions,
             'evaluations' => $evaluations,
+            'bkt_mastery' => $bktMastery,
             'progress' => $progress,
         ]);
+    }
+
+    /**
+     * Dapatkan ringkasan penguasaan materi siswa (Bayesian Knowledge Tracing)
+     */
+    public function getStudentMastery(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $bktService = app(KnowledgeTracingService::class);
+        $mastery = $bktService->getStudentTopicMastery($user);
+
+        return response()->json($mastery);
     }
 
     public function getProgress(Request $request, $courseId)

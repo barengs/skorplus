@@ -764,23 +764,83 @@ export default function CbtPage() {
   if (result) {
     const score = result.score;
     const color = score >= 80 ? 'emerald' : score >= 60 ? 'orange' : 'red';
+    const irtResult = result.irt_result || null;
+    const predictedUtbk = result.predicted_score || irtResult?.predicted_utbk_score || null;
+
     return (
       <AppLayout title="Hasil Ujian">
         <div className="w-full max-w-4xl mx-auto text-center flex flex-col items-center gap-6 py-8">
           <div className="text-7xl">{score >= 80 ? '🏆' : score >= 60 ? '👍' : '💪'}</div>
           <div>
             <div className="text-6xl font-black text-slate-900 dark:text-slate-100 mb-2">{score}</div>
-            <p className="text-slate-600 dark:text-slate-400">Skor akhir Anda</p>
+            <p className="text-slate-600 dark:text-slate-400">Skor Evaluasi Ujian (Skala 0 - 100)</p>
           </div>
-          <Badge color={color} className="text-sm px-4 py-1.5">
+          <Badge color={color} className="text-sm px-4 py-1.5 font-bold">
             {score >= 80 ? 'Sangat Baik!' : score >= 60 ? 'Cukup Baik' : 'Perlu Latihan Lagi'}
           </Badge>
+
+          {/* Machine Learning: Evaluasi IRT Rasch Model & Prediksi UTBK */}
+          {predictedUtbk && (
+            <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-6 text-left shadow-lg space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/20 pb-4">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
+                    🤖 Item Response Theory (Rasch Model)
+                  </span>
+                  <h3 className="text-lg font-black mt-1">Estimasi Skor Prediksi UTBK SNBT</h3>
+                </div>
+                {irtResult?.ability_tier?.label && (
+                  <span className="text-xs bg-white text-indigo-900 font-black px-3 py-1 rounded-full shadow-xs">
+                    {irtResult.ability_tier.label}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
+                <div className="bg-white/10 backdrop-blur-xs rounded-xl p-3 border border-white/10">
+                  <div className="text-3xl font-black">{predictedUtbk}</div>
+                  <div className="text-[11px] opacity-80 mt-0.5 font-medium">Prediksi Skor UTBK</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-xs rounded-xl p-3 border border-white/10">
+                  <div className="text-3xl font-black">
+                    {irtResult?.theta !== undefined ? (irtResult.theta > 0 ? `+${irtResult.theta}` : irtResult.theta) : '0.0'}
+                  </div>
+                  <div className="text-[11px] opacity-80 mt-0.5 font-medium">Kemampuan Laten (&theta;)</div>
+                </div>
+                <div className="col-span-2 sm:col-span-1 bg-white/10 backdrop-blur-xs rounded-xl p-3 border border-white/10">
+                  <div className="text-3xl font-black">
+                    {result.correct_count} <span className="text-base font-normal opacity-70">/ {result.total_questions}</span>
+                  </div>
+                  <div className="text-[11px] opacity-80 mt-0.5 font-medium">Akurasi Butir Soal</div>
+                </div>
+              </div>
+
+              {/* Strengths & Weaknesses if any */}
+              {((irtResult?.strengths && irtResult.strengths.length > 0) || (irtResult?.weaknesses && irtResult.weaknesses.length > 0)) && (
+                <div className="grid sm:grid-cols-2 gap-3 text-xs pt-1">
+                  {irtResult?.strengths && irtResult.strengths.length > 0 && (
+                    <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/30">
+                      <span className="font-bold text-emerald-200 block mb-1">🌟 Subtes Unggulan Anda:</span>
+                      <span className="text-white/90">{irtResult.strengths.join(', ')}</span>
+                    </div>
+                  )}
+                  {irtResult?.weaknesses && irtResult.weaknesses.length > 0 && (
+                    <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-400/30">
+                      <span className="font-bold text-amber-200 block mb-1">🎯 Rekomendasi Peningkatan:</span>
+                      <span className="text-white/90">{irtResult.weaknesses.join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Subtest Analysis Breakdown */}
           {result.subtest_breakdown && result.subtest_breakdown.length > 0 && (
             <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 text-left space-y-3">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
                 <span>📊 Analisis Per Subtes:</span>
+                <span className="text-[11px] text-slate-400 font-normal">Akurasi & Estimasi Skor IRT</span>
               </h4>
               <div className="space-y-2">
                 {result.subtest_breakdown.map((sb, i) => {
@@ -793,6 +853,11 @@ export default function CbtPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-slate-500 font-medium">{sb.correct}/{sb.total} Benar</span>
+                        {sb.predicted_score && (
+                          <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800">
+                            {sb.predicted_score} pts (IRT)
+                          </span>
+                        )}
                         <span className={`font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
                           {pct}%
                         </span>

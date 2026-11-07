@@ -11,6 +11,7 @@ use App\Models\ExamType;
 use App\Models\LearningPackage;
 use App\Models\Program;
 use App\Models\Question;
+use App\Services\ItemResponseTheoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -691,19 +692,42 @@ class CbtController extends Controller
         $maxScore = $totalQuestions; // Assuming 1 point per question for normalization
         $normalizedScore = $maxScore > 0 ? round(($correctCount / $maxScore) * 100) : 0;
 
+        // Machine Learning: Evaluasi Kemampuan Laten (Item Response Theory - Rasch Model)
+        $irtService = app(ItemResponseTheoryService::class);
+        $irtResult = $irtService->evaluateSession($session, $questions, $answers);
+
+        // Perkaya subtestBreakdown dengan estimasi theta & prediksi skor IRT per subtes
+        foreach ($subtestBreakdown as $name => &$st) {
+            $matchingIrt = collect($irtResult['subtest_breakdown'])->firstWhere('subtest', $name);
+            if ($matchingIrt) {
+                $st['theta'] = $matchingIrt['theta'];
+                $st['predicted_score'] = $matchingIrt['predicted_score'];
+            }
+        }
+        unset($st);
+
         $session->update([
             'status' => 'submitted',
             'submitted_at' => now(),
             'score' => $normalizedScore,
             'total_score' => $totalScore,
+            'subtest_scores' => array_values($subtestBreakdown),
+            'predicted_score' => $irtResult['predicted_utbk_score'],
+            'strengths' => $irtResult['strengths'],
+            'weaknesses' => $irtResult['weaknesses'],
         ]);
 
         AuditLog::record(
             'SUBMIT_EXAM',
-            "Siswa {$session->user?->name} menyelesaikan sesi ujian '{$session->exam_title}' dengan skor {$normalizedScore} pts.",
+            "Siswa {$session->user?->name} menyelesaikan sesi ujian '{$session->exam_title}' dengan skor {$normalizedScore} pts (Prediksi IRT UTBK: {$irtResult['predicted_utbk_score']}).",
             'cbt',
             $session->exam,
-            ['score' => $normalizedScore, 'session_id' => $session->id]
+            [
+                'score' => $normalizedScore,
+                'predicted_score' => $irtResult['predicted_utbk_score'],
+                'theta' => $irtResult['theta'],
+                'session_id' => $session->id,
+            ]
         );
 
         return response()->json([
@@ -712,6 +736,8 @@ class CbtController extends Controller
             'correct_count' => $correctCount,
             'total_questions' => $totalQuestions,
             'subtest_breakdown' => array_values($subtestBreakdown),
+            'predicted_score' => $irtResult['predicted_utbk_score'],
+            'irt_result' => $irtResult,
             'session' => $session->fresh(),
         ]);
     }

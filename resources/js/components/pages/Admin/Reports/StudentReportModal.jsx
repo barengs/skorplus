@@ -6,7 +6,7 @@ import Badge from '../../../atoms/Badge';
 import Button from '../../../atoms/Button';
 import { printStudentReportPDF, printCbtSessionDetailPDF } from '../../../../utils/pdfReportGenerator';
 
-export default function StudentReportModal({ userId, onClose }) {
+export default function StudentReportModal({ userId, onClose, apiEndpoint = null }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,12 +19,13 @@ export default function StudentReportModal({ userId, onClose }) {
     if (userId) {
       fetchReport();
     }
-  }, [userId]);
+  }, [userId, apiEndpoint]);
 
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/users/${userId}/report`);
+      const endpoint = apiEndpoint || `/admin/users/${userId}/report`;
+      const res = await api.get(endpoint);
       setReport(res.data);
     } catch {
       toast.error('Gagal memuat rapor siswa.');
@@ -73,7 +74,15 @@ export default function StudentReportModal({ userId, onClose }) {
 
   if (!report) return null;
 
-  const { student, summary, subtest_stats, exam_history, learning_progress } = report;
+  const {
+    student,
+    summary,
+    subtest_stats = [],
+    exam_history = [],
+    learning_progress = [],
+    bkt_analytics = {},
+    irt_analytics = {},
+  } = report;
 
   // Render detail pengerjaan ujian CBT
   if (selectedSessionId && sessionDetail) {
@@ -217,26 +226,173 @@ export default function StudentReportModal({ userId, onClose }) {
               </div>
 
               {/* KPI Mini */}
-              <div className="grid grid-cols-2 gap-4 lg:w-96 shrink-0">
-                 <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-md flex flex-col justify-center">
-                    <FontAwesomeIcon icon={['fas', 'gauge-high']} className="text-2xl opacity-80 mb-2" />
-                    <div className="text-3xl font-black">{summary.avg_cbt_score}</div>
-                    <div className="text-xs font-medium opacity-90 mt-1">Rata-rata Skor CBT</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 lg:w-[480px] shrink-0">
+                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-3.5 text-white shadow-md flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'gauge-high']} className="text-xl opacity-80 mb-1.5" />
+                    <div className="text-2xl font-black">{summary.avg_cbt_score}</div>
+                    <div className="text-[11px] font-medium opacity-90">Rata-rata CBT</div>
                  </div>
-                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col justify-center">
-                    <FontAwesomeIcon icon={['fas', 'check-double']} className="text-emerald-500 text-2xl mb-2" />
-                    <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{summary.pass_rate}%</div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">Tingkat Kelulusan</div>
+                 <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-3.5 text-white shadow-md flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'brain']} className="text-xl opacity-80 mb-1.5" />
+                    <div className="text-2xl font-black">{summary.predicted_utbk_score || irt_analytics?.avg_utbk_score || '-'}</div>
+                    <div className="text-[11px] font-medium opacity-90">Prediksi UTBK (IRT)</div>
                  </div>
-                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col justify-center">
-                    <FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-purple-500 text-2xl mb-2" />
-                    <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{summary.courses_enrolled}</div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">Total Kursus Diikuti</div>
+                 <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-3.5 text-white shadow-md flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="text-xl opacity-80 mb-1.5" />
+                    <div className="text-2xl font-black">{summary.bkt_mastery_percentage !== undefined ? `${summary.bkt_mastery_percentage}%` : '-'}</div>
+                    <div className="text-[11px] font-medium opacity-90">Penguasaan (BKT)</div>
                  </div>
-                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col justify-center">
-                    <FontAwesomeIcon icon={['fas', 'bars-progress']} className="text-amber-500 text-2xl mb-2" />
-                    <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{summary.avg_progress}%</div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">Progres E-Learning</div>
+                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'check-double']} className="text-emerald-500 text-xl mb-1.5" />
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{summary.pass_rate}%</div>
+                    <div className="text-[11px] font-medium text-slate-500">Kelulusan CBT</div>
+                 </div>
+                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'book-open-reader']} className="text-purple-500 text-xl mb-1.5" />
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{summary.courses_enrolled}</div>
+                    <div className="text-[11px] font-medium text-slate-500">Kursus Diikuti</div>
+                 </div>
+                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'bars-progress']} className="text-amber-500 text-xl mb-1.5" />
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{summary.avg_progress}%</div>
+                    <div className="text-[11px] font-medium text-slate-500">Progres Belajar</div>
+                 </div>
+              </div>
+           </div>
+
+           {/* Section ML: Analisis Machine Learning (BKT & IRT) */}
+           <div className="bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-purple-50/50 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-900/60 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-indigo-100 dark:border-indigo-900/40">
+                 <div>
+                    <h3 className="font-black text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                       <span className="text-indigo-600 dark:text-indigo-400">🤖</span> Statistik Machine Learning: Tingkat Penguasaan & Kemampuan Siswa
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                       Kombinasi model probabilistik <strong>Bayesian Knowledge Tracing (BKT)</strong> untuk materi belajar dan <strong>Item Response Theory (IRT Rasch Model)</strong> untuk simulasi CBT UTBK.
+                    </p>
+                 </div>
+                 {irt_analytics?.ability_tier?.label && (
+                    <Badge color={irt_analytics.ability_tier.badge || 'blue'} className="text-xs px-3 py-1 font-bold">
+                       {irt_analytics.ability_tier.label}
+                    </Badge>
+                 )}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                 {/* Card 1: IRT Rasch Model (Kemampuan Laten & Prediksi UTBK) */}
+                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                       <div>
+                          <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Metode 2: Item Response Theory (IRT)</div>
+                          <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mt-0.5">Kemampuan Laten (Theta &theta;) & Prediksi UTBK</h4>
+                       </div>
+                       <span className="text-2xl">🎯</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 mb-4 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                       <div>
+                          <div className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                             {summary.predicted_utbk_score || irt_analytics?.avg_utbk_score || 500}
+                          </div>
+                          <div className="text-[10px] uppercase font-bold text-slate-400 mt-0.5">Skor UTBK (IRT)</div>
+                       </div>
+                       <div>
+                          <div className="text-xl font-black text-slate-800 dark:text-slate-200">
+                             {irt_analytics?.avg_theta !== undefined ? (irt_analytics.avg_theta > 0 ? `+${irt_analytics.avg_theta}` : irt_analytics.avg_theta) : '0.0'}
+                          </div>
+                          <div className="text-[10px] uppercase font-bold text-slate-400 mt-0.5">Kemampuan (&theta;)</div>
+                       </div>
+                       <div>
+                          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                             {irt_analytics?.highest_utbk_score || summary.predicted_utbk_score || '-'}
+                          </div>
+                          <div className="text-[10px] uppercase font-bold text-slate-400 mt-0.5">Skor Tertinggi</div>
+                       </div>
+                    </div>
+
+                    {/* Strengths & Weaknesses Subtest IRT */}
+                    <div className="space-y-3">
+                       {irt_analytics?.subtest_radar && irt_analytics.subtest_radar.length > 0 ? (
+                          <div className="space-y-2">
+                             <div className="text-xs font-semibold text-slate-600 dark:text-slate-400">Estimasi Skor IRT per Subtes:</div>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {irt_analytics.subtest_radar.map((st, i) => (
+                                   <div key={i} className="p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between text-xs">
+                                      <span className="font-medium text-slate-700 dark:text-slate-300 truncate">{st.subtest}</span>
+                                      <span className={`font-black ml-2 ${st.predicted_score >= 600 ? 'text-emerald-600 dark:text-emerald-400' : (st.predicted_score >= 500 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400')}`}>
+                                         {st.predicted_score} pts
+                                      </span>
+                                   </div>
+                                ))}
+                             </div>
+                          </div>
+                       ) : (
+                          <p className="text-xs text-slate-500 italic">Belum ada data IRT dari sesi tryout CBT.</p>
+                       )}
+                    </div>
+                 </div>
+
+                 {/* Card 2: BKT Model (Penguasaan Topik & Materi) */}
+                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                       <div>
+                          <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Metode 1: Bayesian Knowledge Tracing (BKT)</div>
+                          <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm mt-0.5">Tingkat Penguasaan Materi (Mastery Index)</h4>
+                       </div>
+                       <span className="text-2xl">🧠</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 mb-4 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                       <div>
+                          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                             {bkt_analytics?.overall_mastery_percentage || summary.bkt_mastery_percentage || 0}%
+                          </div>
+                          <div className="text-[10px] uppercase font-bold text-slate-400 mt-0.5">Mastery Index</div>
+                       </div>
+                       <div>
+                          <div className="text-xl font-black text-blue-600 dark:text-blue-400">
+                             {bkt_analytics?.mastered_topics_count || 0}
+                          </div>
+                          <div className="text-[10px] uppercase font-bold text-slate-400 mt-0.5">Topik Dikuasai</div>
+                       </div>
+                       <div>
+                          <div className="text-xl font-black text-rose-500">
+                             {bkt_analytics?.remedial_topics_count || 0}
+                          </div>
+                          <div className="text-[10px] uppercase font-bold text-slate-400 mt-0.5">Butuh Remedial</div>
+                       </div>
+                    </div>
+
+                    {/* Breakdown Modul BKT */}
+                    <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                       {bkt_analytics?.modules && bkt_analytics.modules.length > 0 ? (
+                          bkt_analytics.modules.map((mod, i) => (
+                             <div key={i} className="p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1.5">
+                                <div className="flex items-center justify-between text-xs">
+                                   <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{mod.module_title}</span>
+                                   <Badge color={mod.badge_color || 'slate'} className="text-[10px] px-2 py-0.5">
+                                      {mod.status_label || `${mod.mastery_percentage}%`}
+                                   </Badge>
+                                </div>
+                                <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                   <div
+                                      className={`h-full rounded-full ${mod.mastery_percentage >= 80 ? 'bg-emerald-500' : (mod.mastery_percentage >= 60 ? 'bg-blue-500' : (mod.mastery_percentage >= 40 ? 'bg-amber-500' : 'bg-rose-500'))}`}
+                                      style={{ width: `${mod.mastery_percentage}%` }}
+                                   />
+                                </div>
+                             </div>
+                          ))
+                       ) : (
+                          <p className="text-xs text-slate-500 italic">Siswa belum mengerjakan kuis materi untuk evaluasi BKT.</p>
+                       )}
+                    </div>
+
+                    {/* Remedial Warning if any */}
+                    {bkt_analytics?.needs_attention && bkt_analytics.needs_attention.length > 0 && (
+                       <div className="mt-3 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/40 text-[11px] text-rose-700 dark:text-rose-300">
+                          <strong>⚠️ Rekomendasi Klinik Belajar:</strong> Topik yang butuh pendalaman: {bkt_analytics.needs_attention.join(', ')}.
+                       </div>
+                    )}
                  </div>
               </div>
            </div>
@@ -280,7 +436,8 @@ export default function StudentReportModal({ userId, onClose }) {
                           <tr className="border-b-2 border-slate-100 dark:border-slate-800">
                              <th className="py-3 px-2 font-bold text-slate-600 dark:text-slate-300">Tanggal</th>
                              <th className="py-3 px-2 font-bold text-slate-600 dark:text-slate-300">Paket Ujian / Tryout</th>
-                             <th className="py-3 px-2 font-bold text-slate-600 dark:text-slate-300 text-center">Skor</th>
+                             <th className="py-3 px-2 font-bold text-slate-600 dark:text-slate-300 text-center">Skor (0-100)</th>
+                             <th className="py-3 px-2 font-bold text-indigo-600 dark:text-indigo-400 text-center">Prediksi UTBK (IRT)</th>
                              <th className="py-3 px-2 font-bold text-slate-600 dark:text-slate-300 text-center">Status</th>
                              <th className="py-3 px-2 font-bold text-slate-600 dark:text-slate-300 text-right no-print">Aksi</th>
                           </tr>
@@ -291,6 +448,9 @@ export default function StudentReportModal({ userId, onClose }) {
                                 <td className="py-3 px-2 text-slate-500 text-xs">{new Date(ex.submitted_at).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}</td>
                                 <td className="py-3 px-2 font-bold text-slate-800 dark:text-slate-200">{ex.title}</td>
                                 <td className="py-3 px-2 text-center font-black text-slate-900 dark:text-slate-100">{ex.score}</td>
+                                <td className="py-3 px-2 text-center font-black text-indigo-600 dark:text-indigo-400">
+                                   {ex.predicted_score ? `${ex.predicted_score} pts` : '-'}
+                                </td>
                                 <td className="py-3 px-2 text-center">
                                    <Badge color={ex.is_pass ? 'emerald' : 'rose'}>{ex.is_pass ? 'Lulus' : 'Remedial'}</Badge>
                                 </td>

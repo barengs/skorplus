@@ -7,6 +7,8 @@ use App\Models\CbtSession;
 use App\Models\CourseEnrollment;
 use App\Models\Exam;
 use App\Models\User;
+use App\Services\ItemResponseTheoryService;
+use App\Services\KnowledgeTracingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -78,6 +80,10 @@ class AdminStudentReportController extends Controller
 
         $resolved = $user->resolvedProfileAttributes();
 
+        // Evaluasi Machine Learning: BKT (Knowledge Tracing) & IRT (Rasch Model)
+        $bktAnalytics = app(KnowledgeTracingService::class)->getStudentTopicMastery($user);
+        $irtAnalytics = app(ItemResponseTheoryService::class)->getStudentIrtSummary($user);
+
         return response()->json([
             'student' => [
                 'id' => $user->id,
@@ -95,6 +101,11 @@ class AdminStudentReportController extends Controller
                 'predicated' => $predicated,
                 'predicated_color' => $predicatedColor,
                 'avg_cbt_score' => $avgScore,
+                'predicted_utbk_score' => $irtAnalytics['avg_utbk_score'] > 0 ? $irtAnalytics['avg_utbk_score'] : ($avgScore > 0 ? (int) round(500 + (($avgScore - 50) * 8)) : 0),
+                'highest_utbk_score' => $irtAnalytics['highest_utbk_score'],
+                'avg_theta' => $irtAnalytics['avg_theta'],
+                'ability_tier' => $irtAnalytics['ability_tier'],
+                'bkt_mastery_percentage' => $bktAnalytics['overall_mastery_percentage'],
                 'exams_taken' => $gradedSessions->count(),
                 'exams_passed' => $passCount,
                 'pass_rate' => $gradedSessions->count() > 0 ? round(($passCount / $gradedSessions->count()) * 100, 1) : 0,
@@ -105,6 +116,8 @@ class AdminStudentReportController extends Controller
                 'completed_lessons' => $completedLessons,
             ],
             'subtest_stats' => $subtestStats,
+            'bkt_analytics' => $bktAnalytics,
+            'irt_analytics' => $irtAnalytics,
             'exam_history' => $sessions->map(function ($s) {
                 $passing = $s->exam?->passing_score ?? 70;
 
@@ -113,6 +126,7 @@ class AdminStudentReportController extends Controller
                     'exam_id' => $s->exam_id,
                     'title' => $s->exam?->title ?? $s->exam_title ?? 'Ujian CBT',
                     'score' => $s->score,
+                    'predicted_score' => $s->predicted_score,
                     'passing_score' => $passing,
                     'is_pass' => $s->score >= $passing,
                     'duration_seconds' => $s->duration_seconds,

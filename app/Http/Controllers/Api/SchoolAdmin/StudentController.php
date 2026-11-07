@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\SchoolAdmin;
 
 use App\Exports\SchoolStudentsExport;
 use App\Exports\SchoolStudentsTemplateExport;
+use App\Http\Controllers\Api\Admin\AdminStudentReportController;
 use App\Http\Controllers\Controller;
 use App\Imports\SchoolStudentsImport;
 use App\Models\School;
@@ -165,6 +166,20 @@ class StudentController extends Controller
         }]);
 
         return response()->json($this->formatStudentPayload($student));
+    }
+
+    /**
+     * Rapor analitik siswa (BKT & IRT) untuk Admin Sekolah
+     */
+    public function report(Request $request, User $student): JsonResponse
+    {
+        $school = $this->getSchool();
+
+        if ($student->school_id !== $school->id) {
+            return response()->json(['message' => 'Akses ditolak.'], 403);
+        }
+
+        return app(AdminStudentReportController::class)->show($request, $student);
     }
 
     public function update(Request $request, User $student): JsonResponse

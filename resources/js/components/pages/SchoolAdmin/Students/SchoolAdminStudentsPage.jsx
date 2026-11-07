@@ -9,6 +9,7 @@ import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { compressImageToFile } from '../../../../utils/imageCompressor';
+import StudentReportModal from '../../Admin/Reports/StudentReportModal';
 
 export default function SchoolAdminStudentsPage() {
   const [students, setStudents] = useState([]);
@@ -18,6 +19,7 @@ export default function SchoolAdminStudentsPage() {
   const [filterProgram, setFilterProgram] = useState('');
   const [filterClassLevel, setFilterClassLevel] = useState('');
   const [classLevels, setClassLevels] = useState([]);
+  const [reportStudentId, setReportStudentId] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -342,7 +344,15 @@ export default function SchoolAdminStudentsPage() {
       id: 'actions',
       header: 'Aksi',
       cell: ({ row }) => (
-        <div className="flex gap-1 justify-end">
+        <div className="flex gap-1.5 justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setReportStudentId(row.original.id)}
+            title="Lihat Rapor & Analisis BKT/IRT Siswa"
+          >
+            <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1" /> Rapor
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => openModal(row.original)}>Edit</Button>
           <Button variant="danger" size="sm" onClick={() => handleDelete(row.original.id)}>Hapus</Button>
         </div>
@@ -670,6 +680,13 @@ export default function SchoolAdminStudentsPage() {
             </form>
           </div>
         </div>
+      )}
+      {reportStudentId && (
+        <StudentReportModal
+          userId={reportStudentId}
+          apiEndpoint={`/school-admin/students/${reportStudentId}/report`}
+          onClose={() => setReportStudentId(null)}
+        />
       )}
     </AppLayout>
   );

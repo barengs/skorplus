@@ -11,6 +11,8 @@ use App\Models\Lesson;
 use App\Models\Module;
 use App\Models\School;
 use App\Models\User;
+use App\Services\ItemResponseTheoryService;
+use App\Services\KnowledgeTracingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -354,6 +356,13 @@ class AdminReportDashboardController extends Controller
             'recent_learning' => $recentEnrollments,
         ];
 
+        // Machine Learning Analytics: Bayesian Knowledge Tracing & Item Response Theory
+        $bktAggregate = app(KnowledgeTracingService::class)->getAggregateBktStats($schoolFilter ? (int) $schoolFilter : null);
+        $irtAggregate = app(ItemResponseTheoryService::class)->getAggregateIrtStats($schoolFilter ? (int) $schoolFilter : null);
+
+        $cbtStats['irt_summary'] = $irtAggregate;
+        $materialStats['bkt_summary'] = $bktAggregate;
+
         return response()->json([
             'summary' => [
                 'total_schools' => $totalSchools,
@@ -368,6 +377,10 @@ class AdminReportDashboardController extends Controller
             'schools_stats' => $schoolStats,
             'cbt_stats' => $cbtStats,
             'materials_stats' => $materialStats,
+            'ml_analytics' => [
+                'bkt' => $bktAggregate,
+                'irt' => $irtAggregate,
+            ],
         ]);
     }
 
