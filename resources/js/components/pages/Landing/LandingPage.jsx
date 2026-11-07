@@ -55,7 +55,7 @@ export function LandingNav({ promo: propPromo }) {
       setPromo(propPromo);
     } else if (!globalPromoCache) {
       axios
-        .get('/api/landing/all')
+        .get('/api/landing')
         .then((res) => {
           if (res.data?.promo) {
             globalPromoCache = res.data.promo;

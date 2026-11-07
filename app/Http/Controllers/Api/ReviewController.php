@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\LearningPackage;
 use App\Models\Program;
 use App\Models\Review;
 use Illuminate\Http\JsonResponse;
@@ -83,35 +84,74 @@ class ReviewController extends Controller
     }
 
     /**
-     * Get reviews for a program.
+     * Resolve a program or learning package by slug or ID.
+     */
+    private function resolveProgramOrPackage(string $slugOrId): mixed
+    {
+        $cleanSlug = str_replace('program-', '', strtolower($slugOrId));
+
+        $program = Program::where('slug', $slugOrId)
+            ->orWhere('slug', $cleanSlug)
+            ->orWhereRaw('LOWER(name) = ?', [$cleanSlug])
+            ->orWhereRaw('LOWER(name) = ?', [strtolower(str_replace('-', ' ', $slugOrId))])
+            ->when(is_numeric($slugOrId), fn ($q) => $q->orWhere('id', $slugOrId))
+            ->first();
+
+        if ($program) {
+            return $program;
+        }
+
+        $package = LearningPackage::where('slug', $slugOrId)
+            ->orWhere('slug', $cleanSlug)
+            ->orWhereRaw('LOWER(name) = ?', [$cleanSlug])
+            ->orWhereRaw('LOWER(name) = ?', [strtolower(str_replace('-', ' ', $slugOrId))])
+            ->when(is_numeric($slugOrId), fn ($q) => $q->orWhere('id', $slugOrId))
+            ->first();
+
+        return $package;
+    }
+
+    /**
+     * Get reviews for a program or learning package.
      */
     public function programReviews(string $slugOrId): JsonResponse
     {
-        $program = is_numeric($slugOrId)
-            ? Program::findOrFail($slugOrId)
-            : Program::where('slug', $slugOrId)->firstOrFail();
+        $target = $this->resolveProgramOrPackage($slugOrId);
 
-        $reviews = $program->reviews()
-            ->with(['user' => function ($query) {
-                $query->select('id', 'name', 'avatar', 'school', 'target_university');
-            }])
-            ->where('is_published', true)
-            ->latest()
-            ->get();
+        if (! $target) {
+            return response()->json([
+                'rating' => 0.0,
+                'total_reviews' => 0,
+                'reviews' => [],
+                'user_review' => null,
+            ]);
+        }
+
+        $reviews = method_exists($target, 'reviews')
+            ? $target->reviews()
+                ->with(['user' => function ($query) {
+                    $query->select('id', 'name', 'avatar', 'school', 'target_university');
+                }])
+                ->where('is_published', true)
+                ->latest()
+                ->get()
+            : collect([]);
 
         $user = auth('api')->user();
-        $userReview = $user ? $program->reviews()->where('user_id', $user->id)->first() : null;
+        $userReview = ($user && method_exists($target, 'reviews'))
+            ? $target->reviews()->where('user_id', $user->id)->first()
+            : null;
 
         return response()->json([
-            'rating' => (float) $program->rating,
-            'total_reviews' => (int) $program->total_reviews,
+            'rating' => (float) ($target->rating ?? 0.0),
+            'total_reviews' => (int) ($target->total_reviews ?? 0),
             'reviews' => $reviews,
             'user_review' => $userReview,
         ]);
     }
 
     /**
-     * Store or update a review for a program.
+     * Store or update a review for a program or learning package.
      */
     public function storeProgramReview(Request $request, string $slugOrId): JsonResponse
     {
@@ -125,15 +165,16 @@ class ReviewController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $program = is_numeric($slugOrId)
-            ? Program::findOrFail($slugOrId)
-            : Program::where('slug', $slugOrId)->firstOrFail();
+        $target = $this->resolveProgramOrPackage($slugOrId);
+        if (! $target) {
+            return response()->json(['message' => 'Program atau paket tidak ditemukan'], 404);
+        }
 
         $review = Review::updateOrCreate(
             [
                 'user_id' => $user->id,
-                'reviewable_type' => Program::class,
-                'reviewable_id' => $program->id,
+                'reviewable_type' => get_class($target),
+                'reviewable_id' => $target->id,
             ],
             [
                 'rating' => $validated['rating'],
@@ -142,14 +183,14 @@ class ReviewController extends Controller
             ]
         );
 
-        Review::recalculateFor($program);
-        $program->refresh();
+        Review::recalculateFor($target);
+        $target->refresh();
 
         return response()->json([
             'message' => 'Testimoni program berhasil disimpan! Terima kasih atas ulasan Anda.',
             'review' => $review->load(['user:id,name,avatar,school']),
-            'rating' => (float) $program->rating,
-            'total_reviews' => (int) $program->total_reviews,
+            'rating' => (float) ($target->rating ?? 0.0),
+            'total_reviews' => (int) ($target->total_reviews ?? 0),
         ], 200);
     }
 }

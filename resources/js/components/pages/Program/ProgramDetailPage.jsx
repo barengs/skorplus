@@ -64,16 +64,18 @@ export default function ProgramDetailPage() {
   const fetchProgramDetail = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`/api/programs/${slug}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      const data = res.data;
+      const [resDetail] = await Promise.all([
+        axios.get(`/api/programs/${slug}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        }),
+        fetchProgramReviews(slug),
+      ]);
+
+      const data = resDetail.data;
       setProgram(data.program);
       setCourses(data.courses || []);
       setAllPrograms(data.all_programs || []);
       setUserCbtUsage(data.user_cbt_usage || null);
-
-      fetchProgramReviews(slug);
     } catch (err) {
       console.error('Failed to load program detail:', err);
       toast.error('Gagal memuat detail program');
@@ -97,7 +99,8 @@ export default function ProgramDetailPage() {
         } : null);
       }
     } catch (err) {
-      console.error('Failed to load program reviews:', err);
+      setReviews([]);
+      setUserReview(null);
     }
   };
 

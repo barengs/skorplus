@@ -112,83 +112,84 @@ class LandingController extends Controller
                 ->orderBy('sort_order');
         };
 
-        $program = Program::with(['courses' => $courseEagerLoad])
-            ->where('slug', $slug)
+        // 1. Check in Program first (lightweight lookup)
+        $program = Program::where('slug', $slug)
             ->orWhere('slug', $cleanSlug)
             ->orWhereRaw('LOWER(name) = ?', [$cleanSlug])
             ->orWhereRaw('LOWER(name) = ?', [strtolower(str_replace('-', ' ', $slug))])
+            ->when(is_numeric($slug), fn ($q) => $q->orWhere('id', $slug))
             ->first();
 
-        if (! $program && is_numeric($slug)) {
-            $program = Program::with(['courses' => $courseEagerLoad])->where('id', $slug)->first();
+        if ($program) {
+            $program->load(['courses' => $courseEagerLoad]);
+            $allPrograms = Program::where('is_active', true)->orderBy('sort_order')->get();
+
+            $user = auth('api')->user();
+            $userCbtUsage = $user ? $program->getCbtUsageForUser($user) : null;
+
+            return response()->json([
+                'program' => $program,
+                'courses' => $program->courses,
+                'all_programs' => $allPrograms,
+                'user_cbt_usage' => $userCbtUsage,
+            ]);
         }
 
-        // If not found in Program, search in LearningPackage (Manajemen Paket)
-        if (! $program) {
-            $pkg = LearningPackage::with(['courses' => $courseEagerLoad, 'exams'])
-                ->where('slug', $slug)
-                ->orWhere('slug', $cleanSlug)
-                ->orWhere('id', is_numeric($slug) ? $slug : 0)
-                ->first();
+        // 2. Check in LearningPackage (Manajemen Paket)
+        $pkg = LearningPackage::where('slug', $slug)
+            ->orWhere('slug', $cleanSlug)
+            ->orWhereRaw('LOWER(name) = ?', [$cleanSlug])
+            ->orWhereRaw('LOWER(name) = ?', [strtolower(str_replace('-', ' ', $slug))])
+            ->when(is_numeric($slug), fn ($q) => $q->orWhere('id', $slug))
+            ->first();
 
-            if ($pkg) {
-                $allPackages = LearningPackage::where('is_published', true)->get()->map(function ($p) {
-                    $hasDiscount = $p->discount_price && $p->discount_price < $p->price;
+        if ($pkg) {
+            $pkg->load(['courses' => $courseEagerLoad, 'exams']);
 
-                    return [
-                        'id' => $p->id,
-                        'name' => $p->name,
-                        'slug' => $p->slug,
-                        'price' => 'Rp '.number_format($hasDiscount ? $p->discount_price : $p->price, 0, ',', '.'),
-                        'price_period' => '/paket',
-                        'features' => $p->features ?? [],
-                        'icon' => '📦',
-                    ];
-                });
+            $allPackages = LearningPackage::where('is_published', true)->get()->map(function ($p) {
+                $hasDiscount = $p->discount_price && $p->discount_price < $p->price;
 
-                $hasDiscount = $pkg->discount_price && $pkg->discount_price < $pkg->price;
-                $displayPrice = 'Rp '.number_format($hasDiscount ? $pkg->discount_price : $pkg->price, 0, ',', '.');
-
-                $adaptedProgram = (object) [
-                    'id' => $pkg->id,
-                    'name' => $pkg->name,
-                    'slug' => $pkg->slug,
-                    'description' => $pkg->description,
-                    'price' => $displayPrice,
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'slug' => $p->slug,
+                    'price' => 'Rp '.number_format($hasDiscount ? $p->discount_price : $p->price, 0, ',', '.'),
                     'price_period' => '/paket',
-                    'features' => $pkg->features ?? [],
-                    'color' => 'from-blue-700 to-violet-700',
-                    'ring_color' => 'ring-blue-400',
-                    'is_popular' => true,
-                    'courses' => $pkg->courses,
-                    'exams' => $pkg->exams,
-                    'cbt_quota' => $pkg->cbt_quota,
+                    'features' => $p->features ?? [],
+                    'icon' => '📦',
                 ];
+            });
 
-                return response()->json([
-                    'program' => $adaptedProgram,
-                    'courses' => $pkg->courses,
-                    'all_programs' => $allPackages,
-                    'user_cbt_usage' => null,
-                ]);
-            }
+            $hasDiscount = $pkg->discount_price && $pkg->discount_price < $pkg->price;
+            $displayPrice = 'Rp '.number_format($hasDiscount ? $pkg->discount_price : $pkg->price, 0, ',', '.');
 
-            abort(404, 'Paket atau Program tidak ditemukan');
+            $user = auth('api')->user();
+            $userCbtUsage = $user ? $pkg->getCbtUsageForUser($user) : null;
+
+            $adaptedProgram = (object) [
+                'id' => $pkg->id,
+                'name' => $pkg->name,
+                'slug' => $pkg->slug,
+                'description' => $pkg->description,
+                'price' => $displayPrice,
+                'price_period' => '/paket',
+                'features' => $pkg->features ?? [],
+                'color' => 'from-blue-700 to-violet-700',
+                'ring_color' => 'ring-blue-400',
+                'is_popular' => true,
+                'courses' => $pkg->courses,
+                'exams' => $pkg->exams,
+                'cbt_quota' => $pkg->cbt_quota,
+            ];
+
+            return response()->json([
+                'program' => $adaptedProgram,
+                'courses' => $pkg->courses,
+                'all_programs' => $allPackages,
+                'user_cbt_usage' => $userCbtUsage,
+            ]);
         }
 
-        $allPrograms = Program::where('is_active', true)->orderBy('sort_order')->get();
-
-        $user = auth('api')->user();
-        $userCbtUsage = null;
-        if ($user) {
-            $userCbtUsage = $program->getCbtUsageForUser($user);
-        }
-
-        return response()->json([
-            'program' => $program,
-            'courses' => $program->courses,
-            'all_programs' => $allPrograms,
-            'user_cbt_usage' => $userCbtUsage,
-        ]);
+        abort(404, 'Paket atau Program tidak ditemukan');
     }
 }

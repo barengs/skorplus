@@ -39,6 +39,11 @@ class LearningPackage extends Model
         return $this->belongsToMany(Exam::class, 'learning_package_exam');
     }
 
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
     public function getCbtUsageForUser(?User $user): array
     {
         if (! $user) {
