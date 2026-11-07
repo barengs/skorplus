@@ -69,6 +69,7 @@ export default function DashboardPage() {
     const schoolInfo = data?.school;
     const recentStudents = data?.recent_students || [];
     const recentSchoolSessions = data?.recent_sessions || [];
+    const mlGrowth = data?.ml_growth;
 
     return (
       <AppLayout title="Dashboard Sekolah">
@@ -110,6 +111,11 @@ export default function DashboardPage() {
               </div>
               <div className="flex flex-wrap gap-2 shrink-0">
                 <Link to="/school-admin/students">
+                  <Button variant="outline" size="sm">
+                    <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak Laporan
+                  </Button>
+                </Link>
+                <Link to="/school-admin/students">
                   <Button size="sm">
                     <FontAwesomeIcon icon={['fas', 'user-plus']} className="mr-1.5" /> Kelola Siswa
                   </Button>
@@ -150,6 +156,196 @@ export default function DashboardPage() {
               icon={<FontAwesomeIcon icon={['fas', 'chart-line']} className="text-amber-500" />}
               color="gold"
             />
+          </div>
+
+          {/* Analisis Machine Learning: Peta Peningkatan & Kesiapan Siswa */}
+          <div className="bg-gradient-to-br from-indigo-900/10 via-purple-900/5 to-blue-900/10 border border-indigo-200 dark:border-indigo-800/40 rounded-2xl p-6 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-indigo-100 dark:border-indigo-900/40">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🤖</span>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
+                    Analisis Machine Learning: Peta Peningkatan & Kesiapan Siswa
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Estimasi kemampuan laten riil dengan Rasch Model IRT (simulasi UTBK) dan Bayesian Knowledge Tracing (penguasaan materi).
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link to="/school-admin/students">
+                  <Button size="sm" variant="outline">
+                    <FontAwesomeIcon icon={['fas', 'users-viewfinder']} className="mr-1.5" />
+                    Lihat Detail & Intervensi Siswa
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* ML Growth KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-950 shadow-xs">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1">
+                  Rata-rata Prediksi UTBK (IRT)
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-indigo-700 dark:text-indigo-300">
+                  {mlGrowth?.avg_predicted_utbk || 500} <span className="text-sm font-semibold text-slate-400">pts</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">Skala UTBK SNBT (200 - 1000)</div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-950 shadow-xs">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
+                  Penguasaan Materi (BKT)
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-300">
+                  {mlGrowth?.avg_bkt_mastery || 0}%
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">Tingkat penguasaan konsep</div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-950 shadow-xs">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1">
+                  Butuh Pendampingan
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
+                  {mlGrowth?.students_at_risk_count || 0} <span className="text-sm font-semibold text-slate-400">Siswa</span>
+                </div>
+                <div className="text-[10px] text-rose-500 font-semibold mt-1">Perlu Klinik Belajar Segera</div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-950 shadow-xs">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1">
+                  Rekomendasi Tingkat Lanjut
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+                  {mlGrowth?.students_advanced_count || 0} <span className="text-sm font-semibold text-slate-400">Siswa</span>
+                </div>
+                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Siap Soal Super HOTS / Top PTN</div>
+              </div>
+            </div>
+
+            {/* Prioritas Tindak Lanjut Siswa */}
+            <div className="grid lg:grid-cols-2 gap-6 pt-2">
+              {/* Siswa Butuh Pendampingan */}
+              <div className="bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-xl p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-rose-50 dark:border-rose-950">
+                  <h4 className="font-bold text-sm text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                    <span>🚨</span> Siswa Prioritas Pendampingan (At-Risk)
+                  </h4>
+                  <span className="text-xs bg-rose-50 dark:bg-rose-950/60 text-rose-600 font-bold px-2 py-0.5 rounded-full">
+                    {mlGrowth?.priority_at_risk_students?.length || 0} Terdeteksi
+                  </span>
+                </div>
+
+                {(!mlGrowth?.priority_at_risk_students || mlGrowth.priority_at_risk_students.length === 0) ? (
+                  <div className="py-6 text-center text-xs text-slate-400">
+                    🎉 Hebat! Tidak ada siswa yang berada dalam kategori butuh pendampingan darurat saat ini.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {mlGrowth.priority_at_risk_students.map((st) => (
+                      <div key={st.id} className="p-3 rounded-lg bg-rose-50/40 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">{st.name}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            {st.target_campus ? <span className="text-blue-600 font-semibold mr-1.5">{st.target_campus}</span> : null}
+                            {st.irt?.weak_subtest ? (
+                              <span className="text-rose-600 font-medium">Subtes Lemah: {st.irt.weak_subtest}</span>
+                            ) : (
+                              <span>Perlu latihan CBT lanjutan</span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-rose-700 dark:text-rose-300 font-semibold mt-1">
+                            💡 Rencana: {st.follow_up?.action_title || 'Klinik Belajar 1-on-1'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {st.follow_up?.whatsapp_url && (
+                            <a
+                              href={st.follow_up.whatsapp_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-all"
+                              title="Hubungi Siswa via WhatsApp"
+                            >
+                              <FontAwesomeIcon icon={['fab', 'whatsapp']} />
+                            </a>
+                          )}
+                          <Link
+                            to="/school-admin/students"
+                            className="px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50"
+                          >
+                            Detail
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Siswa Tingkat Lanjut */}
+              <div className="bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-emerald-50 dark:border-emerald-950">
+                  <h4 className="font-bold text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <span>🏆</span> Siswa Rekomendasi Tingkat Lanjut (Top PTN Ready)
+                  </h4>
+                  <span className="text-xs bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 font-bold px-2 py-0.5 rounded-full">
+                    {mlGrowth?.top_advanced_students?.length || 0} Siswa
+                  </span>
+                </div>
+
+                {(!mlGrowth?.top_advanced_students || mlGrowth.top_advanced_students.length === 0) ? (
+                  <div className="py-6 text-center text-xs text-slate-400">
+                    Belum ada siswa yang mencapai ambang batas predikat Mastered/Top PTN (≥680 pts).
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {mlGrowth.top_advanced_students.map((st) => (
+                      <div key={st.id} className="p-3 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">{st.name}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                            <span className="font-black text-indigo-600">
+                              {st.irt?.predicted_utbk_score ? `${st.irt.predicted_utbk_score} pts (IRT)` : ''}
+                            </span>
+                            <span>•</span>
+                            <span className="font-bold text-emerald-600">
+                              {st.bkt?.mastery_percentage !== null && st.bkt?.mastery_percentage !== undefined ? `${st.bkt.mastery_percentage}% Mastered` : ''}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold mt-1">
+                            🎯 Rencana: {st.follow_up?.action_title || 'Tantangan Soal Super HOTS & Top PTN'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {st.follow_up?.whatsapp_url && (
+                            <a
+                              href={st.follow_up.whatsapp_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-all"
+                              title="Apresiasi Siswa via WhatsApp"
+                            >
+                              <FontAwesomeIcon icon={['fab', 'whatsapp']} />
+                            </a>
+                          )}
+                          <Link
+                            to="/school-admin/students"
+                            className="px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50"
+                          >
+                            Detail
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Quick Tables: Recent Students & Recent CBT Results */}

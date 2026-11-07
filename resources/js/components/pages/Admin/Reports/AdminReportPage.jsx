@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { exportToCsv } from '../../../../utils/exportCsv';
 import { printComprehensiveAnalyticsPDF, printExecutiveSummaryPDF, printSchoolAnalyticsPDF, printCbtAnalyticsPDF, printMaterialsAnalyticsPDF, printSchoolStudentsPDF } from '../../../../utils/pdfReportGenerator';
 import StudentReportModal from './StudentReportModal';
+import Avatar from '../../../atoms/Avatar';
 
 export default function AdminReportPage() {
   const navigate = useNavigate();
@@ -41,6 +42,45 @@ export default function AdminReportPage() {
   const [schoolStudents, setSchoolStudents] = useState([]);
   const [schoolStudentsLoading, setSchoolStudentsLoading] = useState(false);
   const [searchSchoolStudent, setSearchSchoolStudent] = useState('');
+
+  // States for Machine Learning Student Intervention Table
+  const [mlStudents, setMlStudents] = useState([]);
+  const [mlCounts, setMlCounts] = useState({
+    total: 0,
+    perlu_tindak_lanjut: 0,
+    butuh_penguatan: 0,
+    kompetitif: 0,
+    mastered: 0,
+    belum_mulai: 0,
+  });
+  const [mlLoading, setMlLoading] = useState(false);
+  const [mlSchoolFilter, setMlSchoolFilter] = useState('');
+  const [mlStatusFilter, setMlStatusFilter] = useState('all');
+  const [mlSearch, setMlSearch] = useState('');
+
+  const fetchMlStudents = async (overrideParams = {}) => {
+    setMlLoading(true);
+    try {
+      const params = {};
+      const school = overrideParams.school !== undefined ? overrideParams.school : mlSchoolFilter;
+      const status = overrideParams.status !== undefined ? overrideParams.status : mlStatusFilter;
+      const search = overrideParams.search !== undefined ? overrideParams.search : mlSearch;
+
+      if (school) params.school_id = school;
+      if (status && status !== 'all') params.status = status;
+      if (search) params.search = search;
+
+      const res = await api.get('/admin/reports/students-analytics', { params });
+      setMlStudents(res.data.students || []);
+      if (res.data.status_counts) {
+        setMlCounts(res.data.status_counts);
+      }
+    } catch {
+      toast.error('Gagal memuat data intervensi siswa');
+    } finally {
+      setMlLoading(false);
+    }
+  };
 
   // Fetch Dashboard aggregate stats
   const fetchDashboardStats = async () => {
@@ -104,6 +144,7 @@ export default function AdminReportPage() {
 
   useEffect(() => {
     fetchDashboardStats();
+    fetchMlStudents();
   }, []);
 
   useEffect(() => {
@@ -576,6 +617,268 @@ export default function AdminReportPage() {
                              )}
                           </div>
                        </div>
+                    </div>
+                 </div>
+
+                 {/* Pemantauan Siswa & Rencana Tindak Lanjut Belajar (AI / ML) */}
+                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                      <div>
+                        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg flex items-center gap-2">
+                          <span>🎯</span>
+                          <span>Pemantauan Siswa & Rekomendasi Tindak Lanjut Belajar</span>
+                          <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold px-2.5 py-0.5 rounded-full">
+                            {mlStudents.length} Siswa
+                          </span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Daftar siswa lintas sekolah yang dikelompokkan berdasarkan hasil Bayesian Knowledge Tracing dan IRT Rasch Model untuk pemberian intervensi personal.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Filter Bar: Dropdown Sekolah, Search, Status Pills */}
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <select
+                            value={mlSchoolFilter}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMlSchoolFilter(val);
+                              fetchMlStudents({ school: val });
+                            }}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm"
+                          >
+                            <option value="">Semua Sekolah Mitra</option>
+                            {schoolsData.schools_list?.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2 flex gap-2">
+                          <Input
+                            placeholder="Cari nama, email, atau NISN siswa..."
+                            value={mlSearch}
+                            onChange={(e) => setMlSearch(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && fetchMlStudents({ search: mlSearch })}
+                          />
+                          <Button onClick={() => fetchMlStudents({ search: mlSearch })} disabled={mlLoading}>
+                            <FontAwesomeIcon icon={['fas', 'search']} className="mr-1.5" /> Cari
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Filter Pills */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-xs font-bold text-slate-500 mr-1">Status Kesiapan:</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMlStatusFilter('all');
+                            fetchMlStudents({ status: 'all' });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            mlStatusFilter === 'all'
+                              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                          }`}
+                        >
+                          Semua Siswa ({mlCounts.total})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMlStatusFilter('perlu_tindak_lanjut');
+                            fetchMlStudents({ status: 'perlu_tindak_lanjut' });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            mlStatusFilter === 'perlu_tindak_lanjut'
+                              ? 'bg-rose-600 text-white shadow-xs'
+                              : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 hover:bg-rose-100'
+                          }`}
+                        >
+                          🚨 Butuh Pendampingan ({mlCounts.perlu_tindak_lanjut})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMlStatusFilter('butuh_penguatan');
+                            fetchMlStudents({ status: 'butuh_penguatan' });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            mlStatusFilter === 'butuh_penguatan'
+                              ? 'bg-amber-500 text-white shadow-xs'
+                              : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
+                          }`}
+                        >
+                          ⚠️ Butuh Penguatan ({mlCounts.butuh_penguatan})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMlStatusFilter('mastered');
+                            fetchMlStudents({ status: 'mastered' });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            mlStatusFilter === 'mastered'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                          }`}
+                        >
+                          🏆 Rekomendasi Lanjut ({mlCounts.mastered})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMlStatusFilter('kompetitif');
+                            fetchMlStudents({ status: 'kompetitif' });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            mlStatusFilter === 'kompetitif'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100'
+                          }`}
+                        >
+                          🎯 Kompetitif ({mlCounts.kompetitif})
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse min-w-[850px]">
+                        <thead>
+                          <tr className="border-b-2 border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                            <th className="p-3">Siswa & Asal Sekolah</th>
+                            <th className="p-3">Prediksi UTBK (IRT)</th>
+                            <th className="p-3">Penguasaan (BKT)</th>
+                            <th className="p-3">Klasifikasi & Rencana Tindakan</th>
+                            <th className="p-3 text-right">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mlLoading ? (
+                            <tr>
+                              <td colSpan={5} className="py-12 text-center text-slate-400">
+                                <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                                Memuat data analisis intervensi siswa...
+                              </td>
+                            </tr>
+                          ) : mlStudents.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="py-10 text-center text-slate-400 text-sm">
+                                Tidak ada data siswa yang cocok dengan kriteria filter saat ini.
+                              </td>
+                            </tr>
+                          ) : (
+                            mlStudents.map((st) => (
+                              <tr key={st.id} className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
+                                <td className="p-3">
+                                  <div className="flex items-center gap-3">
+                                    <Avatar name={st.name} src={st.avatar} size="md" />
+                                    <div>
+                                      <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">{st.name}</div>
+                                      <div className="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
+                                        <span className="font-semibold text-blue-600 dark:text-blue-400">{st.school_name || st.school || 'Individu'}</span>
+                                        {st.nisn && (
+                                          <>
+                                            <span>•</span>
+                                            <span className="font-mono">NISN: {st.nisn}</span>
+                                          </>
+                                        )}
+                                        {st.target_campus && (
+                                          <>
+                                            <span>•</span>
+                                            <span className="text-purple-600 font-medium">{st.target_campus}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td className="p-3">
+                                  {st.irt?.predicted_utbk_score ? (
+                                    <div>
+                                      <div className="font-black text-indigo-600 dark:text-indigo-400 text-sm">
+                                        {st.irt.predicted_utbk_score} pts
+                                      </div>
+                                      <div className="text-[10px] text-slate-400">
+                                        CBT: {st.last_cbt_score ?? '-'} pts {st.irt?.theta !== null && st.irt?.theta !== undefined ? `(θ ${st.irt.theta > 0 ? '+' : ''}${st.irt.theta})` : ''}
+                                      </div>
+                                      {st.irt?.weak_subtest && (
+                                        <div className="text-[10px] text-rose-500 font-semibold truncate max-w-[150px] mt-0.5" title={`Subtes Lemah: ${st.irt.weak_subtest}`}>
+                                          ⚠️ {st.irt.weak_subtest}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-slate-400 italic">Belum ada tes</span>
+                                  )}
+                                </td>
+
+                                <td className="p-3">
+                                  {st.bkt?.mastery_percentage !== null && st.bkt?.mastery_percentage !== undefined ? (
+                                    <div>
+                                      <div className={`font-black text-sm ${st.bkt.mastery_percentage >= 80 ? 'text-emerald-600 dark:text-emerald-400' : (st.bkt.mastery_percentage >= 60 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400')}`}>
+                                        {st.bkt.mastery_percentage}%
+                                      </div>
+                                      <div className="text-[10px] text-slate-400">{st.bkt?.status_label || 'Terekam'}</div>
+                                      {st.bkt?.weak_topic && (
+                                        <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold truncate max-w-[150px] mt-0.5" title={`Topik Lemah: ${st.bkt.weak_topic}`}>
+                                          ⚠️ {st.bkt.weak_topic}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-slate-400 italic">Belum ada kuis</span>
+                                  )}
+                                </td>
+
+                                <td className="p-3 max-w-[280px]">
+                                  <Badge color={st.follow_up?.badge_color || 'slate'} className="text-[10px] font-bold mb-1">
+                                    {st.follow_up?.status_label || 'Belum Ada Aktivitas'}
+                                  </Badge>
+                                  <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                    {st.follow_up?.action_title || 'Tindak Lanjut Belajar'}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 line-clamp-2 mt-0.5" title={st.follow_up?.action_detail}>
+                                    {st.follow_up?.action_detail || '-'}
+                                  </div>
+                                </td>
+
+                                <td className="p-3 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {st.follow_up?.whatsapp_url && (
+                                      <a
+                                        href={st.follow_up.whatsapp_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800 transition-all inline-flex items-center"
+                                        title="Hubungi Siswa via WhatsApp untuk tindak lanjut"
+                                      >
+                                        <FontAwesomeIcon icon={['fab', 'whatsapp']} className="text-sm" />
+                                      </a>
+                                    )}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setReportStudentId(st.id)}
+                                      title="Lihat Rapor & Analisis Siswa"
+                                    >
+                                      <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1" /> Rapor
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                  </div>
               </div>

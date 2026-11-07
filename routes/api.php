@@ -182,6 +182,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('audit-logs/stats', [AdminAuditLogController::class, 'stats']);
         Route::get('audit-logs/{auditLog}', [AdminAuditLogController::class, 'show']);
         Route::get('reports/dashboard', [AdminReportDashboardController::class, 'index']);
+        Route::get('reports/students-analytics', [AdminReportDashboardController::class, 'studentsAnalytics']);
         Route::get('reports/schools/{school}/students', [AdminReportDashboardController::class, 'schoolStudents']);
         Route::get('reports/learning', [AdminReportController::class, 'learningReports']);
         Route::get('reports/exams', [AdminReportController::class, 'examReports']);
@@ -195,6 +196,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('profile', [SchoolProfileController::class, 'update']);
 
         Route::get('students', [StudentController::class, 'index']);
+        Route::get('students-analytics', [StudentController::class, 'studentsAnalytics']);
         Route::post('students', [StudentController::class, 'store']);
         Route::post('students/batch', [StudentController::class, 'batchStore']);
         Route::get('students/export', [StudentController::class, 'export']);

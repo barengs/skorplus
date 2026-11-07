@@ -9,6 +9,7 @@ import api from '../../../../services/api';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { compressImageToFile } from '../../../../utils/imageCompressor';
+import { printSchoolStudentsPDF } from '../../../../utils/pdfReportGenerator';
 import StudentReportModal from '../../Admin/Reports/StudentReportModal';
 
 export default function SchoolAdminStudentsPage() {
@@ -266,6 +267,18 @@ export default function SchoolAdminStudentsPage() {
     }
   };
 
+  const [statusGroupFilter, setStatusGroupFilter] = useState('all');
+
+  const counts = useMemo(() => {
+    return {
+      all: students.length,
+      perlu_tindak_lanjut: students.filter((s) => s.follow_up?.status_key === 'perlu_tindak_lanjut' || (s.last_cbt_score !== null && Number(s.last_cbt_score) < 55)).length,
+      butuh_penguatan: students.filter((s) => s.follow_up?.status_key === 'butuh_penguatan').length,
+      kompetitif: students.filter((s) => s.follow_up?.status_key === 'kompetitif').length,
+      mastered: students.filter((s) => s.follow_up?.status_key === 'mastered' || (s.irt?.predicted_utbk_score && s.irt.predicted_utbk_score >= 680)).length,
+    };
+  }, [students]);
+
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
       const matchSearch = !searchTerm ||
@@ -274,14 +287,26 @@ export default function SchoolAdminStudentsPage() {
         (s.nisn || '').includes(searchTerm);
       const matchProg = !filterProgram || s.program === filterProgram;
       const matchClass = !filterClassLevel || s.class_level === filterClassLevel;
-      return matchSearch && matchProg && matchClass;
+
+      let matchStatus = true;
+      if (statusGroupFilter !== 'all') {
+        if (statusGroupFilter === 'perlu_tindak_lanjut') {
+          matchStatus = s.follow_up?.status_key === 'perlu_tindak_lanjut' || (s.last_cbt_score !== null && Number(s.last_cbt_score) < 55);
+        } else if (statusGroupFilter === 'mastered') {
+          matchStatus = s.follow_up?.status_key === 'mastered' || (s.irt?.predicted_utbk_score && s.irt.predicted_utbk_score >= 680);
+        } else {
+          matchStatus = s.follow_up?.status_key === statusGroupFilter;
+        }
+      }
+
+      return matchSearch && matchProg && matchClass && matchStatus;
     });
-  }, [students, searchTerm, filterProgram, filterClassLevel]);
+  }, [students, searchTerm, filterProgram, filterClassLevel, statusGroupFilter]);
 
   const columns = useMemo(() => [
     {
       accessorKey: 'name',
-      header: 'Nama Siswa',
+      header: 'Nama Siswa & Identitas',
       cell: (info) => (
         <div className="flex items-center gap-3">
           <Avatar
@@ -291,31 +316,94 @@ export default function SchoolAdminStudentsPage() {
           />
           <div>
             <div className="font-bold text-slate-900 dark:text-slate-100">{info.getValue()}</div>
-            {info.row.original.nisn && (
-              <div className="text-xs text-slate-500 font-mono">NISN: {info.row.original.nisn}</div>
-            )}
+            <div className="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
+              {info.row.original.nisn && (
+                <span className="font-mono">NISN: {info.row.original.nisn}</span>
+              )}
+              {info.row.original.class_level && (
+                <>
+                  <span>•</span>
+                  <span>Kls {info.row.original.class_level}</span>
+                </>
+              )}
+              {info.row.original.target_campus && (
+                <>
+                  <span>•</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold">{info.row.original.target_campus}</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
       ),
     },
     {
-      accessorKey: 'class_level',
-      header: 'Tingkat Kelas',
-      cell: (info) => (
-        info.getValue()
-          ? <Badge color="blue">{info.getValue()}</Badge>
-          : <span className="text-xs text-slate-400">-</span>
-      ),
+      accessorKey: 'irt.predicted_utbk_score',
+      header: 'Prediksi UTBK (IRT)',
+      cell: ({ row }) => {
+        const irtScore = row.original.irt?.predicted_utbk_score || (row.original.last_cbt_score !== null && row.original.last_cbt_score !== undefined ? Math.round(500 + ((Number(row.original.last_cbt_score) - 50) * 8)) : null);
+        return irtScore ? (
+          <div>
+            <div className="font-black text-indigo-600 dark:text-indigo-400 text-sm">
+              {irtScore} pts
+            </div>
+            <div className="text-[10px] text-slate-400">
+              CBT: {row.original.last_cbt_score ?? '-'} pts {row.original.irt?.theta !== null && row.original.irt?.theta !== undefined ? `(θ ${row.original.irt.theta > 0 ? '+' : ''}${row.original.irt.theta})` : ''}
+            </div>
+            {row.original.irt?.weak_subtest && (
+              <div className="text-[10px] text-rose-500 font-semibold truncate max-w-[150px] mt-0.5" title={`Subtes Lemah: ${row.original.irt.weak_subtest}`}>
+                ⚠️ {row.original.irt.weak_subtest}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400 italic">Belum ada tes</span>
+        );
+      },
     },
     {
-      accessorKey: 'email',
-      header: 'Email / Kontak',
-      cell: (info) => (
-        <div className="text-sm">
-          <div>{info.getValue()}</div>
-          {info.row.original.phone && <div className="text-xs text-slate-500">{info.row.original.phone}</div>}
-        </div>
-      ),
+      accessorKey: 'bkt.mastery_percentage',
+      header: 'Penguasaan (BKT)',
+      cell: ({ row }) => {
+        const bktMastery = row.original.bkt?.mastery_percentage;
+        return bktMastery !== null && bktMastery !== undefined ? (
+          <div>
+            <div className={`font-black text-sm ${bktMastery >= 80 ? 'text-emerald-600 dark:text-emerald-400' : (bktMastery >= 60 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400')}`}>
+              {bktMastery}%
+            </div>
+            <div className="text-[10px] text-slate-400">
+              {row.original.bkt?.status_label || 'Terekam'}
+            </div>
+            {row.original.bkt?.weak_topic && (
+              <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold truncate max-w-[150px] mt-0.5" title={`Topik Lemah: ${row.original.bkt.weak_topic}`}>
+                ⚠️ {row.original.bkt.weak_topic}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400 italic">Belum ada kuis</span>
+        );
+      },
+    },
+    {
+      accessorKey: 'follow_up',
+      header: 'Klasifikasi & Tindak Lanjut',
+      cell: ({ row }) => {
+        const followUp = row.original.follow_up || {};
+        return (
+          <div className="space-y-1 max-w-[240px]">
+            <Badge color={followUp.badge_color || 'slate'} className="text-[10px] font-bold">
+              {followUp.status_label || 'Belum Ada Aktivitas'}
+            </Badge>
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              {followUp.action_title || 'Tindak Lanjut Belajar'}
+            </div>
+            <div className="text-[11px] text-slate-500 line-clamp-2" title={followUp.action_detail}>
+              {followUp.action_detail || '-'}
+            </div>
+          </div>
+        );
+      },
     },
     {
       accessorKey: 'program',
@@ -327,36 +415,36 @@ export default function SchoolAdminStudentsPage() {
       },
     },
     {
-      accessorKey: 'cbt_sessions_count',
-      header: 'Aktivitas CBT',
-      cell: (info) => (
-        <Badge color="slate">{info.getValue() || 0} sesi ujian</Badge>
-      ),
-    },
-    {
-      accessorKey: 'is_active',
-      header: 'Status',
-      cell: (info) => (
-        info.getValue() ? <Badge color="emerald">✓ Aktif</Badge> : <Badge color="slate">Nonaktif</Badge>
-      ),
-    },
-    {
       id: 'actions',
       header: 'Aksi',
-      cell: ({ row }) => (
-        <div className="flex gap-1.5 justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setReportStudentId(row.original.id)}
-            title="Lihat Rapor & Analisis BKT/IRT Siswa"
-          >
-            <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1" /> Rapor
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => openModal(row.original)}>Edit</Button>
-          <Button variant="danger" size="sm" onClick={() => handleDelete(row.original.id)}>Hapus</Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const followUp = row.original.follow_up || {};
+        return (
+          <div className="flex items-center gap-1.5 justify-end">
+            {followUp.whatsapp_url && (
+              <a
+                href={followUp.whatsapp_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800 transition-all inline-flex items-center"
+                title="Hubungi Siswa via WhatsApp untuk tindak lanjut"
+              >
+                <FontAwesomeIcon icon={['fab', 'whatsapp']} className="text-sm" />
+              </a>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setReportStudentId(row.original.id)}
+              title="Lihat Rapor & Analisis BKT/IRT Siswa"
+            >
+              <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1" /> Rapor
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => openModal(row.original)}>Edit</Button>
+            <Button variant="danger" size="sm" onClick={() => handleDelete(row.original.id)}>Hapus</Button>
+          </div>
+        );
+      },
     },
   ], []);
 
@@ -373,7 +461,15 @@ export default function SchoolAdminStudentsPage() {
               Total {students.length} siswa terdaftar di bawah akun sekolah ini
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => printSchoolStudentsPDF(school, filteredStudents)}
+              disabled={filteredStudents.length === 0}
+              title="Cetak rekapitulasi data siswa & hasil pembelajaran (PDF)"
+            >
+              <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-500" /> Cetak Laporan (PDF)
+            </Button>
             <Button variant="outline" onClick={() => setImportModalOpen(true)}>
               <FontAwesomeIcon icon={['fas', 'file-import']} className="mr-2" /> Import Excel
             </Button>
@@ -417,6 +513,46 @@ export default function SchoolAdminStudentsPage() {
             <option value="garansi">Garansi</option>
           </select>
           <Button variant="ghost" onClick={loadData}>🔄 Refresh Data</Button>
+        </div>
+
+        {/* Status Group Pills */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
+          <span className="text-xs font-bold text-slate-500 mr-1">Status Kesiapan & Tindak Lanjut:</span>
+          <button
+            type="button"
+            onClick={() => setStatusGroupFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusGroupFilter === 'all' ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}`}
+          >
+            Semua Siswa ({counts.all})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusGroupFilter('perlu_tindak_lanjut')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusGroupFilter === 'perlu_tindak_lanjut' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 hover:bg-rose-100'}`}
+          >
+            🚨 Butuh Pendampingan ({counts.perlu_tindak_lanjut})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusGroupFilter('butuh_penguatan')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusGroupFilter === 'butuh_penguatan' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100'}`}
+          >
+            ⚠️ Butuh Penguatan ({counts.butuh_penguatan})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusGroupFilter('mastered')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusGroupFilter === 'mastered' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'}`}
+          >
+            🏆 Rekomendasi Lanjut ({counts.mastered})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusGroupFilter('kompetitif')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusGroupFilter === 'kompetitif' ? 'bg-blue-600 text-white shadow-xs' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100'}`}
+          >
+            🎯 Kompetitif ({counts.kompetitif})
+          </button>
         </div>
 
         {/* Table */}

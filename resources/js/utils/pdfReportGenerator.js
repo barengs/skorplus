@@ -1217,78 +1217,118 @@ export const printSchoolStudentsPDF = (school, students = []) => {
     ? Math.round((students.reduce((sum, s) => sum + (Number(s.last_cbt_score) || 0), 0) / totalWithScore) * 10) / 10
     : 0;
 
+  // Analisis Agregat ML untuk Sekolah
+  const validIrtScores = students
+    .map(s => s.irt?.predicted_utbk_score || (s.last_cbt_score !== null ? Math.round(500 + ((Number(s.last_cbt_score) - 50) * 8)) : null))
+    .filter(val => val !== null && val !== undefined);
+  const avgPredictedUtbk = validIrtScores.length > 0
+    ? Math.round(validIrtScores.reduce((sum, v) => sum + v, 0) / validIrtScores.length)
+    : 500;
+
+  const validBktScores = students
+    .map(s => s.bkt?.mastery_percentage)
+    .filter(val => val !== null && val !== undefined);
+  const avgBktMastery = validBktScores.length > 0
+    ? Math.round(validBktScores.reduce((sum, v) => sum + v, 0) / validBktScores.length)
+    : 0;
+
+  const atRiskCount = students.filter(s => s.follow_up?.status_key === 'perlu_tindak_lanjut' || (s.last_cbt_score !== null && Number(s.last_cbt_score) < 55)).length;
+  const advancedCount = students.filter(s => s.follow_up?.status_key === 'mastered' || (s.irt?.predicted_utbk_score && s.irt.predicted_utbk_score >= 680)).length;
+
   const html = `
     <!DOCTYPE html>
     <html lang="id">
     <head>
       <meta charset="UTF-8">
-      <title>Data Siswa Mitra - ${school.name || 'Sekolah'}</title>
+      <title>Laporan Pembelajaran & Rekomendasi Siswa - ${school.name || 'Sekolah'}</title>
       <style>${getBaseStyles()}</style>
     </head>
     <body>
       <div class="doc-container">
-        ${renderLetterheadHtml('Rekapitulasi Data Siswa Sekolah Mitra')}
+        ${renderLetterheadHtml('Laporan Pembelajaran & Rekomendasi Siswa')}
 
         <div class="doc-title">
-          <h3>Daftar Siswa & Evaluasi Belajar: ${school.name || '-'}</h3>
-          <p>Tanggal Unduh: ${printDate} · Total Siswa Terdaftar: ${students.length} Siswa</p>
+          <h3>Laporan Pembelajaran & Pemetaan Kesiapan Siswa: ${school.name || '-'}</h3>
+          <p>Analisis Berbasis Item Response Theory (IRT) & Bayesian Knowledge Tracing (BKT) · Tanggal: ${printDate}</p>
         </div>
 
-        <!-- Ringkasan Sekolah -->
+        <!-- Ringkasan Eksekutif ML Sekolah -->
         <div class="kpi-grid avoid-break">
           <div class="kpi-card">
             <div class="kpi-num">${students.length}</div>
             <div class="kpi-label">Total Siswa</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-num" style="color: #2563eb;">${totalWithScore}</div>
-            <div class="kpi-label">Pernah Ujian CBT</div>
+            <div class="kpi-num" style="color: #4f46e5;">${avgPredictedUtbk} pts</div>
+            <div class="kpi-label">Prediksi UTBK (IRT)</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-num" style="color: #059669;">${avgScore} pts</div>
-            <div class="kpi-label">Rata-rata Skor CBT</div>
+            <div class="kpi-num" style="color: #059669;">${avgBktMastery}%</div>
+            <div class="kpi-label">Penguasaan Materi (BKT)</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-num" style="color: #d97706;">${students.filter(s => s.is_active).length}</div>
-            <div class="kpi-label">Siswa Aktif</div>
+          <div class="kpi-card" style="border-left: 3px solid #e11d48;">
+            <div class="kpi-num" style="color: #e11d48;">${atRiskCount}</div>
+            <div class="kpi-label">Butuh Pendampingan</div>
+          </div>
+          <div class="kpi-card" style="border-left: 3px solid #059669;">
+            <div class="kpi-num" style="color: #059669;">${advancedCount}</div>
+            <div class="kpi-label">Tingkat Lanjut (Top PTN)</div>
           </div>
         </div>
 
-        <!-- Tabel Siswa -->
-        <div class="section-title">Daftar Siswa Terdaftar & Skor CBT Terakhir</div>
+        <!-- Tabel Siswa & Rencana Tindak Lanjut -->
+        <div class="section-title">Rekapitulasi Individual: Analisis IRT/BKT & Rencana Tindak Lanjut</div>
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 5%;" class="text-center">No</th>
-              <th style="width: 35%;">Nama Lengkap & NISN</th>
-              <th style="width: 15%;">Program</th>
-              <th style="width: 25%;" class="text-center">Skor CBT Terakhir</th>
-              <th style="width: 20%;">Aktivitas Terakhir</th>
+              <th style="width: 4%;" class="text-center">No</th>
+              <th style="width: 26%;">Nama Lengkap & NISN</th>
+              <th style="width: 14%;" class="text-center">Prediksi UTBK (IRT)</th>
+              <th style="width: 12%;" class="text-center">BKT Mastery</th>
+              <th style="width: 18%;">Klasifikasi Kesiapan</th>
+              <th style="width: 26%;">Rekomendasi Tindak Lanjut</th>
             </tr>
           </thead>
           <tbody>
-            ${students.length > 0 ? students.map((st, i) => `
-              <tr>
-                <td class="text-center">${i + 1}</td>
-                <td>
-                  <div class="font-bold">${st.name || '-'}</div>
-                  <div style="font-size: 7.5pt; color: #64748b;">NISN: ${st.nisn || '-'} · ${st.email || '-'}</div>
-                </td>
-                <td><span class="badge badge-slate">${st.program || 'Reguler'}</span></td>
-                <td class="text-center">
-                  ${st.last_cbt_score !== null && st.last_cbt_score !== undefined ? `
-                    <div class="font-bold" style="color: ${Number(st.last_cbt_score) >= 70 ? '#059669' : '#d97706'}; font-size: 10pt;">
-                      ${st.last_cbt_score} pts
+            ${students.length > 0 ? students.map((st, i) => {
+              const utbk = st.irt?.predicted_utbk_score || (st.last_cbt_score !== null && st.last_cbt_score !== undefined ? Math.round(500 + ((Number(st.last_cbt_score) - 50) * 8)) : null);
+              const bkt = st.bkt?.mastery_percentage !== null && st.bkt?.mastery_percentage !== undefined ? `${st.bkt.mastery_percentage}%` : '-';
+              const followUp = st.follow_up || {};
+              const statusKey = followUp.status_key || (Number(st.last_cbt_score) < 55 ? 'perlu_tindak_lanjut' : 'kompetitif');
+              const statusBadgeColor = statusKey === 'perlu_tindak_lanjut' ? 'badge-rose' : (statusKey === 'mastered' ? 'badge-emerald' : (statusKey === 'butuh_penguatan' ? 'badge-amber' : 'badge-blue'));
+              const statusLabel = followUp.status_label || (statusKey === 'perlu_tindak_lanjut' ? 'Perlu Intervensi Segera' : 'Kompetitif');
+              const actionDetail = followUp.action_detail || (st.last_cbt_score !== null ? `Skor evaluasi ${st.last_cbt_score} pts. Tingkatkan latihan soal berkala.` : 'Belum ada data pengerjaan ujian.');
+
+              return `
+                <tr>
+                  <td class="text-center">${i + 1}</td>
+                  <td>
+                    <div class="font-bold">${st.name || '-'}</div>
+                    <div style="font-size: 7.5pt; color: #64748b;">
+                      NISN: ${st.nisn || '-'} · ${st.program || 'Reguler'} · Kls: ${st.class_level || '-'}
                     </div>
-                    <div style="font-size: 7pt; color: #64748b;">${st.last_cbt_title || 'Ujian CBT'}</div>
-                  ` : '<span style="font-size: 8pt; color: #94a3b8; font-style: italic;">Belum ada ujian</span>'}
-                </td>
-                <td style="font-size: 8pt; color: #475569;">
-                  ${st.last_activity || '-'}
-                </td>
-              </tr>
-            `).join('') : `
-              <tr><td colspan="5" class="text-center text-slate-400">Tidak ada data siswa.</td></tr>
+                  </td>
+                  <td class="text-center">
+                    ${utbk ? `
+                      <div class="font-bold" style="color: #4f46e5; font-size: 9.5pt;">
+                        ${utbk} pts
+                      </div>
+                      <div style="font-size: 7pt; color: #64748b;">CBT: ${st.last_cbt_score ?? '-'} pts</div>
+                    ` : '<span style="font-size: 7.5pt; color: #94a3b8; font-style: italic;">Belum ada tes</span>'}
+                  </td>
+                  <td class="text-center font-bold" style="color: ${bkt !== '-' && parseInt(bkt) >= 70 ? '#059669' : '#d97706'};">
+                    ${bkt}
+                  </td>
+                  <td>
+                    <span class="badge ${statusBadgeColor}">${statusLabel}</span>
+                  </td>
+                  <td style="font-size: 7.5pt; color: #334155; line-height: 1.35;">
+                    ${actionDetail}
+                  </td>
+                </tr>
+              `;
+            }).join('') : `
+              <tr><td colspan="6" class="text-center text-slate-400">Tidak ada data siswa.</td></tr>
             `}
           </tbody>
         </table>
@@ -1298,7 +1338,7 @@ export const printSchoolStudentsPDF = (school, students = []) => {
           'Koordinator Akademik Mitra',
           school.name || 'Sekolah Mitra',
           'Mengetahui,',
-          'Kepala Lembaga / Direktur',
+          'Direktur Akademik & Kemahasiswaan',
           'SkorPlus Learning Center'
         )}
       </div>

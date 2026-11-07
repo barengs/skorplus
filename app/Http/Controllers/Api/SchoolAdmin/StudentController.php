@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\SchoolAdmin;
 
 use App\Exports\SchoolStudentsExport;
 use App\Exports\SchoolStudentsTemplateExport;
+use App\Http\Controllers\Api\Admin\AdminReportDashboardController;
 use App\Http\Controllers\Api\Admin\AdminStudentReportController;
 use App\Http\Controllers\Controller;
 use App\Imports\SchoolStudentsImport;
@@ -71,8 +72,25 @@ class StudentController extends Controller
             });
         }
 
-        $students = $query->latest()->get()->map(function (User $user) {
-            return $this->formatStudentPayload($user);
+        $rawStudents = $query->latest()->get();
+        $formattedWithIntervention = app(AdminReportDashboardController::class)
+            ->formatStudentsWithIntervention($rawStudents)
+            ->keyBy('id');
+
+        $students = $rawStudents->map(function (User $user) use ($formattedWithIntervention) {
+            $base = $this->formatStudentPayload($user);
+            $extra = $formattedWithIntervention->get($user->id);
+            if ($extra) {
+                $base['irt'] = $extra['irt'];
+                $base['bkt'] = $extra['bkt'];
+                $base['follow_up'] = $extra['follow_up'];
+                $base['last_cbt_score'] = $extra['last_cbt_score'];
+                $base['last_cbt_title'] = $extra['last_cbt_title'];
+                $base['last_activity'] = $extra['last_activity'];
+                $base['last_activity_at'] = $extra['last_activity_at'];
+            }
+
+            return $base;
         });
 
         return response()->json([
@@ -371,5 +389,16 @@ class StudentController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Gagal mengimpor data: '.$e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Dapatkan analisis individual siswa sekolah (IRT & BKT) beserta rencana tindak lanjut
+     */
+    public function studentsAnalytics(Request $request): JsonResponse
+    {
+        $school = $this->getSchool();
+        $request->merge(['school_id' => $school->id]);
+
+        return app(AdminReportDashboardController::class)->studentsAnalytics($request);
     }
 }

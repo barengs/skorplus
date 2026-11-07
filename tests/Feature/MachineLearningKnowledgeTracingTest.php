@@ -219,6 +219,37 @@ class MachineLearningKnowledgeTracingTest extends TestCase
                 'materials_stats' => ['bkt_summary'],
                 'ml_analytics' => ['bkt', 'irt'],
             ]);
+
+        $analyticsResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/admin/reports/students-analytics');
+
+        $analyticsResponse->assertOk()
+            ->assertJsonStructure([
+                'status_counts' => [
+                    'total',
+                    'perlu_tindak_lanjut',
+                    'butuh_penguatan',
+                    'kompetitif',
+                    'mastered',
+                    'belum_mulai',
+                ],
+                'total_students',
+                'students' => [
+                    '*' => [
+                        'id',
+                        'name',
+                        'irt',
+                        'bkt',
+                        'follow_up' => [
+                            'status_key',
+                            'status_label',
+                            'badge_color',
+                            'urgency',
+                            'action_title',
+                            'action_detail',
+                        ],
+                    ],
+                ],
+            ]);
     }
 }
-

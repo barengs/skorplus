@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Admin\AdminReportDashboardController;
 use App\Http\Controllers\Controller;
 use App\Models\CbtSession;
 use App\Models\Course;
@@ -451,6 +452,25 @@ class DashboardController extends Controller
             ->take(5)
             ->get(['id', 'user_id', 'exam_title', 'exam_type', 'score', 'status', 'submitted_at', 'created_at']);
 
+        // Analitik Peningkatan Siswa Sekolah berbasis Machine Learning (IRT & BKT)
+        $allSchoolStudents = $school->students()
+            ->with(['studentProfile', 'profile', 'schoolEntity'])
+            ->get();
+
+        $interventionStudents = app(AdminReportDashboardController::class)
+            ->formatStudentsWithIntervention($allSchoolStudents);
+
+        $atRiskStudents = $interventionStudents->filter(fn ($s) => $s['follow_up']['status_key'] === 'perlu_tindak_lanjut')->values();
+        $advancedStudents = $interventionStudents->filter(fn ($s) => $s['follow_up']['status_key'] === 'mastered')->values();
+        $strengtheningStudents = $interventionStudents->filter(fn ($s) => $s['follow_up']['status_key'] === 'butuh_penguatan')->values();
+        $competitiveStudents = $interventionStudents->filter(fn ($s) => $s['follow_up']['status_key'] === 'kompetitif')->values();
+
+        $scoresList = $interventionStudents->pluck('irt.predicted_utbk_score')->filter();
+        $avgPredictedUtbk = $scoresList->isNotEmpty() ? (int) round($scoresList->avg()) : 500;
+
+        $masteryList = $interventionStudents->pluck('bkt.mastery_percentage')->filter();
+        $avgBktMastery = $masteryList->isNotEmpty() ? (int) round($masteryList->avg()) : 0;
+
         return response()->json([
             'dashboard_type' => 'admin_sekolah',
             'user' => [
@@ -469,6 +489,16 @@ class DashboardController extends Controller
                 'total_cbt_sessions' => $totalCbtSessions,
                 'completed_sessions' => $completedSessions,
                 'avg_score' => $avgScore,
+            ],
+            'ml_growth' => [
+                'avg_predicted_utbk' => $avgPredictedUtbk,
+                'avg_bkt_mastery' => $avgBktMastery,
+                'students_at_risk_count' => $atRiskStudents->count(),
+                'students_advanced_count' => $advancedStudents->count(),
+                'students_strengthening_count' => $strengtheningStudents->count(),
+                'students_competitive_count' => $competitiveStudents->count(),
+                'priority_at_risk_students' => $atRiskStudents->take(5),
+                'top_advanced_students' => $advancedStudents->take(5),
             ],
             'recent_students' => $recentStudents,
             'recent_sessions' => $recentSessions,
