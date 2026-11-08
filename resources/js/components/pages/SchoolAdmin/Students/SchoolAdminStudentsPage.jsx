@@ -438,10 +438,14 @@ export default function SchoolAdminStudentsPage() {
               onClick={() => setReportStudentId(row.original.id)}
               title="Lihat Rapor & Analisis BKT/IRT Siswa"
             >
-              <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1" /> Rapor
+              <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1 text-blue-600" /> Rapor
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => openModal(row.original)}>Edit</Button>
-            <Button variant="danger" size="sm" onClick={() => handleDelete(row.original.id)}>Hapus</Button>
+            <Button variant="outline" size="sm" onClick={() => openModal(row.original)}>
+              <FontAwesomeIcon icon={['fas', 'pen-to-square']} className="mr-1 text-amber-600" /> Edit
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleDelete(row.original.id)} className="text-rose-600 hover:bg-rose-50 border-rose-200 dark:border-rose-800">
+              <FontAwesomeIcon icon={['fas', 'trash']} className="mr-1 text-rose-600" /> Hapus
+            </Button>
           </div>
         );
       },
@@ -468,19 +472,19 @@ export default function SchoolAdminStudentsPage() {
               disabled={filteredStudents.length === 0}
               title="Cetak rekapitulasi data siswa & hasil pembelajaran (PDF)"
             >
-              <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-500" /> Cetak Laporan (PDF)
+              <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-600" /> Cetak Laporan (PDF)
             </Button>
             <Button variant="outline" onClick={() => setImportModalOpen(true)}>
-              <FontAwesomeIcon icon={['fas', 'file-import']} className="mr-2" /> Import Excel
+              <FontAwesomeIcon icon={['fas', 'file-import']} className="mr-2 text-emerald-600" /> Import Excel
             </Button>
             <Button variant="outline" onClick={handleExport}>
-              <FontAwesomeIcon icon={['fas', 'file-export']} className="mr-2" /> Export Excel
+              <FontAwesomeIcon icon={['fas', 'file-export']} className="mr-2 text-blue-600" /> Export Excel
             </Button>
             <Button variant="outline" onClick={() => setBatchModalOpen(true)}>
-              <FontAwesomeIcon icon={['fas', 'file-import']} className="mr-2" /> Impor Massal
+              <FontAwesomeIcon icon={['fas', 'users']} className="mr-2 text-indigo-600" /> Impor Massal
             </Button>
-            <Button onClick={() => openModal()}>
-              <FontAwesomeIcon icon={['fas', 'user-plus']} className="mr-2" /> Tambah Siswa
+            <Button variant="primary" onClick={() => openModal()}>
+              <FontAwesomeIcon icon={['fas', 'user-plus']} className="mr-2 text-white" /> Tambah Siswa
             </Button>
           </div>
         </div>
@@ -512,7 +516,9 @@ export default function SchoolAdminStudentsPage() {
             <option value="mandiri">Mandiri</option>
             <option value="garansi">Garansi</option>
           </select>
-          <Button variant="ghost" onClick={loadData}>🔄 Refresh Data</Button>
+          <Button variant="outline" onClick={loadData}>
+            <FontAwesomeIcon icon={['fas', 'rotate-right']} className="mr-1.5 text-slate-600 dark:text-slate-300" /> Refresh Data
+          </Button>
         </div>
 
         {/* Status Group Pills */}

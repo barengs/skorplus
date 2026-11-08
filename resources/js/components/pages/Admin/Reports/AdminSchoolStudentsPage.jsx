@@ -110,14 +110,15 @@ export default function AdminSchoolStudentsPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/admin/reports')}
-              className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-sm font-semibold flex items-center gap-1.5"
               title="Kembali ke Laporan & Analitik"
             >
-              ← Kembali
+              <FontAwesomeIcon icon={['fas', 'arrow-left']} className="text-slate-500" />
+              <span>Kembali</span>
             </button>
             <div>
               <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-                <span className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base shadow-md shadow-blue-500/20">
+                <span className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base shadow-sm">
                   <FontAwesomeIcon icon={['fas', 'user-graduate']} />
                 </span>
                 Data Siswa Mitra
@@ -139,7 +140,7 @@ export default function AdminSchoolStudentsPage() {
               disabled={students.length === 0}
               title="Cetak rekapitulasi data siswa & hasil CBT sekolah ini (PDF)"
             >
-              <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF
+              <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-600" /> Cetak PDF
             </Button>
             <Button
               variant="outline"
@@ -160,19 +161,19 @@ export default function AdminSchoolStudentsPage() {
               }
               disabled={students.length === 0}
             >
-              <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5" /> Ekspor CSV
+              <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5 text-emerald-600" /> Ekspor CSV
             </Button>
             <Button variant="outline" onClick={() => fetchStudents(search.trim())} disabled={loading}>
-              <FontAwesomeIcon icon={['fas', 'rotate-right']} className={loading ? 'animate-spin' : ''} />
+              <FontAwesomeIcon icon={['fas', 'rotate-right']} className={`text-slate-600 dark:text-slate-300 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
 
         {/* Mini stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg">
-            <div className="text-xs font-semibold uppercase tracking-wide opacity-90 mb-1">Total Siswa</div>
-            <div className="text-3xl font-black">{students.length}</div>
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Total Siswa</div>
+            <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{students.length}</div>
           </div>
           <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Pernah Ujian CBT</div>
@@ -202,8 +203,8 @@ export default function AdminSchoolStudentsPage() {
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
             </div>
-            <Button onClick={handleSearch} disabled={loading}>
-              <FontAwesomeIcon icon={['fas', 'search']} className="mr-1.5" /> Cari
+            <Button variant="primary" onClick={handleSearch} disabled={loading}>
+              <FontAwesomeIcon icon={['fas', 'search']} className="mr-1.5 text-white" /> Cari
             </Button>
           </div>
         </div>
@@ -382,14 +383,14 @@ export default function AdminSchoolStudentsPage() {
                           )}
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="outline"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleOpenRapor(student.id);
                             }}
-                            className="group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 text-xs px-2.5 font-bold flex items-center justify-center whitespace-nowrap"
+                            className="group-hover:border-blue-500 group-hover:text-blue-600 text-xs px-2.5 font-bold flex items-center justify-center whitespace-nowrap"
                           >
-                            <FontAwesomeIcon icon={['fas', 'id-card']} className="mr-1.5 text-blue-600 dark:text-blue-400 text-xs" />
+                            <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1.5 text-blue-600 text-xs" />
                             Rapor
                           </Button>
                         </div>

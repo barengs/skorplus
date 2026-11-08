@@ -291,7 +291,7 @@ export default function AdminReportPage() {
           </div>
           <div className="flex flex-wrap gap-2 no-print">
              <Button variant="outline" onClick={() => printComprehensiveAnalyticsPDF(dashboardData)} disabled={!dashboardData} title="Cetak dokumen analitik komprehensif (Semua Bab: Ringkasan, Sekolah, CBT & Materi)">
-                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-500" /> Cetak Laporan Lengkap
+                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-600 text-sm" /> Cetak Laporan Lengkap
              </Button>
              <Button
                 variant="outline"
@@ -316,7 +316,7 @@ export default function AdminReportPage() {
                    }
                 }}
              >
-                <FontAwesomeIcon icon={['fas', 'print']} className="mr-2 text-blue-500" />
+                <FontAwesomeIcon icon={['fas', 'print']} className="mr-2 text-blue-600 text-sm" />
                 {activeTab === 'dashboard' && 'Cetak Ringkasan'}
                 {activeTab === 'students' && 'Cetak Pemantauan Siswa'}
                 {activeTab === 'schools' && 'Cetak Analitik Sekolah'}
@@ -325,7 +325,7 @@ export default function AdminReportPage() {
                 {activeTab === 'logs' && 'Cetak Laporan Lengkap'}
              </Button>
              <Button variant="outline" onClick={() => fetchDashboardStats()} disabled={loading}>
-                <FontAwesomeIcon icon={['fas', 'rotate-right']} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+                <FontAwesomeIcon icon={['fas', 'rotate-right']} className={`mr-2 text-slate-600 dark:text-slate-300 text-sm ${loading ? 'animate-spin' : ''}`} />
                 Segarkan Data
              </Button>
           </div>
@@ -494,23 +494,23 @@ export default function AdminReportPage() {
                  </div>
 
                  {/* Quick Nav Banner to Pemantauan Siswa */}
-                 <div className="bg-gradient-to-r from-indigo-900/10 via-purple-900/5 to-blue-900/10 border border-indigo-200 dark:border-indigo-800/40 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-500/20 shrink-0">
+                 <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                       <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg shrink-0">
                           <FontAwesomeIcon icon={['fas', 'user-graduate']} />
                        </div>
                        <div>
-                          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                              <span>Analisis Machine Learning & Pemantauan Siswa</span>
-                             <Badge color="indigo" className="text-[10px] font-bold">IRT & BKT AI</Badge>
+                             <Badge color="blue" className="text-[10px] font-bold">IRT & BKT</Badge>
                           </h3>
                           <p className="text-xs text-slate-500 mt-0.5">
                              Lihat pemetaan tingkat penguasaan materi (BKT), estimasi skor UTBK (IRT), dan rekomendasi tindak lanjut belajar untuk {mlCounts.total || 'seluruh'} siswa.
                           </p>
                        </div>
                     </div>
-                    <Button onClick={() => setActiveTab('students')} className="shrink-0 cursor-pointer">
-                       <FontAwesomeIcon icon={['fas', 'arrow-right']} className="mr-1.5" /> Buka Pemantauan Siswa ({mlCounts.total})
+                    <Button variant="primary" onClick={() => setActiveTab('students')} className="shrink-0 cursor-pointer text-xs">
+                       <FontAwesomeIcon icon={['fas', 'arrow-right']} className="mr-1.5 text-white" /> Buka Pemantauan Siswa ({mlCounts.total})
                     </Button>
                  </div>
               </div>
@@ -520,8 +520,8 @@ export default function AdminReportPage() {
             {activeTab === 'students' && (
               <div className="space-y-6 animate-fade-in-up">
                  {/* Machine Learning Analytics Panel: BKT & IRT */}
-                 <div className="bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-purple-50/60 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-900/60 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl p-6 shadow-xs space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-indigo-100 dark:border-indigo-900/40">
+                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100 dark:border-slate-800">
                        <div>
                           <div className="flex items-center gap-2">
                              <span className="text-xl">🤖</span>
@@ -695,7 +695,7 @@ export default function AdminReportPage() {
                           disabled={mlStudents.length === 0}
                           title="Cetak laporan hasil pembelajaran & rekomendasi tindak lanjut siswa (PDF)"
                         >
-                          <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF Siswa
+                          <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-600" /> Cetak PDF Siswa
                         </Button>
                         <Button
                           variant="outline"
@@ -716,10 +716,10 @@ export default function AdminReportPage() {
                           }}
                           disabled={mlStudents.length === 0}
                         >
-                          <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5" /> Ekspor CSV
+                          <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5 text-emerald-600" /> Ekspor CSV
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => fetchMlStudents()} disabled={mlLoading}>
-                          <FontAwesomeIcon icon={['fas', 'rotate-right']} className={mlLoading ? 'animate-spin' : ''} />
+                          <FontAwesomeIcon icon={['fas', 'rotate-right']} className={`text-slate-600 dark:text-slate-300 ${mlLoading ? 'animate-spin' : ''}`} />
                         </Button>
                       </div>
                     </div>
@@ -753,8 +753,8 @@ export default function AdminReportPage() {
                             onChange={(e) => setMlSearch(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && fetchMlStudents({ search: mlSearch })}
                           />
-                          <Button onClick={() => fetchMlStudents({ search: mlSearch })} disabled={mlLoading}>
-                            <FontAwesomeIcon icon={['fas', 'search']} className="mr-1.5" /> Cari
+                          <Button variant="primary" onClick={() => fetchMlStudents({ search: mlSearch })} disabled={mlLoading}>
+                            <FontAwesomeIcon icon={['fas', 'search']} className="mr-1.5 text-white" /> Cari
                           </Button>
                         </div>
                       </div>
@@ -948,7 +948,7 @@ export default function AdminReportPage() {
                                         className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800 transition-all inline-flex items-center"
                                         title="Hubungi Siswa via WhatsApp untuk tindak lanjut"
                                       >
-                                        <FontAwesomeIcon icon={['fab', 'whatsapp']} className="text-sm" />
+                                        <FontAwesomeIcon icon={['fab', 'whatsapp']} className="text-sm text-emerald-600" />
                                       </a>
                                     )}
                                     <Button
@@ -957,7 +957,7 @@ export default function AdminReportPage() {
                                       onClick={() => setReportStudentId(st.id)}
                                       title="Lihat Rapor & Analisis Siswa"
                                     >
-                                      <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1" /> Rapor
+                                      <FontAwesomeIcon icon={['fas', 'chart-pie']} className="mr-1 text-blue-600" /> Rapor
                                     </Button>
                                   </div>
                                 </td>
@@ -975,13 +975,13 @@ export default function AdminReportPage() {
             {activeTab === 'schools' && (
               <div className="space-y-6 animate-fade-in-up">
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg">
-                        <div className="flex items-center gap-3 mb-2 opacity-90">
+                    <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-center">
+                        <div className="flex items-center gap-3 mb-2 text-blue-600 dark:text-blue-400">
                             <FontAwesomeIcon icon={['fas', 'school']} className="text-2xl" />
-                            <h4 className="font-bold">Total Mitra Sekolah</h4>
+                            <h4 className="font-bold text-slate-700 dark:text-slate-300">Total Mitra Sekolah</h4>
                         </div>
-                        <div className="text-4xl font-black">{schoolsData.total_schools}</div>
-                        <div className="text-sm opacity-80 mt-1">{schoolsData.active_schools} Sekolah Aktif</div>
+                        <div className="text-4xl font-black text-slate-900 dark:text-slate-100">{schoolsData.total_schools}</div>
+                        <div className="text-sm text-slate-400 mt-1">{schoolsData.active_schools} Sekolah Aktif</div>
                     </div>
                     <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
                         <div className="text-slate-500 font-semibold mb-1">Total Siswa Sekolah</div>
@@ -1001,7 +1001,7 @@ export default function AdminReportPage() {
                              onClick={() => printSchoolAnalyticsPDF(schoolsData, dashboardData)}
                              title="Cetak Evaluasi & Kinerja Mitra Sekolah"
                           >
-                             <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF Sekolah
+                             <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-600" /> Cetak PDF Sekolah
                           </Button>
                           <Button
                              variant="outline"
@@ -1019,7 +1019,7 @@ export default function AdminReportPage() {
                                 exportToCsv(schoolsData.schools_list || [], cols, 'laporan-kinerja-sekolah');
                              }}
                           >
-                             <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5" /> Ekspor CSV Sekolah
+                             <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5 text-emerald-600" /> Ekspor CSV Sekolah
                           </Button>
                        </div>
                     </div>
@@ -1136,7 +1136,7 @@ export default function AdminReportPage() {
                                 disabled={filteredSchoolStudents.length === 0}
                                 title="Cetak rekapitulasi data siswa dan skor CBT sekolah ini"
                              >
-                                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF
+                                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-600" /> Cetak PDF
                              </Button>
                              <Button
                                 variant="outline"
@@ -1159,10 +1159,10 @@ export default function AdminReportPage() {
                                 }}
                                 disabled={filteredSchoolStudents.length === 0}
                              >
-                                <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5" /> CSV
+                                <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5 text-emerald-600" /> CSV
                              </Button>
                              <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => {
                                    setSelectedSchool(null);
@@ -1170,7 +1170,7 @@ export default function AdminReportPage() {
                                 }}
                                 title="Tutup daftar siswa"
                              >
-                                <FontAwesomeIcon icon={['fas', 'xmark']} />
+                                <FontAwesomeIcon icon={['fas', 'xmark']} className="text-slate-500" />
                              </Button>
                           </div>
                        </div>
@@ -1313,7 +1313,7 @@ export default function AdminReportPage() {
                                onClick={() => printCbtAnalyticsPDF(cbtData, dashboardData)}
                                title="Cetak Laporan Analitik CBT lengkap dengan distribusi skor (PDF)"
                             >
-                               <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak Analitik CBT (PDF)
+                               <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-600" /> Cetak Analitik CBT (PDF)
                             </Button>
                          </div>
                          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
@@ -1402,12 +1402,12 @@ export default function AdminReportPage() {
               <div className="space-y-6 animate-fade-in-up">
                  {/* Top Metrics Grid */}
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                     <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg flex items-center justify-between">
+                     <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
                          <div>
-                            <div className="text-sm font-semibold opacity-90 mb-1">Materi / Kursus Aktif</div>
-                            <div className="text-3xl font-black">{materialsData.active_courses} <span className="text-base font-normal opacity-70">/ {materialsData.total_courses}</span></div>
+                            <div className="text-sm font-semibold text-slate-500 mb-1">Materi / Kursus Aktif</div>
+                            <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{materialsData.active_courses} <span className="text-base font-normal text-slate-400">/ {materialsData.total_courses}</span></div>
                          </div>
-                         <FontAwesomeIcon icon={['fas', 'book']} className="text-4xl opacity-30" />
+                         <FontAwesomeIcon icon={['fas', 'book']} className="text-4xl text-emerald-500/30" />
                      </div>
                      <StatCard label="Total Modul & Bab" value={materialsData.total_modules} icon={<FontAwesomeIcon icon={['fas', 'folder-tree']} />} color="blue" />
                      <StatCard label="Total Sesi Pembelajaran" value={materialsData.total_lessons} icon={<FontAwesomeIcon icon={['fas', 'chalkboard']} />} color="purple" />
@@ -1465,7 +1465,7 @@ export default function AdminReportPage() {
                                onClick={() => printMaterialsAnalyticsPDF(materialsData, dashboardData)}
                                title="Cetak Laporan Kurikulum & Analitik Materi E-Learning (PDF)"
                             >
-                               <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak Analitik Materi (PDF)
+                               <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-600" /> Cetak Analitik Materi (PDF)
                             </Button>
                          </div>
                          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
@@ -1473,7 +1473,7 @@ export default function AdminReportPage() {
                                  materialsData.courses_ranking.map((course, i) => (
                                      <div key={course.id} className="p-4 rounded-xl border border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                          <div className="flex-1 flex gap-3 items-center">
-                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-black shrink-0">
+                                             <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-black shrink-0">
                                                  #{i+1}
                                              </div>
                                              <div>
@@ -1529,7 +1529,9 @@ export default function AdminReportPage() {
                                 <option value="ongoing">Sedang Belajar (&lt;100%)</option>
                                 <option value="completed">Selesai (100%)</option>
                             </select>
-                            <Button onClick={fetchLearningReports}><FontAwesomeIcon icon={['fas','search']} /></Button>
+                            <Button variant="primary" onClick={fetchLearningReports}>
+                               <FontAwesomeIcon icon={['fas', 'search']} className="text-white" />
+                            </Button>
                             <Button
                                variant="outline"
                                onClick={() => {
@@ -1547,7 +1549,7 @@ export default function AdminReportPage() {
                                   );
                                }}
                             >
-                               <FontAwesomeIcon icon={['fas', 'file-arrow-down']} /> Ekspor CSV
+                               <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5 text-emerald-600" /> Ekspor CSV
                             </Button>
                         </div>
                     </div>
@@ -1575,7 +1577,9 @@ export default function AdminReportPage() {
                                     <option key={sch} value={sch}>{sch}</option>
                                 ))}
                             </select>
-                            <Button onClick={() => fetchExamReports()}><FontAwesomeIcon icon={['fas','search']} /></Button>
+                            <Button variant="primary" onClick={() => fetchExamReports()}>
+                               <FontAwesomeIcon icon={['fas', 'search']} className="text-white" />
+                            </Button>
                             <Button
                                variant="outline"
                                onClick={() => {
@@ -1593,7 +1597,7 @@ export default function AdminReportPage() {
                                   );
                                }}
                             >
-                               <FontAwesomeIcon icon={['fas', 'file-arrow-down']} /> Ekspor CSV
+                               <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5 text-emerald-600" /> Ekspor CSV
                             </Button>
                         </div>
                     </div>

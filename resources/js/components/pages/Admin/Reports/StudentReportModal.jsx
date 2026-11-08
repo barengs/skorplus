@@ -99,8 +99,12 @@ export default function StudentReportModal({ userId, onClose, apiEndpoint = null
               <p className="text-xs text-slate-500 mt-1">{session.exam_title} • {session.student_name}</p>
             </div>
             <div className="flex gap-2 no-print">
-              <Button variant="outline" size="sm" onClick={() => setSelectedSessionId(null)}>← Kembali</Button>
-              <Button size="sm" onClick={handlePrintSessionDetail} title="Cetak lembar evaluasi pengerjaan soal (PDF)"><FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5" /> Cetak PDF</Button>
+              <Button variant="outline" size="sm" onClick={() => setSelectedSessionId(null)}>
+                <FontAwesomeIcon icon={['fas', 'arrow-left']} className="mr-1.5 text-slate-500" /> Kembali
+              </Button>
+              <Button variant="primary" size="sm" onClick={handlePrintSessionDetail} title="Cetak lembar evaluasi pengerjaan soal (PDF)">
+                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-white" /> Cetak PDF
+              </Button>
             </div>
           </div>
           
@@ -179,8 +183,12 @@ export default function StudentReportModal({ userId, onClose, apiEndpoint = null
             <p className="text-xs text-slate-500 mt-1">Laporan komprehensif performa tryout & kemajuan belajar</p>
           </div>
           <div className="flex gap-2 no-print">
-             <Button variant="outline" size="sm" onClick={onClose}>Batal / Tutup</Button>
-             <Button size="sm" onClick={handlePrintReport} title="Cetak rapor akademik siswa (PDF)"><FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5" /> Cetak Rapor PDF</Button>
+             <Button variant="outline" size="sm" onClick={onClose}>
+                <FontAwesomeIcon icon={['fas', 'xmark']} className="mr-1.5 text-slate-500" /> Batal / Tutup
+             </Button>
+             <Button variant="primary" size="sm" onClick={handlePrintReport} title="Cetak rapor akademik siswa (PDF)">
+                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-white" /> Cetak Rapor PDF
+             </Button>
           </div>
         </div>
 
@@ -227,20 +235,20 @@ export default function StudentReportModal({ userId, onClose, apiEndpoint = null
 
               {/* KPI Mini */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 lg:w-[480px] shrink-0">
-                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-3.5 text-white shadow-md flex flex-col justify-center">
-                    <FontAwesomeIcon icon={['fas', 'gauge-high']} className="text-xl opacity-80 mb-1.5" />
-                    <div className="text-2xl font-black">{summary.avg_cbt_score}</div>
-                    <div className="text-[11px] font-medium opacity-90">Rata-rata CBT</div>
+                 <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-3.5 shadow-xs flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'gauge-high']} className="text-xl text-blue-600 dark:text-blue-400 mb-1.5" />
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{summary.avg_cbt_score}</div>
+                    <div className="text-[11px] font-medium text-slate-500">Rata-rata CBT</div>
                  </div>
-                 <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-3.5 text-white shadow-md flex flex-col justify-center">
-                    <FontAwesomeIcon icon={['fas', 'brain']} className="text-xl opacity-80 mb-1.5" />
-                    <div className="text-2xl font-black">{summary.predicted_utbk_score || irt_analytics?.avg_utbk_score || '-'}</div>
-                    <div className="text-[11px] font-medium opacity-90">Prediksi UTBK (IRT)</div>
+                 <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-3.5 shadow-xs flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'brain']} className="text-xl text-indigo-600 dark:text-indigo-400 mb-1.5" />
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{summary.predicted_utbk_score || irt_analytics?.avg_utbk_score || '-'}</div>
+                    <div className="text-[11px] font-medium text-slate-500">Prediksi UTBK (IRT)</div>
                  </div>
-                 <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-3.5 text-white shadow-md flex flex-col justify-center">
-                    <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="text-xl opacity-80 mb-1.5" />
-                    <div className="text-2xl font-black">{summary.bkt_mastery_percentage !== undefined ? `${summary.bkt_mastery_percentage}%` : '-'}</div>
-                    <div className="text-[11px] font-medium opacity-90">Penguasaan (BKT)</div>
+                 <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-3.5 shadow-xs flex flex-col justify-center">
+                    <FontAwesomeIcon icon={['fas', 'graduation-cap']} className="text-xl text-emerald-600 dark:text-emerald-400 mb-1.5" />
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{summary.bkt_mastery_percentage !== undefined ? `${summary.bkt_mastery_percentage}%` : '-'}</div>
+                    <div className="text-[11px] font-medium text-slate-500">Penguasaan (BKT)</div>
                  </div>
                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm flex flex-col justify-center">
                     <FontAwesomeIcon icon={['fas', 'check-double']} className="text-emerald-500 text-xl mb-1.5" />
@@ -261,8 +269,8 @@ export default function StudentReportModal({ userId, onClose, apiEndpoint = null
            </div>
 
            {/* Section ML: Analisis Machine Learning (BKT & IRT) */}
-           <div className="bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-purple-50/50 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-900/60 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-indigo-100 dark:border-indigo-900/40">
+           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
                  <div>
                     <h3 className="font-black text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
                        <span className="text-indigo-600 dark:text-indigo-400">🤖</span> Statistik Machine Learning: Tingkat Penguasaan & Kemampuan Siswa
@@ -455,7 +463,9 @@ export default function StudentReportModal({ userId, onClose, apiEndpoint = null
                                    <Badge color={ex.is_pass ? 'emerald' : 'rose'}>{ex.is_pass ? 'Lulus' : 'Remedial'}</Badge>
                                 </td>
                                 <td className="py-3 px-2 text-right no-print">
-                                   <Button variant="ghost" size="sm" onClick={() => fetchSessionDetail(ex.id)}>Lihat Detail Soal</Button>
+                                   <Button variant="outline" size="sm" onClick={() => fetchSessionDetail(ex.id)}>
+                                      <FontAwesomeIcon icon={['fas', 'eye']} className="mr-1 text-blue-600" /> Detail
+                                   </Button>
                                 </td>
                              </tr>
                           ))}
