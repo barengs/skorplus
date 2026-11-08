@@ -32,6 +32,10 @@ const getBaseStyles = () => `
       page-break-inside: avoid;
       break-inside: avoid;
     }
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
     .no-print {
       display: none !important;
     }
@@ -1351,12 +1355,13 @@ export const printSchoolStudentsPDF = (school, students = []) => {
 
 /**
  * Generate Comprehensive Analytics Report PDF (Master All-In-One Document)
- * Combines Executive Summary, School Performance, CBT Evaluation, and E-Learning Curriculum
+ * Combines Executive Summary, Student Monitoring (ML: IRT & BKT), School Performance,
+ * CBT Evaluation, and E-Learning Curriculum
  */
-export const printComprehensiveAnalyticsPDF = (dashboardData) => {
+export const printComprehensiveAnalyticsPDF = (dashboardData, studentsList = [], mlCounts = {}) => {
   if (!dashboardData) return;
 
-  const { summary = {}, schools_stats = {}, cbt_stats = {}, materials_stats = {} } = dashboardData;
+  const { summary = {}, schools_stats = {}, cbt_stats = {}, materials_stats = {}, ml_analytics = {} } = dashboardData;
   const printDate = new Date().toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
@@ -1369,6 +1374,19 @@ export const printComprehensiveAnalyticsPDF = (dashboardData) => {
   const totalSub = cbt_stats.total_sessions_submitted || 1;
   const courses = materials_stats.courses_ranking || [];
   const lessonTypes = materials_stats.lesson_types || {};
+
+  // Machine Learning & Pemantauan Siswa Data
+  const irtSummary = cbt_stats.irt_summary || ml_analytics.irt || {};
+  const bktSummary = materials_stats.bkt_summary || ml_analytics.bkt || {};
+
+  const students = Array.isArray(studentsList) ? studentsList : [];
+  const counts = mlCounts && Object.keys(mlCounts).length > 0 ? mlCounts : {
+    total: students.length,
+    perlu_tindak_lanjut: students.filter(s => s.follow_up?.status_key === 'perlu_tindak_lanjut').length,
+    butuh_penguatan: students.filter(s => s.follow_up?.status_key === 'butuh_penguatan').length,
+    mastered: students.filter(s => s.follow_up?.status_key === 'mastered').length,
+    kompetitif: students.filter(s => s.follow_up?.status_key === 'kompetitif').length,
+  };
 
   const html = `
     <!DOCTYPE html>
@@ -1386,7 +1404,7 @@ export const printComprehensiveAnalyticsPDF = (dashboardData) => {
         <!-- Title -->
         <div class="doc-title">
           <h3>Laporan Analitik Komprehensif Institusi & Akademik</h3>
-          <p>Dokumen Evaluasi Lengkap: Mitra Sekolah, Computer-Based Testing (CBT), dan E-Learning · Diterbitkan: ${printDate}</p>
+          <p>Dokumen Evaluasi Lengkap: Pemantauan Siswa & Machine Learning, Mitra Sekolah, CBT, dan E-Learning · Diterbitkan: ${printDate}</p>
         </div>
 
         <!-- BAB I: RINGKASAN EKSEKUTIF -->
@@ -1414,8 +1432,150 @@ export const printComprehensiveAnalyticsPDF = (dashboardData) => {
           </div>
         </div>
 
-        <!-- BAB II: ANALISIS SEKOLAH -->
-        <div class="section-title">Bab II. Evaluasi Kinerja Mitra Sekolah</div>
+        <!-- BAB II: PEMANTAUAN SISWA & TINDAK LANJUT BELAJAR (MACHINE LEARNING) -->
+        <div class="section-title">Bab II. Pemantauan Siswa & Rekomendasi Tindak Lanjut Belajar (Machine Learning)</div>
+        <p style="font-size: 8pt; color: #4b5563; margin-top: -4px; margin-bottom: 10px;">
+          Evaluasi berbasis kecerdasan buatan: <strong>Item Response Theory (IRT Rasch Model)</strong> untuk estimasi skor UTBK dan <strong>Bayesian Knowledge Tracing (BKT)</strong> untuk tingkat penguasaan kompetensi materi secara adaptif.
+        </p>
+
+        <!-- KPI Mini Pemantauan Siswa -->
+        <div class="kpi-grid avoid-break">
+          <div class="kpi-card">
+            <div class="kpi-num">${counts.total || students.length || summary.total_students_partner || 0}</div>
+            <div class="kpi-label">Siswa Dipantau</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-num" style="color: #4f46e5;">${irtSummary.avg_predicted_score || 500} pts</div>
+            <div class="kpi-label">Prediksi Rata-rata UTBK</div>
+          </div>
+          <div class="kpi-card" style="border-left: 3px solid #e11d48;">
+            <div class="kpi-num" style="color: #e11d48;">${counts.perlu_tindak_lanjut ?? 0}</div>
+            <div class="kpi-label">Butuh Pendampingan</div>
+          </div>
+          <div class="kpi-card" style="border-left: 3px solid #d97706;">
+            <div class="kpi-num" style="color: #d97706;">${counts.butuh_penguatan ?? 0}</div>
+            <div class="kpi-label">Butuh Penguatan</div>
+          </div>
+          <div class="kpi-card" style="border-left: 3px solid #059669;">
+            <div class="kpi-num" style="color: #059669;">${counts.mastered ?? 0}</div>
+            <div class="kpi-label">Rekomendasi Lanjut</div>
+          </div>
+        </div>
+
+        <!-- Matriks 2 Kolom Ringkasan IRT & BKT -->
+        <div class="avoid-break" style="display: flex; gap: 12px; margin-bottom: 14px;">
+          <!-- Panel IRT -->
+          <div style="flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; background: #ffffff;">
+            <div style="font-size: 8pt; font-weight: 800; color: #4338ca; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
+              Model 1: Item Response Theory (IRT Rasch CBT)
+            </div>
+            <table style="width: 100%; font-size: 7.5pt; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 2.5px 0; color: #059669; font-weight: 600;">Sangat Siap / Top PTN (&ge; 700)</td>
+                <td style="text-align: right; font-weight: 800;">${irtSummary.ability_distribution?.super_high ?? 0} siswa</td>
+              </tr>
+              <tr>
+                <td style="padding: 2.5px 0; color: #2563eb; font-weight: 600;">Tinggi / Kompetitif (600 - 699)</td>
+                <td style="text-align: right; font-weight: 800;">${irtSummary.ability_distribution?.high ?? 0} siswa</td>
+              </tr>
+              <tr>
+                <td style="padding: 2.5px 0; color: #0891b2; font-weight: 600;">Rata-rata Nasional (500 - 599)</td>
+                <td style="text-align: right; font-weight: 800;">${irtSummary.ability_distribution?.moderate ?? 0} siswa</td>
+              </tr>
+              <tr>
+                <td style="padding: 2.5px 0; color: #e11d48; font-weight: 600;">Perlu Bimbingan Tambahan (&lt; 500)</td>
+                <td style="text-align: right; font-weight: 800;">${irtSummary.ability_distribution?.low ?? 0} siswa</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Panel BKT -->
+          <div style="flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; background: #ffffff;">
+            <div style="font-size: 8pt; font-weight: 800; color: #047857; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
+              Model 2: Bayesian Knowledge Tracing (Materi Belajar)
+            </div>
+            <table style="width: 100%; font-size: 7.5pt; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 2.5px 0; color: #059669; font-weight: 600;">Mastered / Tuntas (&ge; 80%)</td>
+                <td style="text-align: right; font-weight: 800;">${bktSummary.distribution?.mastered ?? 0} siswa</td>
+              </tr>
+              <tr>
+                <td style="padding: 2.5px 0; color: #2563eb; font-weight: 600;">Kompeten (60% - 79%)</td>
+                <td style="text-align: right; font-weight: 800;">${bktSummary.distribution?.proficient ?? 0} siswa</td>
+              </tr>
+              <tr>
+                <td style="padding: 2.5px 0; color: #d97706; font-weight: 600;">Berkembang (40% - 59%)</td>
+                <td style="text-align: right; font-weight: 800;">${bktSummary.distribution?.developing ?? 0} siswa</td>
+              </tr>
+              <tr>
+                <td style="padding: 2.5px 0; color: #e11d48; font-weight: 600;">Remedial Alert (&lt; 40%)</td>
+                <td style="text-align: right; font-weight: 800;">${bktSummary.distribution?.needs_remedial ?? 0} siswa</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabel Rekapitulasi Siswa & Rencana Tindak Lanjut -->
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 4%;" class="text-center">No</th>
+              <th style="width: 25%;">Nama Siswa & Asal Sekolah</th>
+              <th style="width: 14%;" class="text-center">Prediksi UTBK (IRT)</th>
+              <th style="width: 12%;" class="text-center">BKT Mastery</th>
+              <th style="width: 17%;">Status Kesiapan</th>
+              <th style="width: 28%;">Rencana Tindak Lanjut Belajar</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${students.length > 0 ? students.map((st, i) => {
+              const utbk = st.irt?.predicted_utbk_score || (st.last_cbt_score !== null && st.last_cbt_score !== undefined ? Math.round(500 + ((Number(st.last_cbt_score) - 50) * 8)) : null);
+              const bkt = st.bkt?.mastery_percentage !== null && st.bkt?.mastery_percentage !== undefined ? `${st.bkt.mastery_percentage}%` : '-';
+              const followUp = st.follow_up || {};
+              const statusKey = followUp.status_key || (Number(st.last_cbt_score) < 55 ? 'perlu_tindak_lanjut' : 'kompetitif');
+              const statusBadgeColor = statusKey === 'perlu_tindak_lanjut' ? 'badge-rose' : (statusKey === 'mastered' ? 'badge-emerald' : (statusKey === 'butuh_penguatan' ? 'badge-amber' : 'badge-blue'));
+              const statusLabel = followUp.status_label || (statusKey === 'perlu_tindak_lanjut' ? 'Perlu Intervensi' : 'Kompetitif');
+              const actionTitle = followUp.action_title || '';
+              const actionDetail = followUp.action_detail || (st.last_cbt_score !== null ? `Skor CBT ${st.last_cbt_score} pts. Tingkatkan latihan berkala.` : 'Belum ada rekaman ujian CBT.');
+
+              return `
+                <tr>
+                  <td class="text-center">${i + 1}</td>
+                  <td>
+                    <div class="font-bold">${st.name || '-'}</div>
+                    <div style="font-size: 7.5pt; color: #64748b;">
+                      ${st.school_name || st.school || 'Individu'} ${st.nisn ? `· NISN: ${st.nisn}` : ''}
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    ${utbk ? `
+                      <div class="font-bold" style="color: #4f46e5; font-size: 9pt;">
+                        ${utbk} pts
+                      </div>
+                      <div style="font-size: 7pt; color: #64748b;">CBT: ${st.last_cbt_score ?? '-'} pts</div>
+                    ` : '<span style="font-size: 7.5pt; color: #94a3b8; font-style: italic;">Belum ada tes</span>'}
+                  </td>
+                  <td class="text-center font-bold" style="color: ${bkt !== '-' && parseInt(bkt) >= 70 ? '#059669' : '#d97706'}; font-size: 9pt;">
+                    ${bkt}
+                    ${st.bkt?.status_label ? `<div style="font-size: 7pt; color: #64748b; font-weight: normal;">${st.bkt.status_label}</div>` : ''}
+                  </td>
+                  <td>
+                    <span class="badge ${statusBadgeColor}">${statusLabel}</span>
+                  </td>
+                  <td style="font-size: 7.5pt; color: #334155; line-height: 1.35;">
+                    ${actionTitle ? `<div class="font-bold" style="color: #1e293b; margin-bottom: 2px;">${actionTitle}</div>` : ''}
+                    <div>${actionDetail}</div>
+                  </td>
+                </tr>
+              `;
+            }).join('') : `
+              <tr><td colspan="6" class="text-center text-slate-400">Belum ada data pemantauan siswa yang dimuat.</td></tr>
+            `}
+          </tbody>
+        </table>
+
+        <!-- BAB III: ANALISIS SEKOLAH -->
+        <div class="section-title">Bab III. Evaluasi Kinerja Mitra Sekolah</div>
         <table class="data-table">
           <thead>
             <tr>
@@ -1449,8 +1609,8 @@ export const printComprehensiveAnalyticsPDF = (dashboardData) => {
           </tbody>
         </table>
 
-        <!-- BAB III: ANALISIS CBT & DISTRIBUSI -->
-        <div class="section-title">Bab III. Analisis Computer-Based Testing (CBT) & Distribusi Skor</div>
+        <!-- BAB IV: ANALISIS CBT & DISTRIBUSI -->
+        <div class="section-title">Bab IV. Analisis Computer-Based Testing (CBT) & Distribusi Skor</div>
         <table class="data-table avoid-break">
           <thead>
             <tr>
@@ -1512,8 +1672,8 @@ export const printComprehensiveAnalyticsPDF = (dashboardData) => {
           </tbody>
         </table>
 
-        <!-- BAB IV: ANALISIS MATERI & KURIKULUM -->
-        <div class="section-title">Bab IV. Analisis Kurikulum & Efektivitas E-Learning</div>
+        <!-- BAB V: ANALISIS MATERI & KURIKULUM -->
+        <div class="section-title">Bab V. Analisis Kurikulum & Efektivitas E-Learning</div>
         <table class="info-table avoid-break">
           <tr>
             <td class="label">Total Kursus Aktif</td>

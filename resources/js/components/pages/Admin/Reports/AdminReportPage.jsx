@@ -142,6 +142,22 @@ export default function AdminReportPage() {
     navigate(`/admin/reports/schools/${school.id}`, { state: { school } });
   };
 
+  const handlePrintComprehensive = async () => {
+    if (!dashboardData) return;
+    let students = mlStudents;
+    let counts = mlCounts;
+    if (!students || students.length === 0) {
+      try {
+        const res = await api.get('/admin/reports/students-analytics');
+        students = res.data.students || [];
+        counts = res.data.status_counts || counts;
+      } catch {
+        // proceed
+      }
+    }
+    printComprehensiveAnalyticsPDF(dashboardData, students, counts);
+  };
+
   useEffect(() => {
     fetchDashboardStats();
     fetchMlStudents();
@@ -290,7 +306,7 @@ export default function AdminReportPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 no-print">
-             <Button variant="outline" onClick={() => printComprehensiveAnalyticsPDF(dashboardData)} disabled={!dashboardData} title="Cetak dokumen analitik komprehensif (Semua Bab: Ringkasan, Sekolah, CBT & Materi)">
+             <Button variant="outline" onClick={handlePrintComprehensive} disabled={!dashboardData} title="Cetak dokumen analitik komprehensif (Semua Bab: Ringkasan, Pemantauan Siswa, Sekolah, CBT & Materi)">
                 <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-600 text-sm" /> Cetak Laporan Lengkap
              </Button>
              <Button
@@ -312,7 +328,7 @@ export default function AdminReportPage() {
                    } else if (activeTab === 'elearning') {
                       printMaterialsAnalyticsPDF(materialsData, dashboardData);
                    } else {
-                      printComprehensiveAnalyticsPDF(dashboardData);
+                      handlePrintComprehensive();
                    }
                 }}
              >
