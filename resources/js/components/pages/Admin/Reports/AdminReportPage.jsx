@@ -291,7 +291,7 @@ export default function AdminReportPage() {
           </div>
           <div className="flex flex-wrap gap-2 no-print">
              <Button variant="outline" onClick={() => printComprehensiveAnalyticsPDF(dashboardData)} disabled={!dashboardData} title="Cetak dokumen analitik komprehensif (Semua Bab: Ringkasan, Sekolah, CBT & Materi)">
-                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-500" /> Cetak Laporan Lengkap (Semua Bab)
+                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-500" /> Cetak Laporan Lengkap
              </Button>
              <Button
                 variant="outline"
@@ -300,6 +300,11 @@ export default function AdminReportPage() {
                 onClick={() => {
                    if (activeTab === 'dashboard') {
                       printExecutiveSummaryPDF(dashboardData);
+                   } else if (activeTab === 'students') {
+                      const schoolObj = mlSchoolFilter && schoolsData.schools_list
+                         ? schoolsData.schools_list.find((s) => s.id == mlSchoolFilter)
+                         : { name: 'Semua Mitra Sekolah' };
+                      printSchoolStudentsPDF(schoolObj, mlStudents);
                    } else if (activeTab === 'schools') {
                       printSchoolAnalyticsPDF(schoolsData, dashboardData);
                    } else if (activeTab === 'cbt') {
@@ -312,11 +317,12 @@ export default function AdminReportPage() {
                 }}
              >
                 <FontAwesomeIcon icon={['fas', 'print']} className="mr-2 text-blue-500" />
-                {activeTab === 'dashboard' && 'Cetak Ringkasan (PDF)'}
-                {activeTab === 'schools' && 'Cetak Analitik Sekolah (PDF)'}
-                {activeTab === 'cbt' && 'Cetak Analitik CBT (PDF)'}
-                {activeTab === 'elearning' && 'Cetak Analitik Materi (PDF)'}
-                {activeTab === 'logs' && 'Cetak Laporan Lengkap (PDF)'}
+                {activeTab === 'dashboard' && 'Cetak Ringkasan'}
+                {activeTab === 'students' && 'Cetak Pemantauan Siswa'}
+                {activeTab === 'schools' && 'Cetak Analitik Sekolah'}
+                {activeTab === 'cbt' && 'Cetak Analitik CBT'}
+                {activeTab === 'elearning' && 'Cetak Analitik Materi'}
+                {activeTab === 'logs' && 'Cetak Laporan Lengkap'}
              </Button>
              <Button variant="outline" onClick={() => fetchDashboardStats()} disabled={loading}>
                 <FontAwesomeIcon icon={['fas', 'rotate-right']} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -329,7 +335,7 @@ export default function AdminReportPage() {
         <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'dashboard'
                 ? 'border-purple-600 text-purple-600 dark:text-purple-400'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -338,8 +344,23 @@ export default function AdminReportPage() {
             <FontAwesomeIcon icon={['fas', 'border-all']} /> Ringkasan
           </button>
           <button
+            onClick={() => setActiveTab('students')}
+            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeTab === 'students'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <FontAwesomeIcon icon={['fas', 'user-graduate']} /> Pemantauan Siswa
+            {mlCounts.total > 0 && (
+              <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold px-2 py-0.5 rounded-full">
+                {mlCounts.total}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('schools')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'schools'
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -349,7 +370,7 @@ export default function AdminReportPage() {
           </button>
           <button
             onClick={() => setActiveTab('cbt')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'cbt'
                 ? 'border-amber-600 text-amber-600 dark:text-amber-400'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -359,7 +380,7 @@ export default function AdminReportPage() {
           </button>
           <button
             onClick={() => setActiveTab('elearning')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'elearning'
                 ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -369,7 +390,7 @@ export default function AdminReportPage() {
           </button>
           <button
             onClick={() => setActiveTab('logs')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'logs'
                 ? 'border-slate-800 text-slate-800 dark:border-slate-300 dark:text-slate-300'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -380,7 +401,7 @@ export default function AdminReportPage() {
         </div>
 
         {/* LOADING STATE */}
-        {loading && activeTab !== 'logs' ? (
+        {loading && activeTab !== 'logs' && activeTab !== 'students' ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400">
              <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4" />
              <p className="font-semibold">Menganalisis data laporan statistik...</p>
@@ -912,7 +933,7 @@ export default function AdminReportPage() {
                              variant="outline"
                              size="sm"
                              onClick={() => printSchoolAnalyticsPDF(schoolsData, dashboardData)}
-                             title="Cetak Laporan Evaluasi & Kinerja Mitra Sekolah (PDF)"
+                             title="Cetak Evaluasi & Kinerja Mitra Sekolah"
                           >
                              <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF Sekolah
                           </Button>
@@ -1047,7 +1068,7 @@ export default function AdminReportPage() {
                                 size="sm"
                                 onClick={() => printSchoolStudentsPDF(selectedSchool, filteredSchoolStudents)}
                                 disabled={filteredSchoolStudents.length === 0}
-                                title="Cetak rekapitulasi data siswa dan skor CBT sekolah ini (PDF)"
+                                title="Cetak rekapitulasi data siswa dan skor CBT sekolah ini"
                              >
                                 <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF
                              </Button>
