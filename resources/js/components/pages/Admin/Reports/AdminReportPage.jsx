@@ -307,7 +307,7 @@ export default function AdminReportPage() {
           </div>
           <div className="flex flex-wrap gap-2 no-print">
              <Button variant="outline" onClick={handlePrintComprehensive} disabled={!dashboardData} title="Cetak dokumen analitik komprehensif (Semua Bab: Ringkasan, Pemantauan Siswa, Sekolah, CBT & Materi)">
-                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-600 text-sm" /> Cetak Laporan Lengkap
+                <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-2 text-rose-600 text-sm" /> Cetak Laporan
              </Button>
              <Button
                 variant="outline"
