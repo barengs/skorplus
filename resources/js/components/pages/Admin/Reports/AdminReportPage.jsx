@@ -493,6 +493,32 @@ export default function AdminReportPage() {
                     </div>
                  </div>
 
+                 {/* Quick Nav Banner to Pemantauan Siswa */}
+                 <div className="bg-gradient-to-r from-indigo-900/10 via-purple-900/5 to-blue-900/10 border border-indigo-200 dark:border-indigo-800/40 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-500/20 shrink-0">
+                          <FontAwesomeIcon icon={['fas', 'user-graduate']} />
+                       </div>
+                       <div>
+                          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                             <span>Analisis Machine Learning & Pemantauan Siswa</span>
+                             <Badge color="indigo" className="text-[10px] font-bold">IRT & BKT AI</Badge>
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                             Lihat pemetaan tingkat penguasaan materi (BKT), estimasi skor UTBK (IRT), dan rekomendasi tindak lanjut belajar untuk {mlCounts.total || 'seluruh'} siswa.
+                          </p>
+                       </div>
+                    </div>
+                    <Button onClick={() => setActiveTab('students')} className="shrink-0 cursor-pointer">
+                       <FontAwesomeIcon icon={['fas', 'arrow-right']} className="mr-1.5" /> Buka Pemantauan Siswa ({mlCounts.total})
+                    </Button>
+                 </div>
+              </div>
+            )}
+
+            {/* TAB: PEMANTAUAN SISWA */}
+            {activeTab === 'students' && (
+              <div className="space-y-6 animate-fade-in-up">
                  {/* Machine Learning Analytics Panel: BKT & IRT */}
                  <div className="bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-purple-50/60 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-900/60 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl p-6 shadow-xs space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-indigo-100 dark:border-indigo-900/40">
@@ -655,6 +681,46 @@ export default function AdminReportPage() {
                         <p className="text-xs text-slate-500 mt-1">
                           Daftar siswa lintas sekolah yang dikelompokkan berdasarkan hasil Bayesian Knowledge Tracing dan IRT Rasch Model untuk pemberian intervensi personal.
                         </p>
+                      </div>
+                      <div className="flex gap-2 no-print">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const schoolObj = mlSchoolFilter && schoolsData.schools_list
+                              ? schoolsData.schools_list.find((s) => s.id == mlSchoolFilter)
+                              : { name: 'Semua Mitra Sekolah' };
+                            printSchoolStudentsPDF(schoolObj, mlStudents);
+                          }}
+                          disabled={mlStudents.length === 0}
+                          title="Cetak laporan hasil pembelajaran & rekomendasi tindak lanjut siswa (PDF)"
+                        >
+                          <FontAwesomeIcon icon={['fas', 'file-pdf']} className="mr-1.5 text-rose-500" /> Cetak PDF Siswa
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const cols = [
+                              { key: 'name', label: 'Nama Siswa' },
+                              { key: 'school_name', label: 'Sekolah' },
+                              { key: 'nisn', label: 'NISN' },
+                              { key: 'email', label: 'Email' },
+                              { key: 'irt.predicted_utbk_score', label: 'Prediksi Skor UTBK (IRT)' },
+                              { key: 'bkt.mastery_percentage', label: 'Penguasaan Materi BKT (%)' },
+                              { key: 'follow_up.status_label', label: 'Status Klasifikasi' },
+                              { key: 'follow_up.action_title', label: 'Rencana Tindak Lanjut' },
+                              { key: 'follow_up.action_detail', label: 'Detail Intervensi' },
+                            ];
+                            exportToCsv(mlStudents, cols, 'pemantauan-siswa-tindak-lanjut');
+                          }}
+                          disabled={mlStudents.length === 0}
+                        >
+                          <FontAwesomeIcon icon={['fas', 'file-arrow-down']} className="mr-1.5" /> Ekspor CSV
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => fetchMlStudents()} disabled={mlLoading}>
+                          <FontAwesomeIcon icon={['fas', 'rotate-right']} className={mlLoading ? 'animate-spin' : ''} />
+                        </Button>
                       </div>
                     </div>
 
