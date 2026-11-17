@@ -40,7 +40,7 @@ export default function CbtLimitModal({ isOpen, onClose, quotaInfo, programName 
             Tutup
           </Button>
           <a
-            href={`https://wa.me/6281234567890?text=Halo%20Admin%20SkorPluss,%20kuota%20CBT%20saya%20telah%20mencapai%20batas%20pada%20${encodeURIComponent(name)}`}
+            href={`https://wa.me/6285152222007?text=Halo%20Admin%20SkorPluss,%20kuota%20CBT%20saya%20telah%20mencapai%20batas%20pada%20${encodeURIComponent(name)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"

@@ -144,6 +144,7 @@ class StudentElearningController extends Controller
                 'correct_index' => $correctIndex,
                 'is_correct' => $isCorrect,
                 'explanation' => $q['explanation'] ?? null,
+                'knowledge_component' => $q['knowledge_component'] ?? ($lesson->module?->title ?? $lesson->title),
             ];
         }
 

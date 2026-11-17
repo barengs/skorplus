@@ -329,7 +329,7 @@ export const printStudentReportPDF = (report) => {
           <div class="letterhead-text">
             <h1>SKORPLUS LEARNING CENTER</h1>
             <h2>Bimbingan Belajar & Konsultasi Akademik Kedinasan, UTBK-SNBT & Olimpiade</h2>
-            <p>Jalan Pendidikan No. 45, Indonesia · Website: https://skorplus.id · Email: info@skorplus.id</p>
+            <p>Jalan Pendidikan No. 45, Indonesia · Telp: 085152222007 · Email: skorplusscenter@gmail.com</p>
           </div>
         </div>
         <div class="letterhead-line2"></div>
@@ -675,7 +675,7 @@ const renderLetterheadHtml = (docSubtitle = 'Laporan Eksekutif Analitik & Evalua
     <div class="letterhead-text">
       <h1>SKORPLUS LEARNING CENTER</h1>
       <h2>${docSubtitle}</h2>
-      <p>Jalan Pendidikan No. 45, Indonesia · Website: https://skorplus.id · Email: info@skorplus.id</p>
+      <p>Jalan Pendidikan No. 45, Indonesia · Telp: 085152222007 · Email: skorplusscenter@gmail.com</p>
     </div>
   </div>
   <div class="letterhead-line2"></div>

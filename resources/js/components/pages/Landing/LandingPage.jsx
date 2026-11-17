@@ -955,7 +955,9 @@ export default function LandingPage() {
                   </>
                 )}
               </div>
-              <p className="text-xs text-slate-600 mt-6">📞 CS: 0812-3456-7890 · Senin–Sabtu 08.00–21.00 WIB</p>
+              <p className="text-xs text-slate-600 mt-6">
+                📞 CS: <a href="https://wa.me/6285152222007" target="_blank" rel="noopener noreferrer" className="hover:underline font-medium">085152222007</a> · Email: <a href="mailto:skorplusscenter@gmail.com" className="hover:underline font-medium">skorplusscenter@gmail.com</a> · Senin–Sabtu 08.00–21.00 WIB
+              </p>
             </div>
           </div>
         </div>
@@ -966,10 +968,11 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <Logo />
           <p className="text-xs text-slate-600">© {new Date().getFullYear()} SkorPluss Learning Center. All rights reserved.</p>
-          <div className="flex gap-4 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500">
+            <a href="mailto:skorplusscenter@gmail.com" className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors">skorplusscenter@gmail.com</a>
+            <a href="https://wa.me/6285152222007" target="_blank" rel="noopener noreferrer" className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors">085152222007</a>
             <a href="#" className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors">Syarat & Ketentuan</a>
             <a href="#" className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors">Kebijakan Privasi</a>
-            <a href="#" className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors">Kontak</a>
           </div>
         </div>
       </footer>

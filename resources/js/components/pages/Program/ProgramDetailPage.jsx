@@ -244,7 +244,7 @@ export default function ProgramDetailPage() {
                       🚀 Daftar Program Sekarang
                     </Link>
                     <a
-                      href="https://wa.me/6281234567890?text=Halo%20SkorPluss,%20saya%20ingin%20konsultasi%20mengenai%20Program"
+                      href="https://wa.me/6285152222007?text=Halo%20SkorPluss,%20saya%20ingin%20konsultasi%20mengenai%20Program"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-5 py-3 rounded-xl font-semibold text-sm bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 transition-all flex items-center gap-2"

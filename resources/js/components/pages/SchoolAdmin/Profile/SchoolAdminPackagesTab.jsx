@@ -346,12 +346,12 @@ export default function SchoolAdminPackagesTab({ school }) {
                 <div>
                   <div className="text-xs text-slate-400">WhatsApp Hotline Kemitraan:</div>
                   <a
-                    href="https://wa.me/6281234567890?text=Halo%20Admin%20SkorPluss,%20kami%20dari%20pihak%20sekolah%20ingin%20mengajukan%20perpanjangan%20kontrak%20paket%20pembelajaran."
+                    href="https://wa.me/6285152222007?text=Halo%20Admin%20SkorPluss,%20kami%20dari%20pihak%20sekolah%20ingin%20mengajukan%20perpanjangan%20kontrak%20paket%20pembelajaran."
                     target="_blank"
                     rel="noreferrer"
                     className="font-bold text-sm text-blue-600 dark:text-blue-400 hover:underline"
                   >
-                    +62 812-3456-7890 (Klik untuk WhatsApp)
+                    085152222007 (Klik untuk WhatsApp)
                   </a>
                 </div>
               </div>
@@ -361,10 +361,10 @@ export default function SchoolAdminPackagesTab({ school }) {
                 <div>
                   <div className="text-xs text-slate-400">Email Resmi Kemitraan:</div>
                   <a
-                    href="mailto:partnership@skorpluss.com?subject=Permohonan%20Perpanjangan%20Kontrak%20Sekolah"
+                    href="mailto:skorplusscenter@gmail.com?subject=Permohonan%20Perpanjangan%20Kontrak%20Sekolah"
                     className="font-bold text-sm text-blue-600 dark:text-blue-400 hover:underline"
                   >
-                    partnership@skorpluss.com
+                    skorplusscenter@gmail.com
                   </a>
                 </div>
               </div>

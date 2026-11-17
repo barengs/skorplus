@@ -10,11 +10,13 @@ import { fetchAdminCourses, createAdminCourse, updateAdminCourse, deleteAdminCou
 import { toast } from 'react-toastify';
 import api from '../../../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import AiCourseGeneratorModal from '../../../molecules/AiCourseGeneratorModal';
 
 export default function AdminElearningPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { courses, loading } = useSelector((state) => state.adminElearning);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   
   useEffect(() => {
     dispatch(fetchAdminCourses());
@@ -51,8 +53,25 @@ export default function AdminElearningPage() {
             <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100">Manajemen Materi E-Learning</h2>
             <p className="text-slate-600 dark:text-slate-400 text-sm">Kelola daftar pelajaran, modul, dan video.</p>
           </div>
-          <Button onClick={() => navigate('/admin/elearning/courses/create')}>+ Tambah Pelajaran</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="soft" onClick={() => setIsAiModalOpen(true)}>
+              <FontAwesomeIcon icon={['fas', 'wand-magic-sparkles']} /> Generate dari Dokumen (AI)
+            </Button>
+            <Button onClick={() => navigate('/admin/elearning/courses/create')}>
+              <FontAwesomeIcon icon={['fas', 'plus']} /> Tambah Pelajaran
+            </Button>
+          </div>
         </div>
+
+        <AiCourseGeneratorModal
+          isOpen={isAiModalOpen}
+          onClose={() => setIsAiModalOpen(false)}
+          onSaved={(course) => {
+            setIsAiModalOpen(false);
+            dispatch(fetchAdminCourses());
+            navigate(`/admin/elearning/courses/${course.id}/curriculum`);
+          }}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {loading ? (

@@ -388,6 +388,20 @@ export default function StudentReportModal({ userId, onClose, apiEndpoint = null
                                       style={{ width: `${mod.mastery_percentage}%` }}
                                    />
                                 </div>
+                                {Array.isArray(mod.knowledge_components) && mod.knowledge_components.length > 0 && (
+                                   <div className="flex flex-wrap gap-1 pt-1">
+                                      {mod.knowledge_components.map((kc, kIdx) => (
+                                         <span
+                                            key={kIdx}
+                                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                                         >
+                                            <i className="fas fa-tag text-[9px] text-indigo-500"></i>
+                                            <span>{kc.name}:</span>
+                                            <strong className="text-slate-800 dark:text-slate-100">{kc.mastery_percentage}%</strong>
+                                         </span>
+                                      ))}
+                                   </div>
+                                )}
                              </div>
                           ))
                        ) : (

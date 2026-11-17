@@ -133,12 +133,14 @@ class KnowledgeTracingService
                 'developing_topics_count' => 0,
                 'remedial_topics_count' => 0,
                 'modules' => [],
+                'knowledge_components' => [],
                 'strengths' => [],
                 'needs_attention' => [],
             ];
         }
 
         $modulesMap = [];
+        $globalKcMap = [];
 
         foreach ($progresses as $prog) {
             $lesson = $prog->lesson;
@@ -159,6 +161,7 @@ class KnowledgeTracingService
                     'module_title' => $moduleTitle,
                     'course_title' => $courseTitle,
                     'responses' => [],
+                    'kc_responses' => [],
                     'score_percentages' => [],
                     'attempts_count' => 0,
                 ];
@@ -166,9 +169,26 @@ class KnowledgeTracingService
 
             $attemptData = $prog->quiz_attempt_data ?? [];
             $evaluations = $attemptData['evaluations'] ?? [];
+            $lessonQuestions = is_array($lesson->quiz_questions) ? $lesson->quiz_questions : [];
 
-            foreach ($evaluations as $ev) {
-                $modulesMap[$moduleId]['responses'][] = (bool) ($ev['is_correct'] ?? false);
+            foreach ($evaluations as $evIndex => $ev) {
+                $isCorrect = (bool) ($ev['is_correct'] ?? false);
+                $modulesMap[$moduleId]['responses'][] = $isCorrect;
+
+                $qIndex = (int) ($ev['question_index'] ?? $evIndex);
+                $kcName = trim((string) (
+                    $ev['knowledge_component']
+                    ?? ($lessonQuestions[$qIndex]['knowledge_component'] ?? '')
+                ));
+                if ($kcName === '') {
+                    $kcName = $moduleTitle;
+                }
+
+                $modulesMap[$moduleId]['kc_responses'][$kcName][] = $isCorrect;
+                $globalKcMap[$kcName]['name'] = $kcName;
+                $globalKcMap[$kcName]['course_title'] = $courseTitle;
+                $globalKcMap[$kcName]['module_title'] = $moduleTitle;
+                $globalKcMap[$kcName]['responses'][] = $isCorrect;
             }
 
             if (isset($attemptData['score_percentage'])) {
@@ -188,6 +208,20 @@ class KnowledgeTracingService
         foreach ($modulesMap as $modData) {
             $bktResult = $this->evaluateResponses($modData['responses']);
 
+            $moduleKcs = [];
+            foreach ($modData['kc_responses'] as $kcName => $kcResp) {
+                $kcEval = $this->evaluateResponses($kcResp);
+                $moduleKcs[] = [
+                    'name' => $kcName,
+                    'questions_attempted' => count($kcResp),
+                    'mastery_percentage' => $kcEval['mastery_percentage'],
+                    'probability' => $kcEval['probability'],
+                    'status' => $kcEval['status'],
+                    'status_label' => $kcEval['status_label'],
+                    'badge_color' => $kcEval['badge_color'],
+                ];
+            }
+
             $resultItem = [
                 'module_id' => $modData['module_id'],
                 'module_title' => $modData['module_title'],
@@ -199,6 +233,7 @@ class KnowledgeTracingService
                 'status_label' => $bktResult['status_label'],
                 'badge_color' => $bktResult['badge_color'],
                 'avg_score' => ! empty($modData['score_percentages']) ? round(array_sum($modData['score_percentages']) / count($modData['score_percentages']), 1) : 0,
+                'knowledge_components' => $moduleKcs,
             ];
 
             $totalProbability += $bktResult['probability'];
@@ -216,6 +251,22 @@ class KnowledgeTracingService
             $moduleResults[] = $resultItem;
         }
 
+        $kcResults = [];
+        foreach ($globalKcMap as $kcItem) {
+            $kcEval = $this->evaluateResponses($kcItem['responses']);
+            $kcResults[] = [
+                'name' => $kcItem['name'],
+                'module_title' => $kcItem['module_title'],
+                'course_title' => $kcItem['course_title'],
+                'questions_attempted' => count($kcItem['responses']),
+                'mastery_percentage' => $kcEval['mastery_percentage'],
+                'probability' => $kcEval['probability'],
+                'status' => $kcEval['status'],
+                'status_label' => $kcEval['status_label'],
+                'badge_color' => $kcEval['badge_color'],
+            ];
+        }
+
         $count = count($moduleResults);
         $overallProb = $count > 0 ? round($totalProbability / $count, 4) : 0.0;
         $overallPercentage = (int) round($overallProb * 100);
@@ -227,6 +278,7 @@ class KnowledgeTracingService
             'developing_topics_count' => $developingCount,
             'remedial_topics_count' => $remedialCount,
             'modules' => $moduleResults,
+            'knowledge_components' => $kcResults,
             'strengths' => array_slice($strengths, 0, 5),
             'needs_attention' => array_slice($needsAttention, 0, 5),
         ];

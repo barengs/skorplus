@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AdminAiCourseGeneratorController;
 use App\Http\Controllers\Api\Admin\AdminAuditLogController;
 use App\Http\Controllers\Api\Admin\AdminCbtController;
 use App\Http\Controllers\Api\Admin\AdminCbtImportController;
@@ -135,6 +136,8 @@ Route::middleware('auth:api')->group(function () {
         Route::post('upload/document', [UploadController::class, 'uploadDocument']);
 
         // E-Learning Admin
+        Route::post('elearning/ai-generator/generate', [AdminAiCourseGeneratorController::class, 'generate']);
+        Route::post('elearning/ai-generator/store', [AdminAiCourseGeneratorController::class, 'store']);
         Route::apiResource('elearning/courses', AdminElearningController::class);
         Route::apiResource('elearning/courses.modules', AdminCourseModuleController::class);
         Route::apiResource('elearning/modules.lessons', AdminModuleLessonController::class);
